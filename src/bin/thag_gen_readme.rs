@@ -90,7 +90,7 @@ fn parse_metadata(relative_dir: &Path, file_path: &Path) -> Option<ScriptMetadat
                             categories.iter().all(|cat| {
                                 let found = valid_categories.contains(&cat.as_str().to_snake_case());
                                 if !found {
-                                    svprtln!(Role::ERR, V::N, "Unknown or invalid category: `{cat}`");
+                                    sveprtln!(Role::ERR, V::N, "Unknown or invalid category: `{cat}`");
                                 }
                                 found
                             }),

@@ -290,10 +290,9 @@ Quickly calculating a percentage:
 
 No quotes, no spaces, escape asterisks and parens, and remember Rust decimal arithmetic requires decimal points or floating point notation on all numbers.
 
-Invoking `--quiet` twice (`-qq` for short) suppresses all non-error feedback including the flowerbox, allowing the
-output to be used as a filter.
+By default, `thag` and Cargo feed back to you on `stderr`.  As of v1.1 this feedback is written to `stderr` so will not affect piping of script output.
 
-By default, `thag` and Cargo feed back to you:
+Invoking `--quiet` twice (`-qq` for short) suppresses all non-error feedback including the flowerbox, similarly to `2>dev/null` except that the latter will also suppress error feedback. 
 
 ```bash
 thag -e ' {
@@ -426,13 +425,7 @@ thag --loop 'println!("{i:>3}.  {line}")' < demo/iter.rs       # Short form: -l
 thag -ql 'format!("{i:>3}.  {line}")' < demo/hello.rs            # Long form: --quiet --loop
 
 ```
-For a true filter that you can safely pipe to another process, use `-qq` (or `--quiet --quiet`) to suppress all non-error output:
 
-```bash
-bash-3.2$ thag -qql 'println!("{i:>3}.  {line}")' < demo/hello.rs | grep Categories
-  3.  //# Categories: basic
-bash-3.2$
-```
 Loop mode also accepts the following optional arguments supplying surrounding code, along the lines of AWK:
 
 ```bash
@@ -467,12 +460,13 @@ For an example of tolerating a broken pipe, see
 
 #### Using `writeln!` with a pipe:
 
-Use `-qq` to suppress informative messages on `stdout` from thag itself.
+As from v1.1, `thag` now writes all feedback to the user on `stderr`, so there should be no need to use the `--qq` option to suppress it.
 
-```bash
-bash-3.2$ thag -qql 'let _ = writeln!(io::stdout(), "{i:>3}.  {line}");' < demo/hello.rs | grep Categories    # long form: --quiet --quiet --loop
+```zsh
+$ thag -l 'let _ = writeln!(io::stdout(), "{i:>3}.  {line}");' < demo/hello.rs | grep Categories
+   Compiling temp v0.0.1 (/var/folders/rx/mng2ds0s6y53v12znz5jhpk80000gn/T/rs_dyn)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.41s
   3.  //# Categories: basic
-bash-3.2$
 ```
 
 ### * As an executable:

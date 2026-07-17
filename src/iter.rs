@@ -36,8 +36,8 @@ use std::{
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 use thag_profiler::profiled;
 use thag_styling::{
-    display_terminal_attributes, display_theme_details, display_theme_roles, re, sprtln, vprtln,
-    Role, Style, TermAttributes, ThemedStyle, V,
+    display_terminal_attributes, display_theme_details, display_theme_roles, re, seprtln, sprtln,
+    vprtln, Role, Style, TermAttributes, ThemedStyle, V,
 };
 use tui_textarea::{Input, TextArea};
 
@@ -589,7 +589,7 @@ pub fn process_source(
         build_state.ast = Some(crate::Ast::Expr(expr_ast));
         process_expr(build_state, rs_source, args, proc_flags, &start)?;
     } else {
-        sprtln!(Role::ERR, "Error parsing code: {maybe_ast:#?}");
+        seprtln!(Role::ERR, "Error parsing code: {maybe_ast:#?}");
     }
     Ok(())
 }

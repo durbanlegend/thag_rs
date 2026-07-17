@@ -193,15 +193,27 @@ impl OutputManager {
         }
     }
 
-    /// Output a message whether or not it passes the verbosity filter.
+    /// Output a message to stdout whether or not it passes the verbosity filter.
     pub fn prtln(&self, message: &str) {
         println!("{message}");
     }
 
-    /// Output a message if it passes the verbosity filter.
+    /// Output a message to stdout if it passes the verbosity filter.
     pub fn vprtln(&self, verbosity: Verbosity, message: &str) {
         if verbosity as u8 <= self.verbosity() as u8 {
             println!("{message}");
+        }
+    }
+
+    /// Output a message to stderr whether or not it passes the verbosity filter.
+    pub fn eprtln(&self, message: &str) {
+        eprintln!("{message}");
+    }
+
+    /// Output a message to stderr if it passes the verbosity filter.
+    pub fn veprtln(&self, verbosity: Verbosity, message: &str) {
+        if verbosity as u8 <= self.verbosity() as u8 {
+            eprintln!("{message}");
         }
     }
 
@@ -249,7 +261,8 @@ pub fn get_verbosity() -> Verbosity {
     verbosity
 }
 
-/// Ungated print line macro for user messages
+/// Ungated print line macro — writes to **stdout**.
+/// Use for primary user-facing output (data, script output, tool results).
 #[macro_export]
 macro_rules! prtln {
     ($($arg:tt)*) => {
@@ -259,7 +272,9 @@ macro_rules! prtln {
     };
 }
 
-/// Verbosity-gated print line macro for user messages
+/// Verbosity-gated print line macro — writes to **stdout**.
+/// Use for user-facing informational output where stdout is appropriate
+/// (e.g. standalone tools, user scripts).
 #[macro_export]
 macro_rules! vprtln {
     ($verbosity:expr, $($arg:tt)*) => {
@@ -270,6 +285,35 @@ macro_rules! vprtln {
     ($verbosity:expr) => {
         {
             $crate::OUTPUT_MANAGER.lock().vprtln($verbosity, "");
+        }
+    };
+}
+
+/// Ungated print line macro — writes to **stderr**.
+/// Use for diagnostic/informational output from runners and tools where
+/// stdout should be reserved for data (mirrors the `cargo`/`git` convention).
+#[macro_export]
+macro_rules! eprtln {
+    ($($arg:tt)*) => {
+        {
+            $crate::OUTPUT_MANAGER.lock().eprtln(&format!($($arg)*));
+        }
+    };
+}
+
+/// Verbosity-gated print line macro — writes to **stderr**.
+/// Use for diagnostic/operational output from runners and tools where
+/// stdout must be kept clean for piping (mirrors the `cargo`/`git` convention).
+#[macro_export]
+macro_rules! veprtln {
+    ($verbosity:expr, $($arg:tt)*) => {
+        {
+            $crate::OUTPUT_MANAGER.lock().veprtln($verbosity, &format!($($arg)*));
+        }
+    };
+    ($verbosity:expr) => {
+        {
+            $crate::OUTPUT_MANAGER.lock().veprtln($verbosity, "");
         }
     };
 }

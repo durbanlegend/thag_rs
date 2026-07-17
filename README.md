@@ -702,7 +702,7 @@ thag -r
 This starts an interactive rapid iteration session where you can enter or paste in a single- or multi-line Rust expression and press Enter to run it. You can also retrieve and optionally edit an expression from history.
 Having evaluated the expression you may choose to edit it, and / or the generated Cargo.toml, in your preferred editor (VS Code, Helix, Zed, nano, etc.) and rerun it. Rapid iteration mode also offers basic housekeeping functions for the temporary files generated, otherwise being in temporary space they will be cleaned up by the operating system in due course.
 
-You can access the last 25 commands or expressions from within rapid iteration mode just by using the up and down arrow keys to navigate history.
+You can access the last 40 commands or expressions from within rapid iteration mode just by using the up and down arrow keys to navigate history.
 
 #### General notes on rapid iteration mode
 Rapid iteration mode temporary files are created under the `rs_iter` subdirectory of your temporary directory (for example $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust). The generated script is called `iter_script.rs`.

@@ -68,9 +68,9 @@ use std::{
     string::ToString,
     time::Instant,
 };
-use thag_common::{self, debug_log, re, vprtln, V};
+use thag_common::{self, debug_log, re, veprtln, V};
 use thag_profiler::profiled;
-use thag_styling::{paint_for_role, svprtln, TermAttributes};
+use thag_styling::{paint_for_role, sveprtln, TermAttributes};
 
 #[cfg(feature = "tui")]
 use crate::{
@@ -540,33 +540,33 @@ fn clean_cache(what: &str) -> ThagResult<()> {
     match what {
         "bins" => {
             if bins_dir.exists() {
-                vprtln!(V::N, "Cleaning executable cache: {}", bins_dir.display());
+                veprtln!(V::N, "Cleaning executable cache: {}", bins_dir.display());
                 fs::remove_dir_all(&bins_dir)?;
-                vprtln!(V::N, "✓ Executable cache cleaned");
+                veprtln!(V::N, "✓ Executable cache cleaned");
             } else {
-                vprtln!(V::N, "Executable cache does not exist");
+                veprtln!(V::N, "Executable cache does not exist");
             }
         }
         "target" => {
             if target_dir.exists() {
-                vprtln!(
+                veprtln!(
                     V::N,
                     "Cleaning shared build cache: {}",
                     target_dir.display()
                 );
                 fs::remove_dir_all(&target_dir)?;
-                vprtln!(V::N, "✓ Shared build cache cleaned");
+                veprtln!(V::N, "✓ Shared build cache cleaned");
             } else {
-                vprtln!(V::N, "Shared build cache does not exist");
+                veprtln!(V::N, "Shared build cache does not exist");
             }
         }
         "all" => {
             let cleaned = if bins_dir.exists() {
-                vprtln!(V::N, "Cleaning executable cache: {}", bins_dir.display());
+                veprtln!(V::N, "Cleaning executable cache: {}", bins_dir.display());
                 fs::remove_dir_all(&bins_dir)?;
                 true
             } else if target_dir.exists() {
-                vprtln!(
+                veprtln!(
                     V::N,
                     "Cleaning shared build cache: {}",
                     target_dir.display()
@@ -577,9 +577,9 @@ fn clean_cache(what: &str) -> ThagResult<()> {
                 false
             };
             if cleaned {
-                vprtln!(V::N, "✓ All caches cleaned");
+                veprtln!(V::N, "✓ All caches cleaned");
             } else {
-                vprtln!(V::N, "No caches to clean");
+                veprtln!(V::N, "No caches to clean");
             }
         }
         _ => {
@@ -795,7 +795,7 @@ fn process(
             }
         };
 
-        vprtln!(V::V, "rs_source={rs_source}");
+        veprtln!(V::V, "rs_source={rs_source}");
 
         let rs_manifest = extract(&rs_source, Instant::now())
             // .map_err(|_err| "Error parsing rs_source")
@@ -830,7 +830,7 @@ pub fn process_expr(
     // let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(args, proc_flags, build_state, start);
-    vprtln!(V::V, "{result:?}");
+    veprtln!(V::V, "{result:?}");
     Ok(())
 }
 
@@ -1040,7 +1040,7 @@ pub fn gen_build_run(
 
         generate(build_state, maybe_rs_source, proc_flags)?;
     } else {
-        svprtln!(
+        sveprtln!(
             Role::EMPH,
             V::N,
             "Skipping unnecessary generation step.  Use --force (-f) to override."
@@ -1057,7 +1057,7 @@ pub fn gen_build_run(
             } else {
                 "Skipping unnecessary cargo build step. Use --force (-f) to override."
             };
-        svprtln!(Role::EMPH, V::N, "{build_qualifier}");
+        sveprtln!(Role::EMPH, V::N, "{build_qualifier}");
     }
     if proc_flags.contains(ProcFlags::RUN) {
         run(proc_flags, &args.args, build_state)?;
@@ -1101,7 +1101,7 @@ pub fn generate(
     }
 
     let target_rs_path = build_state.target_dir_path.join(&build_state.source_name);
-    vprtln!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
+    veprtln!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
 
     if !build_state.build_from_orig_source {
         // TODO make this configurable
@@ -1180,7 +1180,7 @@ fn prettyplease_unparse(syntax_tree: &syn::File) -> String {
 #[profiled]
 pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
     let start_build = Instant::now();
-    vprtln!(V::V, "BBBBBBBB In build");
+    veprtln!(V::V, "BBBBBBBB In build");
 
     if proc_flags.contains(ProcFlags::EXPAND) {
         handle_expand(proc_flags, build_state)
@@ -1241,7 +1241,7 @@ fn build_command_args(
     } else if proc_flags.contains(ProcFlags::CARGO) {
         args.extend_from_slice(&build_state.args[1..]);
     } else if proc_flags.contains(ProcFlags::TEST_ONLY) && !build_state.args.is_empty() {
-        svprtln!(Role::INFO, V::V, "build_state.args={:#?}", build_state.args);
+        sveprtln!(Role::INFO, V::V, "build_state.args={:#?}", build_state.args);
         args.push("--".to_string());
         args.extend_from_slice(&build_state.args[..]);
     }
@@ -1282,7 +1282,7 @@ fn configure_command_output(command: &mut Command, proc_flags: &ProcFlags) {
 fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
-    svprtln!(Role::INFO, V::V, "cargo_command={cargo_command:#?}");
+    sveprtln!(Role::INFO, V::V, "cargo_command={cargo_command:#?}");
 
     let output = cargo_command.output()?;
 
@@ -1302,7 +1302,7 @@ fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult
 fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
-    svprtln!(Role::INFO, V::VV, "cargo_command={cargo_command:#?}");
+    sveprtln!(Role::INFO, V::VV, "cargo_command={cargo_command:#?}");
 
     let status = cargo_command.spawn()?.wait()?;
 
@@ -1357,7 +1357,7 @@ fn cache_executable(build_state: &BuildState) -> ThagResult<()> {
     // Copy executable to cache
     if source_exe.exists() {
         fs::copy(&source_exe, &dest_exe)?;
-        svprtln!(
+        sveprtln!(
             Role::INFO,
             V::VV,
             "Cached executable: {}",
@@ -1400,13 +1400,13 @@ fn display_build_failure(inference_level: &DependencyInference) {
         config::DependencyInference::Max => "It may be that maximal dependency inference is specifying conflicting features. Consider trying `config` or failing that, a `toml` block",
     };
 
-    svprtln!(
+    sveprtln!(
         Role::HD3,
         V::V,
         r"Dependency inference_level={inference_level:#?}
 If the problem is a dependency error, consider the following advice:"
     );
-    svprtln!(
+    sveprtln!(
         Role::EMPH,
         V::V,
         r"{advice}
@@ -1482,14 +1482,14 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     }
 
     repeat_dash!(70);
-    svprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
+    sveprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
 
-    vprtln!(
+    veprtln!(
         V::QQ,
         "Executable built and moved to ~/{cargo_bin_subdir}/{executable_stem}"
     );
 
-    svprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
+    sveprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
     Ok(())
 }
 
@@ -1520,12 +1520,12 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     // Sandwich command between two lines of dashes in the terminal
 
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
-    svprtln!(Role::EMPH, V::Q, "{dash_line}");
+    sveprtln!(Role::EMPH, V::Q, "{dash_line}");
 
     let exit_status = run_command.status()?;
-    // svprtln!(Role::EMPH, V::N, "Exit status={exit_status:#?}");
+    // sveprtln!(Role::EMPH, V::N, "Exit status={exit_status:#?}");
 
-    svprtln!(Role::EMPH, V::Q, "{dash_line}");
+    sveprtln!(Role::EMPH, V::Q, "{dash_line}");
 
     // #[cfg(debug_assertions)]
     // debug_log!("Exit status={exit_status:#?}");
@@ -1553,6 +1553,6 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
     #[cfg(debug_assertions)]
     debug_log!("{msg}");
     if proc_flags.intersects(ProcFlags::DEBUG | ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
-        vprtln!(V::QQ, "{msg}");
+        veprtln!(V::QQ, "{msg}");
     }
 }

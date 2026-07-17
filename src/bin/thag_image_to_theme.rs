@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut theme = match generator.generate_from_file(&image_path) {
         Ok(theme) => theme,
         Err(e) => {
-            sprtln!(Role::Error, "❌ Failed to generate theme: {}", e);
+            seprtln!(Role::Error, "❌ Failed to generate theme: {}", e);
             return Err(e.into());
         }
     };

@@ -430,7 +430,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Verify paths exist
     if !lib_path.exists() {
-        svprtln!(
+        sveprtln!(
             Role::ERR,
             V::N,
             "lib.rs not found at: {}",
@@ -440,7 +440,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if !demo_dir.exists() {
-        svprtln!(
+        sveprtln!(
             Role::ERR,
             V::N,
             "demo directory not found at: {}",
@@ -456,7 +456,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let macros = parse_proc_macros(&lib_path, &demo_dir)?;
 
     if macros.is_empty() {
-        svprtln!(
+        sveprtln!(
             Role::WARN,
             V::N,
             "No proc macros found in {}",

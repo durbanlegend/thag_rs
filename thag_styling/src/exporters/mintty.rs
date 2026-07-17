@@ -33,7 +33,7 @@ impl ThemeExporter for MinttyExporter {
         let _ = writeln!(output, "BackgroundColour={r},{g},{b}");
 
         if let Some([r, g, b]) = &theme.palette.normal.rgb() {
-            let _ = writeln!(output, "ForegroundColour={r},{g},{b}",);
+            let _ = writeln!(output, "ForegroundColour={r},{g},{b}");
         }
 
         // Cursor colors
@@ -150,7 +150,7 @@ impl ThemeExporter for MinttyExporter {
 
         // Bright Cyan
         if let Some([r, g, b]) = &theme.palette.hint.rgb() {
-            let _ = writeln!(output, "BoldCyan={r},{g},{b}",);
+            let _ = writeln!(output, "BoldCyan={r},{g},{b}");
         }
 
         // Bright White

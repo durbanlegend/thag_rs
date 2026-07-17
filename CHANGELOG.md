@@ -2,6 +2,104 @@
 
 All notable changes to this project will be documented in this file.
 
+# v2.0.0 (2026-07-17)
+
+## Major Release — Pipeline-Friendly Output & API Cleanup
+
+v2.0.0 establishes a clean separation between thag's own diagnostic output and the
+stdout stream of the script being run, following the convention established by `cargo`,
+`git`, `make`, and other established tools. All thag operational messages now go to
+**stderr**, leaving **stdout** exclusively for the user's script output. This makes
+pipeline use (`thag myscript.rs | grep foo`) work naturally without needing `-qq`.
+
+### Breaking Changes
+
+- **Informational output moved to stderr**: All thag status, progress, warning, and
+  error messages now write to stderr instead of stdout. Any shell automation that
+  captured thag's own messages via stdout redirection will need to redirect stderr
+  instead (e.g. `thag script.rs 2>thag.log` rather than `thag script.rs >thag.log`).
+  Script output itself is unaffected — it continues to go to stdout as before.
+
+- **`cprtln!` and `cvprtln!` removed** from `thag_styling`: these macros were already
+  marked `#[deprecated]` (superseded by `sprtln!` and `svprtln!` respectively). Any
+  remaining uses should be updated to the non-deprecated equivalents.
+
+- All workspace crates bumped to v2.0.0:
+
+  - `thag_rs`: 1.0.1 → 2.0.0
+  - `thag_common`: 1.0.1 → 2.0.0
+  - `thag_demo`: 1.0.1 → 2.0.0
+  - `thag_proc_macros`: 1.0.1 → 2.0.0
+  - `thag_profiler`: 1.0.1 → 2.0.0
+  - `thag_styling`: 1.0.1 → 2.0.0
+
+### Migration Guide
+
+For most interactive users, no action is required — thag's diagnostic messages will
+simply appear on stderr as before, just routed correctly. Specific cases to review:
+
+- **Pipeline scripts**: `thag myscript.rs | next_command` now works without `-qq`.
+  The `-qq` flag is still useful to silence thag's stderr output entirely (e.g. in CI).
+
+- **Automation capturing stdout**: Change `>` to `2>` if you were capturing thag's
+  own messages (compilation status, skip notices, error messages, etc.).
+
+- **Scripts using `vprtln!` for data output**: `vprtln!` and `prtln!` continue to
+  write to **stdout** — no change needed. Only thag's own internal calls were
+  migrated to the new stderr variants.
+
+- **`thag_styling` library users**: Replace `cprtln!` → `sprtln!` and
+  `cvprtln!` → `svprtln!`.
+
+### New Features
+
+- **`eprtln!` and `veprtln!` macros** added to `thag_common` (and re-exported by
+  `thag_styling` and `thag_rs`): stderr equivalents of `prtln!` and `vprtln!`.
+  Use these for diagnostic/operational output in tools and runners where stdout
+  must be kept clean for piping.
+
+- **`seprtln!` and `sveprtln!` macros** added to `thag_styling`: stderr equivalents
+  of `sprtln!` and `svprtln!` for styled diagnostic output. The full symmetric
+  macro family is now:
+
+  | Macro | Target | Verbosity-gated | Styled |
+  |---|---|---|---|
+  | `prtln!` / `eprtln!` | stdout / stderr | No | No |
+  | `vprtln!` / `veprtln!` | stdout / stderr | Yes | No |
+  | `sprtln!` / `seprtln!` | stdout / stderr | No | Yes |
+  | `svprtln!` / `sveprtln!` | stdout / stderr | Yes | Yes |
+
+- **Pastebin support in `thag_url`**: `https://pastebin.com/AbCdEfGh` is now
+  automatically converted to its raw form and fetched, alongside the existing
+  support for GitHub, GitHub Gist, GitLab, Bitbucket, Rust Playground, and
+  direct raw URLs.
+
+### Improvements
+
+- **ITER: history flushed on exit**: Pressing Ctrl-D or Ctrl-C in ITER now calls
+  `sync_history()` before exiting, ensuring the session's history is written to
+  disk even if the process is interrupted.
+
+- **ITER: history file naming**: The staging and backup files used by the history
+  review feature are renamed from the generic `hist_staging.txt`/`hist_backup.txt`
+  to `thag_iter_hist_staging.txt`/`thag_iter_hist_backup.txt`, consistent with
+  the main history file and avoiding collisions with other tools in `$CARGO_HOME`.
+
+- **CI: Linux musl target restored**: `x86_64-unknown-linux-musl` is re-added to
+  the release build matrix. The previous blocker (`native-tls` / OpenSSL under
+  musl) is resolved — `reqwest` was already switched to `rustls-tls` and no
+  remaining crates pull in a C TLS dependency.
+
+- **Debug output cleaned up**: Stray `eprintln!("raw_url=...")` debug calls
+  removed from `thag_url`, and leftover debug prints removed from ITER's
+  `review_history` function.
+
+### Notes
+
+- ITER stdin TUI history review (replacing the raw-JSON-in-`$EDITOR` fallback
+  with a proper in-TUI interface) is tracked for v2.1. The existing F7/F8
+  history navigation and the `$EDITOR` fallback on F6 continue to work as before.
+
 # v1.0.1 (2026-05-12)
 
 ## Patch Release

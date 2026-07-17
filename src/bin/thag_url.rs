@@ -36,6 +36,7 @@ enum SourceType {
     GitLab,
     Bitbucket,
     RustPlayground,
+    Pastebin,
     Raw,
 }
 
@@ -151,6 +152,7 @@ fn detect_source_type(url: &Url) -> SourceType {
         "gitlab.com" => SourceType::GitLab,
         "bitbucket.org" => SourceType::Bitbucket,
         "play.rust-lang.org" => SourceType::RustPlayground,
+        "pastebin.com" => SourceType::Pastebin,
         _ => SourceType::Raw,
     })
 }
@@ -179,7 +181,6 @@ fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
             let raw_url = url_str
                 .replace("github.com", "raw.githubusercontent.com")
                 .replace("/blob/", "/");
-            eprintln!("raw_url={raw_url}");
             Ok(raw_url)
         }
         SourceType::GitHubGist => {
@@ -211,7 +212,6 @@ fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
 
             // Convert to raw URL
             let raw_url = format!("https://gist.githubusercontent.com/{username}/{gist_id}/raw");
-            eprintln!("raw_url={raw_url}");
             Ok(raw_url)
         }
         SourceType::GitLab => {
@@ -259,6 +259,21 @@ fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
             Ok(format!(
                 "https://gist.githubusercontent.com/rust-play/{gist_id}/raw"
             ))
+        }
+        SourceType::Pastebin => {
+            let path = url.path();
+            // Strip leading slash to get the paste ID
+            let paste_id = path.trim_start_matches('/');
+            if paste_id.is_empty() {
+                return Err(UrlError::SyntaxError(
+                    "Invalid Pastebin URL: no paste ID found".to_string(),
+                ));
+            }
+            // Already a raw URL
+            if paste_id.starts_with("raw/") {
+                return Ok(url_str.to_string());
+            }
+            Ok(format!("https://pastebin.com/raw/{paste_id}"))
         }
         SourceType::Raw => Ok(url_str.to_string()),
     }
@@ -473,5 +488,17 @@ mod tests {
     fn test_raw_url() {
         let url = "https://example.com/raw/file.rs";
         assert_eq!(convert_to_raw_url(url).unwrap(), url);
+    }
+
+    #[test]
+    fn test_pastebin_url() {
+        let result = convert_to_raw_url("https://pastebin.com/AbCdEfGh");
+        assert_eq!(result.unwrap(), "https://pastebin.com/raw/AbCdEfGh");
+    }
+
+    #[test]
+    fn test_pastebin_raw_url() {
+        let result = convert_to_raw_url("https://pastebin.com/raw/AbCdEfGh");
+        assert_eq!(result.unwrap(), "https://pastebin.com/raw/AbCdEfGh");
     }
 }

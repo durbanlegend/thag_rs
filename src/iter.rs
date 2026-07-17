@@ -354,8 +354,8 @@ pub fn run_iter(
 ) -> ThagResult<()> {
     #[allow(unused_variables)]
     let history_path = build_state.cargo_home.join(HISTORY_FILE);
-    let hist_staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
-    let hist_backup_path: PathBuf = build_state.cargo_home.join("hist_backup.txt");
+    let hist_staging_path: PathBuf = build_state.cargo_home.join("thag_iter_hist_staging.txt");
+    let hist_backup_path: PathBuf = build_state.cargo_home.join("thag_iter_hist_backup.txt");
     let history = Box::new(FileBackedHistory::with_file(40, history_path.clone())?);
 
     let cmd_vec = IterCommand::iter()
@@ -448,6 +448,7 @@ pub fn run_iter(
         let input: &str = match sig {
             Signal::Success(ref buffer) => buffer,
             Signal::CtrlD | Signal::CtrlC => {
+                let _ = line_editor.sync_history();
                 break;
             }
         };
@@ -692,8 +693,6 @@ fn review_history(
     if confirm {
         let history_mut = line_editor.history_mut();
         let saved_history = fs::read_to_string(staging_path)?;
-        eprintln!("staging_path={}", staging_path.display());
-        eprintln!("saved_history={saved_history}");
         history_mut.clear()?;
         for line in saved_history.lines() {
             let entry = decode(line);

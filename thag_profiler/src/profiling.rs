@@ -1524,6 +1524,11 @@ impl Profile {
 
         // debug_log!("cleaned_stack={cleaned_stack:#?}");
 
+        if cleaned_stack.is_empty() {
+            debug_log!("Empty cleaned stack found");
+            return None;
+        }
+
         let fn_name = &cleaned_stack[0];
 
         // // Check for recursive calls using thread-local tracking
@@ -2210,7 +2215,12 @@ pub fn extract_profile_callstack() -> Vec<String> {
                         break 'process_symbol;
                     }
                     if !start {
-                        if name.contains(START_PATTERN) && !name.contains("{{closure}}") {
+                        // Match both legacy mangling ("Profile::new") and
+                        // Rust v0 mangling ("<..::Profile>::new") introduced as
+                        // default in Rust ~1.78.
+                        let is_profile_new = name.contains(START_PATTERN)
+                            || (name.contains("Profile") && name.contains(">" ) && name.ends_with("::new"));
+                        if is_profile_new && !name.contains("{{closure}}") {
                             start = true;
                             is_current_fn = true;
                         }
@@ -2857,10 +2867,17 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
 ];
 
 /// Normalises function names by removing closure references and hash suffixes.
+/// Handles both legacy Rust mangling (`::h[hexdigits]` suffix) and v0 mangling
+/// (`[16-hex-digit]` crate disambiguators, e.g. `crate[abc123]::module::fn`).
 #[internal_doc]
 pub fn clean_function_name(name: &mut str) -> String {
-    // Trim suffix like ::{{closure}} or ::h[hexdigits]
+    // Trim closure suffixes:
+    //   Legacy mangling:  ::{{closure}}
+    //   Rust v0 mangling: ::{closure#N}
+    // Also trim legacy hex suffix: ::h[hexdigits]
     let trimmed = if let Some(pos) = name.find("::{{closure}}") {
+        &name[..pos]
+    } else if let Some(pos) = name.find("::{closure") {
         &name[..pos]
     } else if let Some(pos) = name.rfind("::h") {
         let hex = &name[pos + 3..];
@@ -2871,6 +2888,45 @@ pub fn clean_function_name(name: &mut str) -> String {
         }
     } else {
         name
+    };
+
+    // Strip Rust v0 mangling crate disambiguators: `[xxxxxxxxxxxxxxxx]` (exactly 16 hex digits).
+    // These appear as `crate_name[HASH]::...` in demangled v0 symbols.
+    let trimmed_owned: String;
+    let trimmed = if trimmed.contains('[') {
+        let mut out = String::with_capacity(trimmed.len());
+        let mut chars = trimmed.chars().peekable();
+        while let Some(c) = chars.by_ref().next() {
+            if c == '[' {
+                // Collect until ']', check it's exactly 16 hex digits
+                let mut hex_buf = String::new();
+                let mut closed = false;
+                for ch in chars.by_ref() {
+                    if ch == ']' {
+                        closed = true;
+                        break;
+                    }
+                    hex_buf.push(ch);
+                }
+                if closed && hex_buf.len() == 16 && hex_buf.chars().all(|ch| ch.is_ascii_hexdigit())
+                {
+                    // Drop the [HASH] — skip it
+                } else {
+                    // Not a v0 disambiguator; put it back literally
+                    out.push('[');
+                    out.push_str(&hex_buf);
+                    if closed {
+                        out.push(']');
+                    }
+                }
+            } else {
+                out.push(c);
+            }
+        }
+        trimmed_owned = out;
+        trimmed_owned.as_str()
+    } else {
+        trimmed
     };
 
     // Remove trailing ::

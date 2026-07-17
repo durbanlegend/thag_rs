@@ -149,3 +149,5 @@ thag_styling/PALETTE_QUERYING.md
 thag_styling/examples/INTEGRATION_ASSESSMENT.md
 thag_styling/readme_notes.md
 thag_styling/src/integrations/INTEGRATION_GUIDE.md
+demo/egui_markdown_viewer_svg_instrumented.rs
+demo/fib_doubling_iterative_ibig_instrumented.rs

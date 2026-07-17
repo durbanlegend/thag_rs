@@ -15,7 +15,7 @@ use inquire::set_global_render_config; // For optional theming of `inquire`
 use std::error::Error;
 use std::fs;
 use thag_styling::{
-    file_navigator, sprtln, theme_to_toml, themed_inquire_config, ImageThemeConfig,
+    file_navigator, seprtln, theme_to_toml, themed_inquire_config, ImageThemeConfig,
     ImageThemeGenerator, Role, Styleable, StylingError, StylingResult, TermBgLuma, Theme,
 };
 

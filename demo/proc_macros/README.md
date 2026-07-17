@@ -256,7 +256,7 @@ fn debug_operation() -> i32 {
 **Run Example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_timing.rs | less
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_timing.rs
 ```
 
 ---
@@ -462,3 +462,4 @@ Test individual examples (requires setting `THAG_DEV_PATH`):
 export THAG_DEV_PATH=$(pwd)  # From thag_rs root directory
 cargo run --bin thag -- demo/proc_macro_derive_constructor.rs
 ```
+

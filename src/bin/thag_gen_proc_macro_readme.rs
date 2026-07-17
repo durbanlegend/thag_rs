@@ -19,7 +19,7 @@ use std::{
 };
 use syn::{parse_file, Attribute, Item, ItemFn, Lit, Meta, MetaNameValue};
 use thag_styling::{
-    auto_help, help_system::check_help_and_exit, set_verbosity_from_env, svprtln, Role, V,
+    auto_help, help_system::check_help_and_exit, set_verbosity_from_env, sveprtln, Role, V,
 };
 
 #[derive(Debug, Clone)]
@@ -39,16 +39,6 @@ enum ProcMacroType {
     Attribute,
     FunctionLike,
 }
-
-// impl ProcMacroType {
-//     fn as_str(&self) -> &'static str {
-//         match self {
-//             ProcMacroType::Derive => "Derive Macro",
-//             ProcMacroType::Attribute => "Attribute Macro",
-//             ProcMacroType::FunctionLike => "Function-like Macro",
-//         }
-//     }
-// }
 
 fn extract_doc_comments(attrs: &[Attribute]) -> String {
     let mut doc_lines = Vec::new();
@@ -268,6 +258,7 @@ fn generate_readme(
     // Write usage section
     writeln!(file, "## Usage\n")?;
     writeln!(file, "To use these macros in your project:\n")?;
+    writeln!(file, "#### Cargo.toml")?;
     writeln!(file, "```toml")?;
     writeln!(file, "[dependencies]")?;
     writeln!(
@@ -277,6 +268,7 @@ fn generate_readme(
     writeln!(file, "```\n")?;
 
     writeln!(file, "Or when using `thag_rs`:\n")?;
+    writeln!(file, "#### Script source\n")?;
     writeln!(file, "```rust")?;
     writeln!(
         file,
@@ -325,14 +317,37 @@ fn generate_readme(
     writeln!(file, "cargo test")?;
     writeln!(file, "```\n")?;
 
-    writeln!(file, "### Macro Expansion")?;
+    writeln!(file, "### Macro Expansion\n")?;
     writeln!(
         file,
-        "Many macros support the `expand` feature to show generated code during compilation:"
+        "There are two distinct expansion mechanisms, depending on the macro type.\n"
     )?;
-    writeln!(file, "```bash")?;
-    writeln!(file, "cargo build --features expand")?;
+    writeln!(file, "**Attribute macros** (`cached`, `timing`, `retry`) — pass `expand` as an argument directly at the call site.")?;
+    writeln!(file, "The Cargo `expand` feature has no effect on these:\n")?;
+    writeln!(file, "```rust")?;
+    writeln!(file, "#[cached(expand)]")?;
+    writeln!(file, "fn fibonacci(n: u32) -> u32 {{ ... }}\n")?;
+    writeln!(file, "#[timing(expand)]")?;
+    writeln!(file, "fn slow_fn() -> i32 {{ ... }}\n")?;
+    writeln!(file, "#[retry(times = 3, expand)]")?;
+    writeln!(
+        file,
+        "fn fallible() -> Result<String, std::io::Error> {{ ... }}"
+    )?;
     writeln!(file, "```\n")?;
+    writeln!(file, "**Derive macros** (`DeriveConstructor`, `DeriveBuilder`, `DeriveDisplay`, `DeriveGetters`) — add")?;
+    writeln!(file, "`#[expand_macro]` to the annotated struct or enum. The `expand` Cargo feature is enabled by")?;
+    writeln!(file, "default, so no special build flags are needed:\n")?;
+    writeln!(file, "```rust")?;
+    writeln!(file, "#[derive(DeriveBuilder)]")?;
+    writeln!(file, "#[expand_macro]")?;
+    writeln!(file, "struct Config {{")?;
+    writeln!(file, "    host: String,")?;
+    writeln!(file, "    port: u16,")?;
+    writeln!(file, "}}")?;
+    writeln!(file, "```\n")?;
+    writeln!(file, "In both cases the pretty-printed generated code is written to `stderr` during compilation and")?;
+    writeln!(file, "appears in the build output.\n")?;
 
     writeln!(file, "### Example Testing")?;
     writeln!(
@@ -343,10 +358,6 @@ fn generate_readme(
     writeln!(
         file,
         "export THAG_DEV_PATH=$(pwd)  # From thag_rs root directory"
-    )?;
-    writeln!(
-        file,
-        "cargo run --bin thag -- demo/proc_macro_const_demo.rs"
     )?;
     writeln!(
         file,

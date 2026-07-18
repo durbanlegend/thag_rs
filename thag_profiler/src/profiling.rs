@@ -2404,8 +2404,11 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
      */
 
     let maybe_callstack: Option<Vec<String>> = safe_alloc! {
-        // Pre-allocate with fixed capacity to avoid reallocations
-        let capacity = 100;
+        // 200 frames covers even the deepest Rust call stacks (syntect/serde/bincode
+        // can stack 80-120 frames on their own).  We gracefully truncate rather than
+        // panic when the limit is hit, so a deep-stack allocation doesn't abort the
+        // profiled process.
+        let capacity = 200;
         let mut callstack: Vec<String> = Vec::with_capacity(capacity); // Fixed size, no growing
         let mut found_recursion = false;
         let mut start = false;
@@ -2413,6 +2416,9 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
         let mut i = 0;
 
         trace(|frame| {
+            if fin || found_recursion || i >= capacity {
+                return false; // Stop walking — truncate gracefully
+            }
             let mut suppress = false;
 
             resolve_frame(frame, |symbol| {
@@ -2451,14 +2457,13 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
                         break 'process_symbol;
                     }
 
-                    // Safe to unwrap now
                     callstack.push(name);
                     i += 1;
+                    // Capacity guard: stop collecting (no panic — caller reads
+                    // the partial stack, which is still useful).
                     if i >= capacity {
-                        safe_alloc! {
-                             println!("frames={callstack:#?}");
-                         };
-                         panic!("Max limit of {capacity} frames exceeded");
+                        fin = true; // signals outer loop to stop
+                        break 'process_symbol;
                     }
                 }
             });

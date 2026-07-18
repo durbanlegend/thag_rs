@@ -85,6 +85,53 @@ Consequences for `extract_profile_callstack`:
 - **Crate hash stripping**: `clean_function_name` strips `[xxxxxxxxxxxxxxxx]`
   (exactly 16 hex digits) from v0-mangled crate disambiguators.
 
+Consequences for `ALLOC_START_PATTERN` and `extract_callstack_with_recursion_check`
+(both in `mem_tracking.rs`, fixed 2026-07-18):
+
+- **ALLOC_START_PATTERN** `"thag_profiler::mem_tracking.+Dispatcher"` was broken
+  by v0 mangling in two independent ways:
+
+  1. *v0 hash*: the demangled crate name is now `thag_profiler[HASH]` so the
+     literal `thag_profiler::` is absent → regex never matched → empty stack →
+     `[Out of scope]` on every entry.
+
+  2. *Dispatcher::alloc inlining*: `Dispatcher::alloc` is a one-liner
+     (`match current { ... TrackingAllocator::alloc() }`) that opt-level ≥ 2
+     inlines away completely. With `[profile.dev] opt-level = 3` the frame
+     vanishes from backtraces, so even a correctly updated regex would not
+     find it for allocation calls (dealloc calls are unaffected because
+     `Dispatcher::dealloc` is not inlined).
+
+  Fix: pattern changed to match `TrackingAllocator` instead of `Dispatcher`.
+  `TrackingAllocator::alloc/dealloc` calls the large `record_alloc/dealloc`
+  functions and is therefore never inlined, making it a reliable anchor.
+  Updated regex: `r"thag_profiler(?:\[[0-9a-f]+\])?::mem_tracking.+TrackingAllocator"`
+  Applied in: `ALLOC_START_PATTERN` static, inline copy in `record_dealloc`,
+  and inline copy in `ProfileRegistry::record_allocation` (mem_attribution.rs).
+
+  **Symptom when broken**: `extract_detailed_alloc_callstack` never finds the
+  start marker, returns an empty stack, and every entry in the
+  `-memory_detail.folded` file is labelled `[Out of <script> scope]`.
+
+- **Capacity-overflow panic** in `extract_detailed_alloc_callstack` and
+  `extract_callstack_with_recursion_check`: both functions had `capacity = 100`
+  with a `panic!` when exceeded. Deep Rust call stacks (syntect / serde / bincode
+  deserialization can be 80-120 frames on their own) reliably hit this limit,
+  causing a panic inside the global allocator — technically undefined behaviour
+  that aborts the process silently or gets caught by eframe's `catch_unwind`.
+  Fix: capacity raised to 200 and the overflow converted to a graceful
+  truncation (`fin = true; break`) instead of `panic!`.
+
+- **`starts_with('<')` suppression** in `extract_callstack_with_recursion_check`:
+  this guard was intended to filter internal trait-impl frames from external crates.
+  With v0 mangling ALL inherent-impl and trait-impl frames are prefixed with `<`,
+  including the user's own `#[profiled]` methods (e.g. `MarkdownApp::ui`). The
+  guard was therefore suppressing every profiled function except free functions like
+  `main`, breaking summary memory attribution for any script where the heavy work
+  happens inside impl blocks. Fix: removed the `|| name.starts_with('<')` arm;
+  the filename-based filter that follows (`file_names.contains(&filename)`) is
+  sufficient to exclude external-crate frames.
+
 ## `extract_profile_callstack` internals
 
 - Walks the backtrace from innermost (current) to outermost.

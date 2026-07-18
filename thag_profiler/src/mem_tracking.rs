@@ -40,8 +40,25 @@ use thag_common::{lazy_static_var, re};
 use std::{cell::Cell, thread_local};
 
 /// Regular expression pattern to identify allocation start points in backtraces
+// Marks the boundary between thag_profiler's own allocator machinery and the
+// alloc/dealloc path we want to record.
+//
+// We match `TrackingAllocator` rather than `Dispatcher` for two reasons:
+//
+// 1. v0 symbol mangling (Rust ≥ 1.97 default) inserts a crate hash so the
+//    demangled name becomes `thag_profiler[HASH]::mem_tracking::TrackingAllocator`.
+//    The `(?:\[[0-9a-f]+\])?` group handles that optional bracket.
+//
+// 2. `Dispatcher::alloc` is a tiny function (just a match + tail-call) that is
+//    inlined away at opt-level ≥ 2 and therefore vanishes from backtraces.
+//    `TrackingAllocator::alloc/dealloc` calls the large `record_alloc` function
+//    and is never inlined, so it reliably appears in the backtrace.
+//
+// The start frame itself is suppressed; collection begins at the *next* frame
+// (either `Dispatcher::alloc/dealloc` if still visible, or the Rust alloc
+// machinery that called into Dispatcher).
 pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
-    LazyLock::new(|| re!("thag_profiler::mem_tracking.+Dispatcher"));
+    LazyLock::new(|| re!(r"thag_profiler(?:\[[0-9a-f]+\])?::mem_tracking.+TrackingAllocator"));
 
 // Thread-local storage for better async/threading isolation
 // Each thread maintains its own flag, preventing cross-thread interference
@@ -483,13 +500,16 @@ type FrameSummary = (String, u32, String, String, ProfileRef);
 pub fn extract_callstack_with_recursion_check(file_names: &[String]) -> Option<Vec<FrameSummary>> {
     safe_alloc! {
         // Pre-allocate with fixed capacity to avoid reallocations
-        let capacity = 100;
+        let capacity = 200;
         let mut frames: Vec<(String, u32, String, String, ProfileRef)> = Vec::with_capacity(capacity); // Fixed size, no growing
         let mut found_recursion = false;
         let mut fin = false;
         let mut i = 0;
 
         trace(|frame| {
+            if fin || found_recursion || i >= capacity {
+                return false;
+            }
             let mut suppress = false;
 
             resolve_frame(frame, |symbol| {
@@ -504,7 +524,16 @@ pub fn extract_callstack_with_recursion_check(file_names: &[String]) -> Option<V
                         fin = true;
                         suppress = true;
                     }
-                    if name.starts_with("backtrace::backtrace::") || name.starts_with('<') {
+                    // Note: do NOT suppress on `starts_with('<')` here.
+                    // With Rust ≥ 1.97 v0 symbol mangling, all inherent-impl and
+                    // trait-impl frames are prefixed with '<', including the user's
+                    // own `#[profiled]` methods (e.g. `MarkdownApp::ui`).  Suppressing
+                    // them prevents `extract_callstack_with_recursion_check` from
+                    // finding any profiled function other than free functions, which
+                    // breaks summary memory attribution.  Filename filtering below
+                    // (via `file_names.contains(&filename)`) is sufficient to exclude
+                    // frames from external crates.
+                    if name.starts_with("backtrace::backtrace::") {
                         suppress = true;
                     }
 
@@ -543,10 +572,8 @@ pub fn extract_callstack_with_recursion_check(file_names: &[String]) -> Option<V
                         frames.push((filename, lineno, name, fn_name, profile_ref));
                         i += 1;
                         if i >= capacity {
-                            safe_alloc! {
-                                 println!("frames={frames:#?}");
-                             };
-                             panic!("Max limit of {capacity} frames exceeded");
+                            fin = true; // graceful truncation
+                            break 'process_symbol;
                         }
                     } else {
                         debug_log!("No profile found for {filename}, {fn_name}, {lineno}");
@@ -777,7 +804,8 @@ pub fn record_dealloc(address: usize, size: usize) {
     // let start_ident = Instant::now();
     // let mut task_id = 0;
     // Now we can safely use backtrace without recursion!
-    let start_pattern: &Regex = re!("thag_profiler::mem_tracking.+Dispatcher");
+    let start_pattern: &Regex =
+        re!(r"thag_profiler(?:\[[0-9a-f]+\])?::mem_tracking.+TrackingAllocator");
 
     let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
     if size > 0 && detailed_memory {

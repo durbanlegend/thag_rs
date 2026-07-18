@@ -65,3 +65,19 @@ jobs:
 
       - name: Test thag_profiler example tests
         run: cargo test --examples -p thag_profiler --no-fail-fast -- --test-threads=1
+
+      - name: Test thag_profiler unit and integration tests (time_profiling)
+        run: cargo test -p thag_profiler --no-fail-fast -- --test-threads=1
+
+      - name: Test thag_profiler unit and integration tests (full_profiling)
+        if: runner.os != 'Windows'
+        run: cargo test -p thag_profiler --features full_profiling --no-fail-fast -- --test-threads=1
+
+      - name: Test thag_proc_macros
+        run: cargo test -p thag_proc_macros --no-fail-fast -- --test-threads=1
+
+      - name: Test thag_common
+        run: cargo test -p thag_common --no-fail-fast -- --test-threads=1
+
+      - name: Test thag_styling
+        run: cargo test -p thag_styling --no-fail-fast -- --test-threads=1

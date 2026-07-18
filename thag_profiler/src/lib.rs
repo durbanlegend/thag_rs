@@ -513,6 +513,24 @@ pub fn init_profiling(root_module: &'static str, profile_type: Option<ProfileTyp
         eprintln!("Exiting init_profiling");
     }
 
+    // Register finalize_profiling as an atexit handler so it runs even when
+    // a GUI framework (e.g. eframe/winit on macOS) terminates the process via
+    // std::process::exit() rather than returning from the event-loop function.
+    // finalize_profiling itself is idempotent (PROFILING_FINALIZED flag) so
+    // the explicit call in the #[enable_profiling] generated code is harmless.
+    #[cfg(feature = "time_profiling")]
+    {
+        unsafe extern "C" fn finalize_atexit() {
+            crate::finalize_profiling();
+        }
+        extern "C" {
+            fn atexit(func: unsafe extern "C" fn()) -> i32;
+        }
+        unsafe {
+            atexit(finalize_atexit);
+        }
+    }
+
     #[cfg(not(feature = "time_profiling"))]
     {}
 }
@@ -547,6 +565,13 @@ fn set_base_location(file_name: &'static str, fn_name: &str, _line_no: u32) {
 #[internal_doc]
 #[allow(clippy::missing_const_for_fn)]
 pub fn finalize_profiling() {
+    // Idempotency guard: prevent double-processing when both the explicit call
+    // (from #[enable_profiling] generated code) and the atexit handler fire.
+    #[cfg(feature = "time_profiling")]
+    if profiling::PROFILING_FINALIZED.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        return;
+    }
+
     #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
     {
         // Ensure debug log is flushed before we disable profiling

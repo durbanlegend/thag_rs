@@ -190,6 +190,7 @@ macro_rules! debug_log {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "debug_logging")]
     use crate::debug_log;
 
     #[cfg(feature = "full_profiling")]

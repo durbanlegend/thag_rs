@@ -59,6 +59,11 @@ use std::sync::{atomic::AtomicUsize, Arc};
 #[cfg(feature = "time_profiling")]
 static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
 
+// Prevents finalize_profiling() from running more than once (e.g. explicit
+// call + atexit handler both firing for GUI apps that exit via process::exit).
+#[cfg(feature = "time_profiling")]
+pub(crate) static PROFILING_FINALIZED: AtomicBool = AtomicBool::new(false);
+
 /// Mutex to prevent concurrent access to profiling by different executions.
 #[internal_doc]
 #[cfg(feature = "time_profiling")]
@@ -280,11 +285,22 @@ impl TryFrom<&[&str]> for ProfileConfiguration {
             }
         };
 
-        // Parse output directory (second element)
-        let output_dir = if value.get(1).map_or("", |s| *s).trim().is_empty() {
-            Some(PathBuf::from(".")) // Default to current directory if empty
-        } else {
-            Some(PathBuf::from(value.get(1).unwrap().trim()))
+        // Parse output directory (second element).
+        // Canonicalize to an absolute path immediately so that subsequent
+        // set_current_dir() calls (e.g. in GUI scripts that navigate to the
+        // selected file's parent) don't silently redirect the profile output.
+        let output_dir = {
+            let raw = value.get(1).map_or("", |s| *s).trim();
+            let p = if raw.is_empty() {
+                std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+            } else {
+                let p = PathBuf::from(raw);
+                // Try to canonicalize; if that fails (dir not yet created) make it
+                // absolute by joining with the current directory.
+                p.canonicalize()
+                    .unwrap_or_else(|_| std::env::current_dir().map(|d| d.join(&p)).unwrap_or(p))
+            };
+            Some(p)
         };
 
         // Parse debug log (third element)
@@ -520,13 +536,31 @@ static_lazy! {
             .and_then(|s| s.to_str())
             .unwrap_or("unknown");
         let timestamp = Local::now().format("%Y%m%d-%H%M%S").to_string();
-        let base = format!("{script_stem}-{timestamp}");
+        let filename_base = format!("{script_stem}-{timestamp}");
 
-        // Create debug log path in temp directory
+        // Resolve the output directory to an absolute path now, before any
+        // set_current_dir() call can change it.  The config was already
+        // canonicalized in TryFrom, but we re-check here as a belt-and-braces
+        // measure and to handle the Default config path too.
+        let output_dir = get_profile_config()
+            .output_dir
+            .unwrap_or_else(|| std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from(".")));
+        let output_dir = output_dir.canonicalize().unwrap_or_else(|_| {
+            std::env::current_dir()
+                .map(|d| d.join(&output_dir))
+                .unwrap_or(output_dir)
+        });
+        // Ensure the output directory exists.
+        std::fs::create_dir_all(&output_dir).ok();
+        let base = output_dir.join(&filename_base);
+        let base = base.to_string_lossy();
+
+        // Debug log always goes to the OS temp directory, unaffected by CWD.
         let mut debug_log_path = std::env::temp_dir();
         debug_log_path.push("thag_profiler");
         std::fs::create_dir_all(&debug_log_path).ok();
-        debug_log_path.push(format!("{base}-debug.log"));
+        debug_log_path.push(format!("{filename_base}-debug.log"));
 
         ProfileFilePaths {
             time: format!("{base}.folded"),
@@ -1052,6 +1086,13 @@ pub(crate) fn enable_profiling(
     {
         debug_log!("Unit test: Resetting profile config to ensure latest env vars are used");
         clear_profile_config_cache();
+    }
+
+    // Reset the finalization flag when starting a new profiling session so that
+    // finalize_profiling() can run again (e.g. in tests that repeatedly enable
+    // and disable profiling, or when re-running after a previous atexit call).
+    if enabled {
+        PROFILING_FINALIZED.store(false, Ordering::SeqCst);
     }
 
     // Check if the operation is a no-op due to environment settings
@@ -1708,7 +1749,6 @@ impl Profile {
             // debug_log!("************\n{current_backtrace:?}\n************");
 
             let cleaned_stack = extract_profile_callstack();
-            // debug_log!("cleaned_stack={cleaned_stack:#?}");
 
             if cleaned_stack.is_empty() {
                 warn_once!(

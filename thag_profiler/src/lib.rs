@@ -1024,7 +1024,7 @@ mod lib_tests {
     fn test_mem_tracking_integration() {
         // Test basic allocator operations
 
-        use crate::safe_alloc;
+        // use crate::safe_alloc;
         let current = mem_tracking::current_allocator();
         assert!(matches!(current, Allocator::Tracking) || matches!(current, Allocator::System));
 

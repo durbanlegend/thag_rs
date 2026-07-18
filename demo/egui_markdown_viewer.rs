@@ -239,6 +239,15 @@ impl eframe::App for MarkdownApp {
 
         let mut nav_action = NavAction::None;
 
+        // Cmd-W / Ctrl-W — "close window" shortcut intercepted at the egui level.
+        // Cmd-Q on macOS goes through the app delegate so egui never sees it, but
+        // the atexit handler in thag_profiler ensures finalize_profiling still runs.
+        if ui.ctx().input(|i| {
+            i.modifiers.command && (i.key_pressed(egui::Key::W) || i.key_pressed(egui::Key::Q))
+        }) {
+            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+
         egui::Panel::top("nav_bar").show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.label("Theme");
@@ -260,6 +269,15 @@ impl eframe::App for MarkdownApp {
                 }
                 ui.separator();
                 ui.label(&current_path_label);
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui
+                        .button("Quit")
+                        .on_hover_text("Close (Cmd-W / Ctrl-W)")
+                        .clicked()
+                    {
+                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
+                });
             });
         });
 

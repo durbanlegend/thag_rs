@@ -2,7 +2,7 @@
 [dependencies]
 thag_proc_macros = { version = "1, thag-auto" }
 thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
-# egui_extras = { version = "0.35", features = ["svg_text"] } # Slow
+egui_extras = { version = "0.35", features = ["svg_text"] } # Slow
 
 [features]
 default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_commonmark/svg","egui_commonmark/fetch"]

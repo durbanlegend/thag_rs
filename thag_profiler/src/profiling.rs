@@ -1525,7 +1525,14 @@ impl Profile {
         // debug_log!("cleaned_stack={cleaned_stack:#?}");
 
         if cleaned_stack.is_empty() {
-            debug_log!("Empty cleaned stack found");
+            warn_once!(true, || {
+                eprintln!(
+                    "thag_profiler WARNING: backtrace yielded no usable frames in \
+                         Profile::new. Profiling data will be incomplete.\n\
+                         This typically means the Rust toolchain's symbol demangling \
+                         format has changed and START_PATTERN needs updating."
+                );
+            });
             return None;
         }
 
@@ -1704,7 +1711,17 @@ impl Profile {
             // debug_log!("cleaned_stack={cleaned_stack:#?}");
 
             if cleaned_stack.is_empty() {
-                debug_log!("Empty cleaned stack found");
+                warn_once!(
+                    true,
+                    || {
+                        eprintln!(
+                            "thag_profiler WARNING: backtrace yielded no usable frames in \
+                             Profile::new. Profiling data will be incomplete.\n\
+                             This typically means the Rust toolchain's symbol demangling \
+                             format has changed and START_PATTERN needs updating."
+                        );
+                    }
+                );
                 return None;
             }
 

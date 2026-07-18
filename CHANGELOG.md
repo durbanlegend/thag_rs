@@ -2,11 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-# v2.0.0 (2026-07-17)
+# v1.1.0 (2026-07-17)
 
-## Major Release — Pipeline-Friendly Output & API Cleanup
+## Minor Release — Pipeline-Friendly Output & API Additions
 
-v2.0.0 establishes a clean separation between thag's own diagnostic output and the
+v1.1.0 establishes a clean separation between thag's own diagnostic output and the
 stdout stream of the script being run, following the convention established by `cargo`,
 `git`, `make`, and other established tools. All thag operational messages now go to
 **stderr**, leaving **stdout** exclusively for the user's script output. This makes
@@ -24,14 +24,14 @@ pipeline use (`thag myscript.rs | grep foo`) work naturally without needing `-qq
   marked `#[deprecated]` (superseded by `sprtln!` and `svprtln!` respectively). Any
   remaining uses should be updated to the non-deprecated equivalents.
 
-- All workspace crates bumped to v2.0.0:
+- All workspace crates bumped to v1.1.0:
 
-  - `thag_rs`: 1.0.1 → 2.0.0
-  - `thag_common`: 1.0.1 → 2.0.0
-  - `thag_demo`: 1.0.1 → 2.0.0
-  - `thag_proc_macros`: 1.0.1 → 2.0.0
-  - `thag_profiler`: 1.0.1 → 2.0.0
-  - `thag_styling`: 1.0.1 → 2.0.0
+  - `thag_rs`: 1.0.1 → 1.1.0
+  - `thag_common`: 1.0.1 → 1.1.0
+  - `thag_demo`: 1.0.1 → 1.1.0
+  - `thag_proc_macros`: 1.0.1 → 1.1.0
+  - `thag_profiler`: 1.0.1 → 1.1.0
+  - `thag_styling`: 1.0.1 → 1.1.0
 
 ### Migration Guide
 
@@ -48,8 +48,9 @@ simply appear on stderr as before, just routed correctly. Specific cases to revi
   write to **stdout** — no change needed. Only thag's own internal calls were
   migrated to the new stderr variants.
 
-- **`thag_styling` library users**: Replace `cprtln!` → `sprtln!` and
-  `cvprtln!` → `svprtln!`.
+- **`thag_styling` library users**: Replace any remaining `cprtln!` → `sprtln!`
+  and `cvprtln!` → `svprtln!`. These macros were already `#[deprecated]`
+  since before v1.0.0; their removal in v1.1.0 completes that deprecation cycle.
 
 ### New Features
 

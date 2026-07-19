@@ -3865,8 +3865,17 @@ pub trait StyledPrint {
     /// Print the styled string to stdout with a newline
     fn println(self);
 
-    /// Print the styled string with verbosity gating
+    /// Print the styled string to stdout with verbosity gating
     fn vprintln(self, verbosity: thag_common::Verbosity);
+
+    /// Print the styled string to stderr
+    fn eprint(self);
+
+    /// Print the styled string to stderr with a newline
+    fn eprintln(self);
+
+    /// Print the styled string to stderr with verbosity gating
+    fn veprintln(self, verbosity: thag_common::Verbosity);
 }
 
 impl StyledPrint for StyledString {
@@ -3879,9 +3888,22 @@ impl StyledPrint for StyledString {
     }
 
     fn vprintln(self, verbosity: thag_common::Verbosity) {
-        let current_verbosity = thag_common::get_verbosity();
-        if verbosity <= current_verbosity {
+        if verbosity <= thag_common::get_verbosity() {
             println!("{self}");
+        }
+    }
+
+    fn eprint(self) {
+        eprint!("{self}");
+    }
+
+    fn eprintln(self) {
+        eprintln!("{self}");
+    }
+
+    fn veprintln(self, verbosity: thag_common::Verbosity) {
+        if verbosity <= thag_common::get_verbosity() {
+            eprintln!("{self}");
         }
     }
 }

@@ -32,7 +32,7 @@ pub fn main() {
         let result = handle(&cli);
 
         if let Err(e) = result {
-            sveprtln!(Role::ERR, V::N, "Error running thag: {e}");
+            sveprtln!(Role::WARN, V::N, "{e}");
 
             std::process::exit(1);
         }

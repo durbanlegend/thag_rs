@@ -70,7 +70,7 @@ use std::{
 };
 use thag_common::{self, debug_log, re, veprtln, V};
 use thag_profiler::profiled;
-use thag_styling::{paint_for_role, seprtln, sveprtln, Styleable, StyledPrint, TermAttributes};
+use thag_styling::{paint_for_role, sveprtln, Styleable, StyledPrint, TermAttributes};
 
 #[cfg(feature = "tui")]
 use crate::{
@@ -1531,8 +1531,13 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     display_timings(&start_run, "Completed run", proc_flags);
 
     if !exit_status.success() {
-        seprtln!(Role::EMPH, "Exit status={exit_status:#?}");
-        return Err(ThagError::Command("Script execution was unsuccessful"));
+        // sveprtln!(Role::EMPH, V::V, "Exit status={exit_status:#?}");
+        let exit_msg = format!(
+            "Script {} terminated with {exit_status}",
+            build_state.source_stem
+        );
+        let exit_msg = Box::leak(exit_msg.into_boxed_str());
+        return Err(ThagError::Command(exit_msg));
     }
 
     Ok(())

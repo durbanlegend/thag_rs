@@ -70,7 +70,7 @@ use std::{
 };
 use thag_common::{self, debug_log, re, veprtln, V};
 use thag_profiler::profiled;
-use thag_styling::{paint_for_role, sveprtln, TermAttributes};
+use thag_styling::{paint_for_role, seprtln, sveprtln, Styleable, StyledPrint, TermAttributes};
 
 #[cfg(feature = "tui")]
 use crate::{
@@ -1040,11 +1040,10 @@ pub fn gen_build_run(
 
         generate(build_state, maybe_rs_source, proc_flags)?;
     } else {
-        sveprtln!(
-            Role::EMPH,
-            V::N,
-            "Skipping unnecessary generation step.  Use --force (-f) to override."
-        );
+        "Skipping unnecessary generation step.  Use --force (-f) to override."
+            .emphasis()
+            .veprintln(V::N);
+
         // build_state.cargo_manifest = Some(default_manifest(build_state)?);
         build_state.cargo_manifest = None; // Don't need it in memory, build will find it on disk
     }
@@ -1523,7 +1522,6 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     sveprtln!(Role::EMPH, V::Q, "{dash_line}");
 
     let exit_status = run_command.status()?;
-    // sveprtln!(Role::EMPH, V::N, "Exit status={exit_status:#?}");
 
     sveprtln!(Role::EMPH, V::Q, "{dash_line}");
 
@@ -1533,6 +1531,7 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     display_timings(&start_run, "Completed run", proc_flags);
 
     if !exit_status.success() {
+        seprtln!(Role::EMPH, "Exit status={exit_status:#?}");
         return Err(ThagError::Command("Script execution was unsuccessful"));
     }
 

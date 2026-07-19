@@ -207,6 +207,8 @@ struct MarkdownApp {
     history: Vec<PathBuf>,
     /// Current position within `history`.
     history_index: usize,
+    /// Multiplicative scale applied to content text only (toolbar stays at 1×).
+    content_zoom: f32,
 }
 
 impl MarkdownApp {
@@ -217,6 +219,7 @@ impl MarkdownApp {
             cache: CommonMarkCache::default(),
             history: vec![path],
             history_index: 0,
+            content_zoom: 1.0,
         }
     }
 
@@ -326,41 +329,39 @@ impl eframe::App for MarkdownApp {
             .map(|p| p.display().to_string())
             .unwrap_or_default();
         let current_path_label = self.current_file_path.display().to_string();
+        // Snapshot for use inside closures (closures can't borrow self).
+        let content_zoom = self.content_zoom;
 
         let mut nav_action = NavAction::None;
         let mut open_file_requested = false;
+        // Zoom is stored in self.content_zoom and applied only to the content
+        // text styles, so the toolbar always stays at its natural size.
+        let mut new_content_zoom = self.content_zoom;
+        let zoom_label = format!("{:.0}%", self.content_zoom * 100.0);
 
-        // Cmd-W / Ctrl-W — "close window" shortcut intercepted at the egui level.
-        // Cmd-Q on macOS goes through the app delegate so egui never sees it, but
-        // the atexit handler in thag_profiler ensures finalize_profiling still runs.
-        if ui.ctx().input(|i| {
-            i.modifiers.command && (i.key_pressed(egui::Key::W) || i.key_pressed(egui::Key::Q))
-        }) {
+        // ── Global keyboard shortcuts ─────────────────────────────────────────────────────
+        // Collect key states first, then act — acting inside input() re-locks
+        // the context and causes a deadlock.
+        let (close, open_key, zoom_in_key, zoom_out_key) = ui.ctx().input(|i| {
+            (
+                i.modifiers.command && (i.key_pressed(egui::Key::W) || i.key_pressed(egui::Key::Q)),
+                i.modifiers.command && i.key_pressed(egui::Key::O),
+                i.modifiers.command && i.key_pressed(egui::Key::Equals),
+                i.modifiers.command && i.key_pressed(egui::Key::Minus),
+            )
+        });
+        if close {
             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
         }
-
-        // Cmd-O — open a new file without quitting.
-        if ui
-            .ctx()
-            .input(|i| i.modifiers.command && i.key_pressed(egui::Key::O))
-        {
+        if open_key {
             open_file_requested = true;
         }
-
-        // Cmd-= / Cmd-- / Cmd-0 — zoom in, out, reset.
-        ui.ctx().input(|i| {
-            if i.modifiers.command && i.key_pressed(egui::Key::Equals) {
-                let z = ui.ctx().zoom_factor();
-                ui.ctx().set_zoom_factor((z * 1.1).min(3.0));
-            }
-            if i.modifiers.command && i.key_pressed(egui::Key::Minus) {
-                let z = ui.ctx().zoom_factor();
-                ui.ctx().set_zoom_factor((z / 1.1).max(0.4));
-            }
-            if i.modifiers.command && i.key_pressed(egui::Key::Num0) {
-                ui.ctx().set_zoom_factor(1.0);
-            }
-        });
+        if zoom_in_key {
+            new_content_zoom = (new_content_zoom * 1.1).min(3.0);
+        }
+        if zoom_out_key {
+            new_content_zoom = (new_content_zoom / 1.1).max(0.4);
+        }
 
         egui::Panel::top("nav_bar").show(ui, |ui| {
             ui.horizontal(|ui| {
@@ -400,29 +401,30 @@ impl eframe::App for MarkdownApp {
                         ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                     ui.separator();
-                    // Zoom controls. In right-to-left order, first-added = rightmost,
-                    // so render +, %, − to produce the visual sequence  − | 100% | +.
-                    let zoom = ui.ctx().zoom_factor();
+                    // Zoom controls (content text only; toolbar stays at 1×).
+                    // RTL layout: first-added = rightmost, so render ↺, +, label, −
+                    // to produce the visual sequence  − | 100% | + | ↺  left-to-right.
+                    if ui
+                        .small_button("↺")
+                        .on_hover_text("Reset content zoom to 100%")
+                        .clicked()
+                    {
+                        new_content_zoom = 1.0;
+                    }
                     if ui
                         .small_button("+")
-                        .on_hover_text("Zoom in (Cmd-=)")
+                        .on_hover_text("Zoom content in (Cmd-=)")
                         .clicked()
                     {
-                        ui.ctx().set_zoom_factor((zoom * 1.1).min(3.0));
+                        new_content_zoom = (new_content_zoom * 1.1).min(3.0);
                     }
-                    if ui
-                        .button(format!("{:.0}%", zoom * 100.0))
-                        .on_hover_text("Reset zoom to 100% (Cmd-0)")
-                        .clicked()
-                    {
-                        ui.ctx().set_zoom_factor(1.0);
-                    }
+                    ui.label(&zoom_label);
                     if ui
                         .small_button("−")
-                        .on_hover_text("Zoom out (Cmd-−)")
+                        .on_hover_text("Zoom content out (Cmd-−)")
                         .clicked()
                     {
-                        ui.ctx().set_zoom_factor((zoom / 1.1).max(0.4));
+                        new_content_zoom = (new_content_zoom / 1.1).max(0.4);
                     }
                 });
             });
@@ -441,6 +443,30 @@ impl eframe::App for MarkdownApp {
                 scroll.active_handle_opacity = 0.80; // clear while dragging
             }
             egui::ScrollArea::vertical().show(ui, |ui| {
+                // Scale content text styles locally so the toolbar is unaffected.
+                // Multiply from the fixed base sizes set in setup_style() so that
+                // repeated zoom steps never accumulate floating-point drift.
+                let cz = content_zoom;
+                if (cz - 1.0).abs() > 0.005 {
+                    use egui::{FontFamily, FontId, TextStyle};
+                    let s = ui.style_mut();
+                    s.text_styles.insert(
+                        TextStyle::Body,
+                        FontId::new(16.0 * cz, FontFamily::Proportional),
+                    );
+                    s.text_styles.insert(
+                        TextStyle::Monospace,
+                        FontId::new(14.0 * cz, FontFamily::Monospace),
+                    );
+                    s.text_styles.insert(
+                        TextStyle::Heading,
+                        FontId::new(24.0 * cz, FontFamily::Proportional),
+                    );
+                    s.text_styles.insert(
+                        TextStyle::Small,
+                        FontId::new(10.0 * cz, FontFamily::Proportional),
+                    );
+                }
                 CommonMarkViewer::new()
                     .syntax_theme_dark("base16-ocean.dark")
                     .syntax_theme_light("InspiredGitHub")
@@ -506,6 +532,9 @@ impl eframe::App for MarkdownApp {
                 NavAction::None => false,
             }
         };
+
+        // Commit zoom change (may have come from keyboard or toolbar buttons).
+        self.content_zoom = new_content_zoom;
 
         if navigated {
             ui.ctx()

@@ -5,6 +5,7 @@ thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 egui_extras = { version = "0.35", features = ["svg"] }
 resvg = { version = "0.45", features = ["text"] }
 fontdb = { version = "0.23", features = ["fs"] }
+rfd = { version = "0.15" }
 
 [features]
 default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_commonmark/svg","egui_commonmark/fetch"]
@@ -15,8 +16,9 @@ opt-level = 3     # Apply maximum performance optimizations
 */
 /// A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
 /// `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the
-/// current markdown file, so navigation between linked documents works correctly. Supports back/forward history
-/// and light/dark/system theme switching via `egui_theme_switch`.
+/// current markdown file, so navigation between linked documents works correctly. Supports back/forward history,
+/// light/dark/system theme switching via `egui_theme_switch`, zoom (Cmd-= / Cmd-- / Cmd-0), and opening a new
+/// file without quitting via a native file dialog (Cmd-O / "Open…" button).
 /// Improved readability over the egui defaults: 16pt body text, near-black text in light mode, near-white
 /// in dark mode, warm paper background, higher-contrast code block backgrounds, and GitHub-style syntax
 /// highlighting for code blocks.
@@ -32,6 +34,7 @@ opt-level = 3     # Apply maximum performance optimizations
 use eframe::egui;
 use egui::load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint};
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
+use rfd::FileDialog;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -325,6 +328,7 @@ impl eframe::App for MarkdownApp {
         let current_path_label = self.current_file_path.display().to_string();
 
         let mut nav_action = NavAction::None;
+        let mut open_file_requested = false;
 
         // Cmd-W / Ctrl-W — "close window" shortcut intercepted at the egui level.
         // Cmd-Q on macOS goes through the app delegate so egui never sees it, but
@@ -334,6 +338,29 @@ impl eframe::App for MarkdownApp {
         }) {
             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
         }
+
+        // Cmd-O — open a new file without quitting.
+        if ui
+            .ctx()
+            .input(|i| i.modifiers.command && i.key_pressed(egui::Key::O))
+        {
+            open_file_requested = true;
+        }
+
+        // Cmd-= / Cmd-- / Cmd-0 — zoom in, out, reset.
+        ui.ctx().input(|i| {
+            if i.modifiers.command && i.key_pressed(egui::Key::Equals) {
+                let z = ui.ctx().zoom_factor();
+                ui.ctx().set_zoom_factor((z * 1.1).min(3.0));
+            }
+            if i.modifiers.command && i.key_pressed(egui::Key::Minus) {
+                let z = ui.ctx().zoom_factor();
+                ui.ctx().set_zoom_factor((z / 1.1).max(0.4));
+            }
+            if i.modifiers.command && i.key_pressed(egui::Key::Num0) {
+                ui.ctx().set_zoom_factor(1.0);
+            }
+        });
 
         egui::Panel::top("nav_bar").show(ui, |ui| {
             ui.horizontal(|ui| {
@@ -355,6 +382,14 @@ impl eframe::App for MarkdownApp {
                     nav_action = NavAction::Forward;
                 }
                 ui.separator();
+                if ui
+                    .button("Open…")
+                    .on_hover_text("Open a markdown file (Cmd-O)")
+                    .clicked()
+                {
+                    open_file_requested = true;
+                }
+                ui.separator();
                 ui.label(&current_path_label);
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui
@@ -363,6 +398,31 @@ impl eframe::App for MarkdownApp {
                         .clicked()
                     {
                         ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
+                    ui.separator();
+                    // Zoom controls. In right-to-left order, first-added = rightmost,
+                    // so render +, %, − to produce the visual sequence  − | 100% | +.
+                    let zoom = ui.ctx().zoom_factor();
+                    if ui
+                        .small_button("+")
+                        .on_hover_text("Zoom in (Cmd-=)")
+                        .clicked()
+                    {
+                        ui.ctx().set_zoom_factor((zoom * 1.1).min(3.0));
+                    }
+                    if ui
+                        .button(format!("{:.0}%", zoom * 100.0))
+                        .on_hover_text("Reset zoom to 100% (Cmd-0)")
+                        .clicked()
+                    {
+                        ui.ctx().set_zoom_factor(1.0);
+                    }
+                    if ui
+                        .small_button("−")
+                        .on_hover_text("Zoom out (Cmd-−)")
+                        .clicked()
+                    {
+                        ui.ctx().set_zoom_factor((zoom / 1.1).max(0.4));
                     }
                 });
             });
@@ -413,6 +473,31 @@ impl eframe::App for MarkdownApp {
                 false
             } else {
                 self.handle_link_click(&url)
+            }
+        } else if open_file_requested {
+            // Show a native file-open dialog. This call blocks the egui render loop
+            // until the user picks a file or cancels; that is expected behaviour.
+            let start_dir = self
+                .current_file_path
+                .parent()
+                .map(|p| p.to_path_buf())
+                .unwrap_or_else(|| PathBuf::from("."));
+            if let Some(path) = FileDialog::new()
+                .add_filter("Markdown", &["md", "markdown"])
+                .set_directory(&start_dir)
+                .pick_file()
+            {
+                let canonical = path.canonicalize().unwrap_or(path);
+                if self.load_file(canonical.clone()) {
+                    self.history.truncate(self.history_index + 1);
+                    self.history.push(canonical);
+                    self.history_index = self.history.len() - 1;
+                    true
+                } else {
+                    false
+                }
+            } else {
+                false // user cancelled
             }
         } else {
             match nav_action {

@@ -140,7 +140,7 @@ Whether you're:
 
 - **Efficient space management** of compiled scripts through a shared build target architecture. All scripts share a single build cache instead of maintaining separate `target` directories.
 
-- **Dependency efficiencies to speed rebuilds and dependency reuse**. Dependencies are compiled once and reused across all scripts.
+- **Dependency caching for fast rebuilds and dependency sharing**. Script dependencies are compiled and cached when first used, reducing compile times for all scripts that use them.
 
 - **A proc macro starter kit: a select set of useful and educational examples** with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
 

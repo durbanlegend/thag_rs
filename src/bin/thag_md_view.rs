@@ -28,6 +28,7 @@ opt-level = 3     # Apply maximum performance optimizations
 /// well.
 /// See the `md-viewer` crate for a professional quality installable example using `egui_commonmark`
 /// vendored to address some issues.
+/// The MSRV of this program is 1.92.
 //# Purpose: GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature
 //  in addition to `tools` when built as a tool, on account of its significant additional dependencies.
 //# Categories: crates, gui, tools
@@ -36,9 +37,12 @@ use eframe::egui;
 use egui::load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint};
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
 use rfd::FileDialog;
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    env,
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex},
+};
 use thag_styling::{
     auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config,
 };
@@ -54,7 +58,7 @@ file_navigator! {}
 /// - Body text bumped from 14 → 16pt; headings to 24pt.
 /// - Dark mode: text raised from ~gray-200 to gray-240 (near-white).
 /// - Light mode: text dropped from gray-60 to gray-5 (near-black). The egui default is
-///   surprisingly faint — much weaker than GitHub, MacDown, or any OS markdown renderer.
+///   surprisingly faint — much weaker than GitHub, `MacDown`, or any OS markdown renderer.
 /// - Light mode background: warm off-white (252,252,248) instead of a stark neutral.
 /// - Code block backgrounds tightened for better inline-code legibility.
 /// - Links: slightly brighter/darker to read well against each background.
@@ -149,7 +153,7 @@ fn main() -> eframe::Result<()> {
     // Keep the process CWD in sync with the file so egui_extras resolves
     // relative image URIs correctly from the start.
     if let Some(parent) = canonical_initial_path.parent() {
-        let _ = std::env::set_current_dir(parent);
+        let _ = env::set_current_dir(parent);
     }
 
     let markdown_content = std::fs::read_to_string(&canonical_initial_path).unwrap_or_else(|_| {
@@ -202,7 +206,7 @@ struct MarkdownApp {
     content: String,
     /// The canonicalized path of the file we are viewing (so we know its parent folder).
     current_file_path: PathBuf,
-    /// Required by egui_commonmark for rendering images/styles.
+    /// Required by `egui_commonmark` for rendering images/styles.
     cache: CommonMarkCache,
     /// Ordered list of visited file paths.
     history: Vec<PathBuf>,
@@ -224,11 +228,11 @@ impl MarkdownApp {
         }
     }
 
-    fn can_go_back(&self) -> bool {
+    const fn can_go_back(&self) -> bool {
         self.history_index > 0
     }
 
-    fn can_go_forward(&self) -> bool {
+    const fn can_go_forward(&self) -> bool {
         self.history_index + 1 < self.history.len()
     }
 
@@ -239,7 +243,7 @@ impl MarkdownApp {
             Ok(new_content) => {
                 // Keep CWD in sync so future canonicalize() calls and image loading work correctly.
                 if let Some(dir) = path.parent() {
-                    let _ = std::env::set_current_dir(dir);
+                    let _ = env::set_current_dir(dir);
                 }
                 self.content = new_content;
                 self.current_file_path = path;
@@ -248,7 +252,7 @@ impl MarkdownApp {
                 true
             }
             Err(e) => {
-                eprintln!("Failed to read {:?}: {e}", path);
+                eprintln!("Failed to read {path:?}: {e}");
                 false
             }
         }
@@ -290,10 +294,10 @@ impl MarkdownApp {
 
         // Resolve relative to the current file's directory.
         // `current_file_path` is always canonicalized (absolute), so `parent()` is reliable.
-        let current_dir = match self.current_file_path.parent() {
-            Some(parent) => parent.to_path_buf(),
-            None => PathBuf::from("."),
-        };
+        let current_dir = self
+            .current_file_path
+            .parent()
+            .map_or_else(|| PathBuf::from("."), |parent| parent.to_path_buf());
         let mut target_path = current_dir.join(url_path);
         // Canonicalize to resolve '..' / '.' and confirm the file exists.
         // Setting CWD first (in load_file) ensures canonicalize works for relative fallbacks.
@@ -314,6 +318,7 @@ impl MarkdownApp {
 }
 
 impl eframe::App for MarkdownApp {
+    #[allow(clippy::too_many_lines)]
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         // Pre-compute toolbar state before any closures borrow self.
         let can_go_back = self.can_go_back();
@@ -517,8 +522,7 @@ impl eframe::App for MarkdownApp {
             let start_dir = self
                 .current_file_path
                 .parent()
-                .map(|p| p.to_path_buf())
-                .unwrap_or_else(|| PathBuf::from("."));
+                .map_or_else(|| PathBuf::from("."), |p| p.to_path_buf());
             if let Some(path) = FileDialog::new()
                 .add_filter("Markdown", &["md", "markdown"])
                 .set_directory(&start_dir)
@@ -607,7 +611,7 @@ impl FastSvgLoader {
         {
             db.load_fonts_dir("/System/Library/Fonts/");
             db.load_fonts_dir("/Library/Fonts/");
-            if let Ok(home) = std::env::var("HOME") {
+            if let Ok(home) = env::var("HOME") {
                 db.load_fonts_dir(Path::new(&home).join("Library/Fonts"));
             }
         }
@@ -615,7 +619,7 @@ impl FastSvgLoader {
         {
             db.load_fonts_dir("/usr/share/fonts/");
             db.load_fonts_dir("/usr/local/share/fonts/");
-            if let Ok(home) = std::env::var("HOME") {
+            if let Ok(home) = env::var("HOME") {
                 db.load_fonts_dir(Path::new(&home).join(".fonts"));
                 db.load_fonts_dir(Path::new(&home).join(".local/share/fonts"));
             }
@@ -623,7 +627,7 @@ impl FastSvgLoader {
         #[cfg(target_os = "windows")]
         {
             db.load_fonts_dir("C:/Windows/Fonts/");
-            if let Ok(profile) = std::env::var("USERPROFILE") {
+            if let Ok(profile) = env::var("USERPROFILE") {
                 db.load_fonts_dir(
                     Path::new(&profile).join("AppData/Local/Microsoft/Windows/Fonts"),
                 );
@@ -651,7 +655,10 @@ impl ImageLoader for FastSvgLoader {
     }
 
     fn load(&self, ctx: &egui::Context, uri: &str, size_hint: SizeHint) -> ImageLoadResult {
-        if !uri.ends_with(".svg") {
+        if !Path::new(uri)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("svg"))
+        {
             return Err(LoadError::NotSupported);
         }
 

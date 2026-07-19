@@ -171,15 +171,30 @@ ___
 
 - Toml-free by default: dependency inference from imports and Rust paths (`x::y::z`).
 
-  `thag` can run many crate examples without needing TOML information. The `thag_url` tool can run them directly URLs including GitHub, GitLab, BitBucket and Rust Playground.
+  `thag` can run many crate examples without needing TOML information. The `thag_url` tool can run them directly as URLs including GitHub, GitLab, BitBucket and Rust Playground.
 
 ```bash
 thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "- is this the Krusty Krab?"
 ```
 
+  `thag_url` can run with options and arguments:
+
+```bash
+$ thag_url https://github.com/PolyMeilex/rfd/blob/master/examples/simple.rs -m 2>/dev/null
+The user choose: Some(
+    "/Users/donf/projects/thag_rs/Cargo.toml",
+)
+```
+
 ```bash
 thag_url https://github.com/mikaelmello/inquire/blob/main/examples/render_config.rs --features=inquire/date
 ```
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/markdown.rs -- README.md 2>/dev/null
+```
+
+  (`thag_url` fetches the remote script demo/markdown.rs and compiles and runs it locally. The compiled script converts the local README.md to HTML and opens it in the browser.)
 
   Since dependency inference has proved fast and reliable in extensive use and testing, toml block content that is no longer necessary (that is, most of it) has been removed from most demo scripts with no noticeable loss of speed. This mostly toml-free scripting is easier and more productive and removes the burden of updating dependencies, at the cost of slightly greater exposure to incompatibilities between newer versions of dependencies.
 
@@ -527,7 +542,7 @@ _— The Rust Reference_
     * **Rapid iteration mode** offers interactivity, and accepts multi-line expressions since it uses bracket matching to wait for closing braces, brackets, parens and quotes.
     If rapid iteration mode becomes too limiting, you have two alternative ways to promote your expression to a full-fledged script from the rapid iteration editor.
     * **Stdin mode** accepts larger scripts and programs on the fly, as typed, pasted or piped input or as URLs (via `thag_url`).
-    * **Edit mode** via a basic TUI (terminal user interface) editor, with optional `thag_url` or other piped input.
+    * **Edit mode** via a basic TUI (terminal user interface) editor, with optional piped input.
     * The classic **script mode** runs an .rs file consisting of a valid Rust snippet or program.
 
 

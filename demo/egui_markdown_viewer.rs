@@ -17,6 +17,9 @@ opt-level = 3     # Apply maximum performance optimizations
 /// `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the
 /// current markdown file, so navigation between linked documents works correctly. Supports back/forward history
 /// and light/dark/system theme switching via `egui_theme_switch`.
+/// Improved readability over the egui defaults: 16pt body text, near-black text in light mode, near-white
+/// in dark mode, warm paper background, higher-contrast code block backgrounds, and GitHub-style syntax
+/// highlighting for code blocks.
 /// Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
 /// an image produces an invisible zero-size hyperlink. If you want a clickable link alongside an image,
 /// add an explicit text link in the markdown below it. You may also notice that it does not handle banners
@@ -37,6 +40,79 @@ use thag_styling::{
 };
 
 file_navigator! {}
+
+/// Applies improved typography and contrast to both the dark and light egui themes.
+///
+/// Called once at startup from the `CreationContext` so that `egui_theme_switch` can still
+/// toggle freely between the two themes while both benefit from the same improvements.
+///
+/// Improvements over the egui defaults:
+/// - Body text bumped from 14 → 16pt; headings to 24pt.
+/// - Dark mode: text raised from ~gray-200 to gray-240 (near-white).
+/// - Light mode: text dropped from gray-60 to gray-5 (near-black). The egui default is
+///   surprisingly faint — much weaker than GitHub, MacDown, or any OS markdown renderer.
+/// - Light mode background: warm off-white (252,252,248) instead of a stark neutral.
+/// - Code block backgrounds tightened for better inline-code legibility.
+/// - Links: slightly brighter/darker to read well against each background.
+fn setup_style(ctx: &egui::Context) {
+    // ── Typography ──────────────────────────────────────────────────────────────────────
+    // Apply to both themes at once; egui_theme_switch only swaps visuals, not text styles.
+    ctx.all_styles_mut(|style| {
+        use egui::{FontFamily, FontId, TextStyle};
+        style
+            .text_styles
+            .insert(TextStyle::Body, FontId::new(16.0, FontFamily::Proportional));
+        style.text_styles.insert(
+            TextStyle::Monospace,
+            FontId::new(14.0, FontFamily::Monospace),
+        );
+        style.text_styles.insert(
+            TextStyle::Button,
+            FontId::new(14.0, FontFamily::Proportional),
+        );
+        style.text_styles.insert(
+            TextStyle::Heading,
+            FontId::new(24.0, FontFamily::Proportional),
+        );
+        // A little more vertical breathing room between adjacent items.
+        style.spacing.item_spacing.y = 6.0; // default 4.0
+    });
+
+    // ── Dark mode: higher-contrast text ─────────────────────────────────────────────────
+    ctx.set_visuals_of(egui::Theme::Dark, {
+        let mut v = egui::Visuals::dark();
+        // Default noninteractive text is gray-200 (~78%); raise it to near-white.
+        v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(240);
+        // Slightly lighter panel so the document surface is distinct from absolute black.
+        v.panel_fill = egui::Color32::from_gray(32);
+        v.window_fill = egui::Color32::from_gray(32);
+        // Inline code blocks: just enough contrast against the panel.
+        v.code_bg_color = egui::Color32::from_gray(55);
+        // Brighter, more GitHub-like link colour.
+        v.hyperlink_color = egui::Color32::from_rgb(100, 185, 255);
+        // Suppress image-loading spinners; in a document reader they are just noise.
+        v.image_loading_spinners = false;
+        v
+    });
+
+    // ── Light mode: near-black text, warm paper background ──────────────────────────────
+    ctx.set_visuals_of(egui::Theme::Light, {
+        let mut v = egui::Visuals::light();
+        // Default noninteractive text is gray-60 — very faint for document reading.
+        // Push it to near-black (gray-5) for document-quality contrast.
+        v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(5);
+        // Warm, slightly off-white background like GitHub's rendered Markdown page.
+        v.panel_fill = egui::Color32::from_rgb(252, 252, 248);
+        v.window_fill = egui::Color32::from_rgb(252, 252, 248);
+        // Inline code: a clear light gray to visually distinguish it from body text.
+        v.code_bg_color = egui::Color32::from_rgb(225, 225, 230);
+        // Slightly deeper blue — more readable on a near-white background.
+        v.hyperlink_color = egui::Color32::from_rgb(0, 100, 210);
+        // Suppress image-loading spinners; in a document reader they are just noise.
+        v.image_loading_spinners = false;
+        v
+    });
+}
 
 fn main() -> eframe::Result<()> {
     let help = auto_help!();
@@ -100,6 +176,7 @@ fn main() -> eframe::Result<()> {
             // registered, the default `SvgLoader::default()` (which calls the
             // 20-second `load_system_fonts()`) is never constructed.
             cc.egui_ctx.add_image_loader(Arc::new(FastSvgLoader::new()));
+            setup_style(&cc.egui_ctx);
             Ok(Box::new(MarkdownApp::new(
                 markdown_content,
                 canonical_initial_path,
@@ -293,7 +370,11 @@ impl eframe::App for MarkdownApp {
 
         egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                CommonMarkViewer::new().show(ui, &mut self.cache, &self.content);
+                CommonMarkViewer::new()
+                    .syntax_theme_dark("base16-ocean.dark")
+                    .syntax_theme_light("InspiredGitHub")
+                    .enable_scroll_to_heading(true)
+                    .show(ui, &mut self.cache, &self.content);
             });
         });
 

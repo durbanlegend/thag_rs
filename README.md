@@ -6,10 +6,9 @@
 [![Rust](https://img.shields.io/badge/rustc-stable+-green.svg)](https://img.shields.io/badge/rustc-stable+-green)
 [![Dependencies](https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg)](https://deps.rs/repo/github/durbanlegend/thag_rs/status)
 
-
 ## Intro
 
-***thag_rs*** (command ***thag***) is a robust toolkit and playground designed to make your Rust development experience smoother and more rewarding.
+***thag_rs*** (command ***thag***) is a robust toolkit and playground designed to make your Rust development experience smoother and more rewarding. For example, a Rust program often only needs a single file instead of a whole project.
 
 ***thag*** includes:
 
@@ -181,8 +180,10 @@ ___
   `thag` can run many crate examples without needing TOML information. The `thag_url` tool can run them directly URLs including GitHub, GitLab, BitBucket and Rust Playground.
 
 ```bash
-thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "is this the Krusty Krab?"
+thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "- is this the Krusty Krab?"
+```
 
+```bash
 thag_url https://github.com/mikaelmello/inquire/blob/main/examples/render_config.rs --features=inquire/date
 ```
 

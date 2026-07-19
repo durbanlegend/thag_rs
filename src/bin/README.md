@@ -122,7 +122,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_ast.rs
  Prompts the user to select a Rust script and a cargo command to run against the
  script's generated project, and invokes `thag` with the --cargo option to run it.
 
-**Purpose:** A user-friendly interface to the `thag` `--cargo` option.
+**Purpose:** A user-friendly interface to the `thag` `--cargo/-A` option.
 
 **Crates:** `atty`, `inquire`, `thag_common`, `thag_proc_macros`
 
@@ -707,6 +707,56 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_legible.
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_markdown.rs
+```
+
+---
+
+### Script: thag_md_view.rs
+
+**Description:**  A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
+ `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the
+ current markdown file, so navigation between linked documents works correctly. Supports back/forward history,
+ light/dark/system theme switching via `egui_theme_switch`, zoom (Cmd-= / Cmd-- / Cmd-0), and opening a new
+ file without quitting via a native file dialog (Cmd-O / "Open…" button).
+ Improved readability over the egui defaults: 16pt body text, near-black text in light mode, near-white
+ in dark mode, warm paper background, higher-contrast code block backgrounds, and GitHub-style syntax
+ highlighting for code blocks.
+ Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
+ an image produces an invisible zero-size hyperlink. If you want a clickable link alongside an image,
+ add an explicit text link in the markdown below it. You may also notice that it does not handle banners
+ well.
+ See the `md-viewer` crate for a professional quality installable example using `egui_commonmark`
+ vendored to address some issues.
+ Applies improved typography and contrast to both the dark and light egui themes.
+
+ Called once at startup from the `CreationContext` so that `egui_theme_switch` can still
+ toggle freely between the two themes while both benefit from the same improvements.
+
+ Improvements over the egui defaults:
+ - Body text bumped from 14 → 16pt; headings to 24pt.
+ - Dark mode: text raised from ~gray-200 to gray-240 (near-white).
+ - Light mode: text dropped from gray-60 to gray-5 (near-black). The egui default is
+   surprisingly faint — much weaker than GitHub, MacDown, or any OS markdown renderer.
+ - Light mode background: warm off-white (252,252,248) instead of a stark neutral.
+ - Code block backgrounds tightened for better inline-code legibility.
+ - Links: slightly brighter/darker to read well against each background.
+ Pending navigation action triggered by the toolbar buttons.
+ The state holder for our egui app.
+
+**Purpose:** GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature
+
+**Crates:** `eframe`, `egui_commonmark`, `egui_extras`, `egui_theme_switch`, `env`, `inquire`, `log`, `resvg`, `rfd`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** crates, gui, tools
+
+**Link:** [thag_md_view.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_md_view.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_md_view.rs
 ```
 
 ---

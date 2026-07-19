@@ -22,19 +22,17 @@
 
   - an option to build fast commands from your scripts
 
-<details>
-<summary>📋 an improved <a href="demo/proc_macros/README.md">demo proc macro starter kit</a></summary>
+  - an improved [demo proc macro starter kit](demo/proc_macros/README.md)
 
-- a ***select set of 12 useful and educational examples***
-
-- full documentation
-
-- demo scripts
-
-- a learning path
-
-- compile-time macro expansion support for proc macro debugging
-</details>
+    - a ***select set of 12 useful and educational examples***
+    
+    - full documentation
+    
+    - demo scripts
+    
+    - a learning path
+    
+    - compile-time macro expansion support for proc macro debugging
 
 ***thag*** has sleek styling with themes to match your terminal preferences.
 
@@ -64,78 +62,74 @@ Whether you're:
 
 ### `thag` includes:
 
-<details>
-<summary>A command ***thag_url*** to intelligently run example scripts directly from URLs</summary>
+
+  - A command ***thag_url*** to intelligently run example scripts directly from URLs
 
   - Automatically resolves straightforward dependencies.
 
   - Default features for crates can be configured with `thag --config/-C`.
 
-<details>
-<summary>Supports popular repo, playground and other URLs.</summary>
+  - Supports popular repo, playground and other URLs.</summary>
 
-  - GitHub
+    - GitHub
+  
+    - GitLab
+  
+    - BitBucket
+  
+    - Rust Playground
+  
+    - Straightforward URLs.
 
-  - GitLab
-
-  - BitBucket
-
-  - Rust Playground
-
-  - Straightforward URLs.
-
-</details>
-
-<details>
-<summary>Over 30 other independently installable <a href="src/bin/README.md">command-line tools</a></summary>
-
-  - AST display tool
-
-  - cargo runner for scripts
-
-  - clippy runner for scripts
-
-  - demo directory downloader
-
-  - demo finder
-
-  - expander for scripts
-
-  - config file generator
-
-  - stdin to clipboard copy tool
-
-  - clipboard to stdout paste tool
-
-  - error variant code generator
-
-  - markdown viewer and GitHub markdown compatibility checker
-
-  - prompted `thag` front-end
-
-  - `\n` to newline unscrambler
-
-  - terminal characteristics detector
-
-  - `thag_styling` tools, including:
-
-    - theme display
-
-    - theme browser
-
-    - theme editor
-
-    - terminal palette vs theme displays
-
-    - base16/24 to `thag_styling` theme converter
-
-    - image to `thag_styling` theme converter
-
-    - `thag_styling` theme to terminal theme converter and installers for popular terminal emulators
-
-    - `thag_styling` theme to terminal palette sync tool
-
-</details>
+  - Over 30 other independently installable [command-line tools](src/bin/README.md) promoted from `thag` scripts
+  
+    - fast (WGPU) full-featured markdown viewer
+  
+    - AST display tool
+  
+    - cargo runner for scripts
+  
+    - clippy runner for scripts
+  
+    - demo directory downloader
+  
+    - demo finder
+  
+    - expander for scripts
+  
+    - config file generator
+  
+    - stdin to clipboard copy tool
+  
+    - clipboard to stdout paste tool
+  
+    - error variant code generator
+  
+    - GitHub markdown compatibility checker
+  
+    - prompted `thag` front-end
+  
+    - `\n` to newline unscrambler
+  
+    - terminal characteristics detector
+  
+    - `thag_styling` tools, including:
+  
+      - theme display
+  
+      - theme browser
+  
+      - theme editor
+  
+      - terminal palette vs theme displays
+  
+      - base16/24 to `thag_styling` theme converter
+  
+      - image to `thag_styling` theme converter
+  
+      - `thag_styling` theme to terminal theme converter and installers for popular terminal emulators
+  
+      - `thag_styling` theme to terminal palette sync tool
 
 - **Efficient space management** of compiled scripts through a shared build target architecture. All scripts share a single build cache instead of maintaining separate `target` directories.
 

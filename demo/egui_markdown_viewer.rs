@@ -369,6 +369,10 @@ impl eframe::App for MarkdownApp {
         });
 
         egui::CentralPanel::default().show(ui, |ui| {
+            // Use a non-floating scrollbar so it reserves its own layout space
+            // instead of overlaying content — otherwise the code-block copy icon
+            // sits under the bar and gets obscured as the bar widens on hover.
+            ui.style_mut().spacing.scroll.floating = false;
             egui::ScrollArea::vertical().show(ui, |ui| {
                 CommonMarkViewer::new()
                     .syntax_theme_dark("base16-ocean.dark")

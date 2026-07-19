@@ -391,7 +391,17 @@ impl eframe::App for MarkdownApp {
                     open_file_requested = true;
                 }
                 ui.separator();
-                ui.label(&current_path_label);
+                // Reserve space for the right-hand controls before sizing the
+                // path label, so the label never spills into the zoom widgets.
+                // Estimate: − 20 + label 35 + + 20 + ↺ 20 + sep 8 + Quit 40
+                //           + inter-widget spacing ≈ 200 px at toolbar font size.
+                let right_reserve = 200.0_f32;
+                let label_max = (ui.available_width() - right_reserve).max(40.0);
+                ui.scope(|ui| {
+                    ui.set_max_width(label_max);
+                    ui.add(egui::Label::new(&current_path_label).truncate())
+                        .on_hover_text(&current_path_label);
+                });
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui
                         .button("Quit")

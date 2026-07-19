@@ -151,3 +151,6 @@ thag_styling/readme_notes.md
 thag_styling/src/integrations/INTEGRATION_GUIDE.md
 demo/egui_markdown_viewer_svg_instrumented.rs
 demo/fib_doubling_iterative_ibig_instrumented.rs
+demo/egui_load_fonts copy.rs
+demo/egui_markdown_viewer copy 1.rs
+demo/egui_markdown_viewer copy.rs

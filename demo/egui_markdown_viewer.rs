@@ -2,7 +2,9 @@
 [dependencies]
 thag_proc_macros = { version = "1, thag-auto" }
 thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
-egui_extras = { version = "0.35", features = ["svg_text"] } # Slow
+egui_extras = { version = "0.35", features = ["svg"] }
+resvg = { version = "0.45", features = ["text"] }
+fontdb = { version = "0.23", features = ["fs"] }
 
 [features]
 default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_commonmark/svg","egui_commonmark/fetch"]
@@ -25,9 +27,11 @@ opt-level = 3     # Apply maximum performance optimizations
 //# Categories: crates, demo, gui, prototype, tools
 //# Usage: egui_markdown_viewer [OPTIONS] [path_to_file]
 use eframe::egui;
+use egui::load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint};
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
-
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 use thag_styling::{
     auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config,
 };
@@ -89,7 +93,13 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Markdown Viewer",
         options,
-        Box::new(move |_cc| {
+        Box::new(move |cc| {
+            // Register our fast SVG loader BEFORE the first frame triggers
+            // egui_commonmark's `prepare_show`, which calls `install_image_loaders`.
+            // Since `install_image_loaders` skips any loader whose ID is already
+            // registered, the default `SvgLoader::default()` (which calls the
+            // 20-second `load_system_fonts()`) is never constructed.
+            cc.egui_ctx.add_image_loader(Arc::new(FastSvgLoader::new()));
             Ok(Box::new(MarkdownApp::new(
                 markdown_content,
                 canonical_initial_path,
@@ -327,5 +337,175 @@ impl eframe::App for MarkdownApp {
                     self.current_file_path.display()
                 )));
         }
+    }
+}
+
+// ─── Fast SVG loader ──────────────────────────────────────────────────────────
+//
+// `egui_extras::install_image_loaders` (called lazily by `egui_commonmark` on
+// first render) only registers its built-in `SvgLoader` if no loader with that
+// ID already exists:
+//
+//   if !ctx.is_loader_installed(SvgLoader::ID) { ctx.add_image_loader(...) }
+//
+// `SvgLoader::default()` calls `fontdb::Database::load_system_fonts()`, which
+// on macOS scans `/System/Library/AssetsV2` — thousands of downloadable font
+// assets — and takes ~20 seconds.
+//
+// By pre-registering `FastSvgLoader` with the **same ID**, we prevent that
+// constructor from ever running.  Our loader calls `load_fonts_dir` on a small
+// set of known directories, reading font files directly without the macOS
+// CoreText/AssetsV2 scan, which is fast (<1 s).
+
+struct FastSvgLoader {
+    state: Mutex<FastSvgState>,
+}
+
+struct FastSvgState {
+    pass_index: u64,
+    cache: HashMap<String, HashMap<SizeHint, FastSvgEntry>>,
+    options: resvg::usvg::Options<'static>,
+}
+
+struct FastSvgEntry {
+    last_used: u64,
+    result: Result<Arc<egui::ColorImage>, String>,
+}
+
+impl FastSvgLoader {
+    /// Must match `egui::generate_loader_id!(SvgLoader)` as evaluated inside
+    /// the `egui_extras::loaders::svg_loader` module:
+    /// `concat!(module_path!(), "::", "SvgLoader")`
+    const ID: &'static str = "egui_extras::loaders::svg_loader::SvgLoader";
+
+    fn new() -> Self {
+        let mut options = resvg::usvg::Options::default();
+
+        // Populate fontdb from known directories instead of calling
+        // `load_system_fonts()`.  On macOS this deliberately skips
+        // `/System/Library/AssetsV2`, which is what causes the ~20 s delay.
+        let db = options.fontdb_mut();
+
+        #[cfg(target_os = "macos")]
+        {
+            db.load_fonts_dir("/System/Library/Fonts/");
+            db.load_fonts_dir("/Library/Fonts/");
+            if let Ok(home) = std::env::var("HOME") {
+                db.load_fonts_dir(Path::new(&home).join("Library/Fonts"));
+            }
+        }
+        #[cfg(target_os = "linux")]
+        {
+            db.load_fonts_dir("/usr/share/fonts/");
+            db.load_fonts_dir("/usr/local/share/fonts/");
+            if let Ok(home) = std::env::var("HOME") {
+                db.load_fonts_dir(Path::new(&home).join(".fonts"));
+                db.load_fonts_dir(Path::new(&home).join(".local/share/fonts"));
+            }
+        }
+        #[cfg(target_os = "windows")]
+        {
+            db.load_fonts_dir("C:/Windows/Fonts/");
+            if let Ok(profile) = std::env::var("USERPROFILE") {
+                db.load_fonts_dir(
+                    Path::new(&profile).join("AppData/Local/Microsoft/Windows/Fonts"),
+                );
+            }
+        }
+
+        log::info!(
+            "FastSvgLoader: initialised ({} font faces)",
+            options.fontdb.faces().count()
+        );
+
+        Self {
+            state: Mutex::new(FastSvgState {
+                pass_index: 0,
+                cache: HashMap::default(),
+                options,
+            }),
+        }
+    }
+}
+
+impl ImageLoader for FastSvgLoader {
+    fn id(&self) -> &str {
+        Self::ID
+    }
+
+    fn load(&self, ctx: &egui::Context, uri: &str, size_hint: SizeHint) -> ImageLoadResult {
+        if !uri.ends_with(".svg") {
+            return Err(LoadError::NotSupported);
+        }
+
+        let mut state = self.state.lock().unwrap();
+        let FastSvgState {
+            pass_index,
+            cache,
+            options,
+        } = &mut *state;
+
+        let bucket = cache.entry(uri.to_owned()).or_default();
+        if let Some(entry) = bucket.get_mut(&size_hint) {
+            entry.last_used = *pass_index;
+            return match entry.result.clone() {
+                Ok(image) => Ok(ImagePoll::Ready { image }),
+                Err(err) => Err(LoadError::Loading(err)),
+            };
+        }
+
+        match ctx.try_load_bytes(uri) {
+            Ok(BytesPoll::Ready { bytes, .. }) => {
+                let result =
+                    egui_extras::image::load_svg_bytes_with_size(&bytes, size_hint, options)
+                        .map(Arc::new);
+                bucket.insert(
+                    size_hint,
+                    FastSvgEntry {
+                        last_used: *pass_index,
+                        result: result.clone(),
+                    },
+                );
+                match result {
+                    Ok(image) => Ok(ImagePoll::Ready { image }),
+                    Err(err) => Err(LoadError::Loading(err)),
+                }
+            }
+            Ok(BytesPoll::Pending { size }) => Ok(ImagePoll::Pending { size }),
+            Err(err) => Err(err),
+        }
+    }
+
+    fn forget(&self, uri: &str) {
+        self.state.lock().unwrap().cache.retain(|key, _| key != uri);
+    }
+
+    fn forget_all(&self) {
+        self.state.lock().unwrap().cache.clear();
+    }
+
+    fn byte_size(&self) -> usize {
+        self.state
+            .lock()
+            .unwrap()
+            .cache
+            .values()
+            .flat_map(|bucket| bucket.values())
+            .map(|entry| match &entry.result {
+                Ok(image) => image.pixels.len() * std::mem::size_of::<egui::Color32>(),
+                Err(err) => err.len(),
+            })
+            .sum()
+    }
+
+    fn end_pass(&self, pass_index: u64) {
+        let mut state = self.state.lock().unwrap();
+        state.pass_index = pass_index;
+        state.cache.retain(|_key, bucket| {
+            if 2 <= bucket.len() {
+                bucket.retain(|_, entry| pass_index <= entry.last_used + 1);
+            }
+            !bucket.is_empty()
+        });
     }
 }

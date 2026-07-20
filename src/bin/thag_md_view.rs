@@ -49,27 +49,31 @@ use thag_styling::{
 
 file_navigator! {}
 
-/// Applies improved typography and contrast to both the dark and light egui themes.
+/// Applies typography and contrast to both egui themes.
 ///
-/// Called once at startup from the `CreationContext` so that `egui_theme_switch` can still
-/// toggle freely between the two themes while both benefit from the same improvements.
+/// `enhanced = true`  — our custom style: 16pt body, 24pt headings, high-contrast colours.
+/// `enhanced = false` — egui defaults: 14pt body, 21pt headings, stock colours.
 ///
-/// Improvements over the egui defaults:
-/// - Body text bumped from 14 → 16pt; headings to 24pt.
-/// - Dark mode: text raised from ~gray-200 to gray-240 (near-white).
-/// - Light mode: text dropped from gray-60 to gray-5 (near-black). The egui default is
-///   surprisingly faint — much weaker than GitHub, `MacDown`, or any OS markdown renderer.
-/// - Light mode background: warm off-white (252,252,248) instead of a stark neutral.
-/// - Code block backgrounds tightened for better inline-code legibility.
-/// - Links: slightly brighter/darker to read well against each background.
-fn setup_style(ctx: &egui::Context) {
+/// Called once at startup and again whenever the toolbar style toggle changes.
+/// `image_loading_spinners` is kept `false` in both modes.
+fn apply_style(ctx: &egui::Context, enhanced: bool) {
     // ── Typography ──────────────────────────────────────────────────────────────────────
-    // Apply to both themes at once; egui_theme_switch only swaps visuals, not text styles.
     ctx.all_styles_mut(|style| {
         use egui::{FontFamily, FontId, TextStyle};
-        style
-            .text_styles
-            .insert(TextStyle::Body, FontId::new(16.0, FontFamily::Proportional));
+        // Body and heading sizes differ between modes; the rest are the same.
+        let (body_pt, heading_pt, spacing_y) = if enhanced {
+            (16.0, 24.0, 6.0)
+        } else {
+            (14.0, 21.0, 4.0)
+        };
+        style.text_styles.insert(
+            TextStyle::Body,
+            FontId::new(body_pt, FontFamily::Proportional),
+        );
+        style.text_styles.insert(
+            TextStyle::Heading,
+            FontId::new(heading_pt, FontFamily::Proportional),
+        );
         style.text_styles.insert(
             TextStyle::Monospace,
             FontId::new(14.0, FontFamily::Monospace),
@@ -79,45 +83,37 @@ fn setup_style(ctx: &egui::Context) {
             FontId::new(14.0, FontFamily::Proportional),
         );
         style.text_styles.insert(
-            TextStyle::Heading,
-            FontId::new(24.0, FontFamily::Proportional),
+            TextStyle::Small,
+            FontId::new(10.0, FontFamily::Proportional),
         );
-        // A little more vertical breathing room between adjacent items.
-        style.spacing.item_spacing.y = 6.0; // default 4.0
+        style.spacing.item_spacing.y = spacing_y;
     });
 
-    // ── Dark mode: higher-contrast text ─────────────────────────────────────────────────
+    // ── Dark mode ─────────────────────────────────────────────────────────────────────────
     ctx.set_visuals_of(egui::Theme::Dark, {
         let mut v = egui::Visuals::dark();
-        // Default noninteractive text is gray-200 (~78%); raise it to near-white.
-        v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(240);
-        // Slightly lighter panel so the document surface is distinct from absolute black.
-        v.panel_fill = egui::Color32::from_gray(32);
-        v.window_fill = egui::Color32::from_gray(32);
-        // Inline code blocks: just enough contrast against the panel.
-        v.code_bg_color = egui::Color32::from_gray(55);
-        // Brighter, more GitHub-like link colour.
-        v.hyperlink_color = egui::Color32::from_rgb(100, 185, 255);
-        // Suppress image-loading spinners; in a document reader they are just noise.
-        v.image_loading_spinners = false;
+        if enhanced {
+            v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(240);
+            v.panel_fill = egui::Color32::from_gray(32);
+            v.window_fill = egui::Color32::from_gray(32);
+            v.code_bg_color = egui::Color32::from_gray(55);
+            v.hyperlink_color = egui::Color32::from_rgb(100, 185, 255);
+        }
+        v.image_loading_spinners = false; // always off in a document reader
         v
     });
 
-    // ── Light mode: near-black text, warm paper background ──────────────────────────────
+    // ── Light mode ────────────────────────────────────────────────────────────────────────
     ctx.set_visuals_of(egui::Theme::Light, {
         let mut v = egui::Visuals::light();
-        // Default noninteractive text is gray-60 — very faint for document reading.
-        // Push it to near-black (gray-5) for document-quality contrast.
-        v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(5);
-        // Warm, slightly off-white background like GitHub's rendered Markdown page.
-        v.panel_fill = egui::Color32::from_rgb(252, 252, 248);
-        v.window_fill = egui::Color32::from_rgb(252, 252, 248);
-        // Inline code: a clear light gray to visually distinguish it from body text.
-        v.code_bg_color = egui::Color32::from_rgb(225, 225, 230);
-        // Slightly deeper blue — more readable on a near-white background.
-        v.hyperlink_color = egui::Color32::from_rgb(0, 100, 210);
-        // Suppress image-loading spinners; in a document reader they are just noise.
-        v.image_loading_spinners = false;
+        if enhanced {
+            v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(5);
+            v.panel_fill = egui::Color32::from_rgb(252, 252, 248);
+            v.window_fill = egui::Color32::from_rgb(252, 252, 248);
+            v.code_bg_color = egui::Color32::from_rgb(225, 225, 230);
+            v.hyperlink_color = egui::Color32::from_rgb(0, 100, 210);
+        }
+        v.image_loading_spinners = false; // always off in a document reader
         v
     });
 }
@@ -184,7 +180,7 @@ fn main() -> eframe::Result<()> {
             // registered, the default `SvgLoader::default()` (which calls the
             // 20-second `load_system_fonts()`) is never constructed.
             cc.egui_ctx.add_image_loader(Arc::new(FastSvgLoader::new()));
-            setup_style(&cc.egui_ctx);
+            apply_style(&cc.egui_ctx, true);
             Ok(Box::new(MarkdownApp::new(
                 markdown_content,
                 canonical_initial_path,
@@ -214,6 +210,8 @@ struct MarkdownApp {
     history_index: usize,
     /// Multiplicative scale applied to content text only (toolbar stays at 1×).
     content_zoom: f32,
+    /// Whether our enhanced style (fonts + contrast) is active, or egui defaults.
+    enhanced_contrast: bool,
 }
 
 impl MarkdownApp {
@@ -225,6 +223,7 @@ impl MarkdownApp {
             history: vec![path],
             history_index: 0,
             content_zoom: 1.0,
+            enhanced_contrast: true,
         }
     }
 
@@ -344,6 +343,8 @@ impl eframe::App for MarkdownApp {
         // text styles, so the toolbar always stays at its natural size.
         let mut new_content_zoom = self.content_zoom;
         let zoom_label = format!("{:.0}%", self.content_zoom * 100.0);
+        let enhanced_contrast = self.enhanced_contrast;
+        let mut new_enhanced_contrast = enhanced_contrast;
 
         // ── Global keyboard shortcuts ─────────────────────────────────────────────────────
         // Collect key states first, then act — acting inside input() re-locks
@@ -373,6 +374,16 @@ impl eframe::App for MarkdownApp {
             ui.horizontal(|ui| {
                 ui.label("Theme");
                 egui_theme_switch::global_theme_switch(ui);
+                if ui
+                    .selectable_label(enhanced_contrast, "Enhanced")
+                    .on_hover_text(
+                        "Toggle between enhanced style (larger text, higher contrast) \
+                         and egui defaults",
+                    )
+                    .clicked()
+                {
+                    new_enhanced_contrast = !enhanced_contrast;
+                }
                 ui.separator();
                 if ui
                     .add_enabled(can_go_back, egui::Button::new("◀ Back"))
@@ -460,27 +471,40 @@ impl eframe::App for MarkdownApp {
             }
             egui::ScrollArea::vertical().show(ui, |ui| {
                 // Scale content text styles locally so the toolbar is unaffected.
-                // Multiply from the fixed base sizes set in setup_style() so that
-                // repeated zoom steps never accumulate floating-point drift.
+                // Read the current base sizes from the inherited style so zoom
+                // works correctly in both enhanced (16/24pt) and default (14/21pt) modes.
                 let cz = content_zoom;
                 if (cz - 1.0).abs() > 0.005 {
                     use egui::{FontFamily, FontId, TextStyle};
                     let s = ui.style_mut();
+                    let base_body = s.text_styles.get(&TextStyle::Body).map_or(14.0, |f| f.size);
+                    let base_mono = s
+                        .text_styles
+                        .get(&TextStyle::Monospace)
+                        .map_or(14.0, |f| f.size);
+                    let base_heading = s
+                        .text_styles
+                        .get(&TextStyle::Heading)
+                        .map_or(21.0, |f| f.size);
+                    let base_small = s
+                        .text_styles
+                        .get(&TextStyle::Small)
+                        .map_or(10.0, |f| f.size);
                     s.text_styles.insert(
                         TextStyle::Body,
-                        FontId::new(16.0 * cz, FontFamily::Proportional),
+                        FontId::new(base_body * cz, FontFamily::Proportional),
                     );
                     s.text_styles.insert(
                         TextStyle::Monospace,
-                        FontId::new(14.0 * cz, FontFamily::Monospace),
+                        FontId::new(base_mono * cz, FontFamily::Monospace),
                     );
                     s.text_styles.insert(
                         TextStyle::Heading,
-                        FontId::new(24.0 * cz, FontFamily::Proportional),
+                        FontId::new(base_heading * cz, FontFamily::Proportional),
                     );
                     s.text_styles.insert(
                         TextStyle::Small,
-                        FontId::new(10.0 * cz, FontFamily::Proportional),
+                        FontId::new(base_small * cz, FontFamily::Proportional),
                     );
                 }
                 CommonMarkViewer::new()
@@ -550,6 +574,12 @@ impl eframe::App for MarkdownApp {
 
         // Commit zoom change (may have come from keyboard or toolbar buttons).
         self.content_zoom = new_content_zoom;
+
+        // Apply style toggle if it changed this frame.
+        if new_enhanced_contrast != enhanced_contrast {
+            self.enhanced_contrast = new_enhanced_contrast;
+            apply_style(ui.ctx(), new_enhanced_contrast);
+        }
 
         if navigated {
             ui.ctx()

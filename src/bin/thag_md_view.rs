@@ -19,7 +19,7 @@ opt-level = 3     # Apply maximum performance optimizations
 /// current markdown file, so navigation between linked documents works correctly. Supports back/forward history,
 /// light/dark/system theme switching via `egui_theme_switch`, zoom (Cmd-= / Cmd-- / Cmd-0), and opening a new
 /// file without quitting via a native file dialog (Cmd-O / "Open…" button).
-/// Improved readability over the egui defaults: 16pt body text, near-black text in light mode, near-white
+/// Improved readability over the egui defaults: near-black text in light mode, near-white
 /// in dark mode, warm paper background, higher-contrast code block backgrounds, and GitHub-style syntax
 /// highlighting for code blocks.
 /// Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
@@ -49,46 +49,15 @@ use thag_styling::{
 
 file_navigator! {}
 
-/// Applies typography and contrast to both egui themes.
+/// Applies contrast colours to both egui themes; font sizes are always left at
+/// egui defaults so toggling never causes a scroll-position jump.
 ///
-/// `enhanced = true`  — our custom style: 16pt body, 24pt headings, high-contrast colours.
-/// `enhanced = false` — egui defaults: 14pt body, 21pt headings, stock colours.
+/// `enhanced = true`  — high-contrast colours (near-white/near-black text, warm backgrounds).
+/// `enhanced = false` — stock egui colours.
 ///
-/// Called once at startup and again whenever the toolbar style toggle changes.
+/// Called once at startup and again whenever the toolbar "Contrast+/-" toggle changes.
 /// `image_loading_spinners` is kept `false` in both modes.
 fn apply_style(ctx: &egui::Context, enhanced: bool) {
-    // ── Typography ──────────────────────────────────────────────────────────────────────
-    ctx.all_styles_mut(|style| {
-        use egui::{FontFamily, FontId, TextStyle};
-        // Body and heading sizes differ between modes; the rest are the same.
-        let (body_pt, heading_pt, spacing_y) = if enhanced {
-            (16.0, 24.0, 6.0)
-        } else {
-            (14.0, 21.0, 4.0)
-        };
-        style.text_styles.insert(
-            TextStyle::Body,
-            FontId::new(body_pt, FontFamily::Proportional),
-        );
-        style.text_styles.insert(
-            TextStyle::Heading,
-            FontId::new(heading_pt, FontFamily::Proportional),
-        );
-        style.text_styles.insert(
-            TextStyle::Monospace,
-            FontId::new(14.0, FontFamily::Monospace),
-        );
-        style.text_styles.insert(
-            TextStyle::Button,
-            FontId::new(14.0, FontFamily::Proportional),
-        );
-        style.text_styles.insert(
-            TextStyle::Small,
-            FontId::new(10.0, FontFamily::Proportional),
-        );
-        style.spacing.item_spacing.y = spacing_y;
-    });
-
     // ── Dark mode ─────────────────────────────────────────────────────────────────────────
     ctx.set_visuals_of(egui::Theme::Dark, {
         let mut v = egui::Visuals::dark();
@@ -210,7 +179,7 @@ struct MarkdownApp {
     history_index: usize,
     /// Multiplicative scale applied to content text only (toolbar stays at 1×).
     content_zoom: f32,
-    /// Whether our enhanced style (fonts + contrast) is active, or egui defaults.
+    /// Whether high-contrast colours are active (`true`) or stock egui colours (`false`).
     enhanced_contrast: bool,
 }
 
@@ -375,11 +344,19 @@ impl eframe::App for MarkdownApp {
                 ui.label("Theme");
                 egui_theme_switch::global_theme_switch(ui);
                 if ui
-                    .selectable_label(enhanced_contrast, "Enhanced")
-                    .on_hover_text(
-                        "Toggle between enhanced style (larger text, higher contrast) \
-                         and egui defaults",
+                    .selectable_label(
+                        enhanced_contrast,
+                        if enhanced_contrast {
+                            "Contrast-"
+                        } else {
+                            "Contrast+"
+                        },
                     )
+                    .on_hover_text(if enhanced_contrast {
+                        "Restore default egui contrast"
+                    } else {
+                        "Apply high-contrast colours"
+                    })
                     .clicked()
                 {
                     new_enhanced_contrast = !enhanced_contrast;
@@ -472,7 +449,6 @@ impl eframe::App for MarkdownApp {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 // Scale content text styles locally so the toolbar is unaffected.
                 // Read the current base sizes from the inherited style so zoom
-                // works correctly in both enhanced (16/24pt) and default (14/21pt) modes.
                 let cz = content_zoom;
                 if (cz - 1.0).abs() > 0.005 {
                     use egui::{FontFamily, FontId, TextStyle};

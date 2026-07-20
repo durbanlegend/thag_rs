@@ -87,6 +87,95 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
     });
 }
 
+/// Rewrites relative image paths in Markdown to absolute `file://` URIs so they
+/// load correctly regardless of platform CWD behaviour.
+///
+/// Paths that already carry a URI scheme (`http://`, `file://`, `data:`, …) are
+/// left untouched. If a relative path cannot be resolved (file does not exist)
+/// it is also left untouched so existing error behaviour is preserved.
+///
+/// Note: processes the raw text, so a path inside a fenced code block is also
+/// rewritten if it matches the image syntax — an acceptable trade-off for the
+/// cross-platform fix.
+fn absolutize_image_paths(content: &str, base_dir: &Path) -> String {
+    let mut out = String::with_capacity(content.len() + 128);
+    let mut rest = content;
+
+    while let Some(bang) = rest.find("![") {
+        out.push_str(&rest[..bang]);
+        rest = &rest[bang..];
+
+        // Find `](`  — alt text must not contain `]`
+        let Some(close_bracket) = rest.find("](") else {
+            out.push_str(&rest[..2]);
+            rest = &rest[2..];
+            continue;
+        };
+
+        let prefix = &rest[..close_bracket + 2]; // `![alt](`
+        rest = &rest[close_bracket + 2..];
+
+        let Some(close_paren) = rest.find(')') else {
+            out.push_str(prefix);
+            continue;
+        };
+
+        let inner = &rest[..close_paren]; // path, possibly with `"title"`
+        rest = &rest[close_paren + 1..];
+
+        // Split optional title: `path "title"` or `path 'title'`
+        let (raw_path, title_suffix) = inner
+            .find(" \"")
+            .or_else(|| inner.find(" '"))
+            .map_or((inner.trim(), ""), |i| (&inner[..i], &inner[i..]));
+
+        let is_schemed = raw_path.starts_with("http://")
+            || raw_path.starts_with("https://")
+            || raw_path.starts_with("file://")
+            || raw_path.starts_with("data:");
+
+        if is_schemed {
+            out.push_str(prefix);
+            out.push_str(inner);
+            out.push(')');
+        } else {
+            match base_dir.join(raw_path).canonicalize() {
+                Ok(abs) => {
+                    out.push_str(prefix);
+                    out.push_str(&path_to_file_uri(&abs));
+                    out.push_str(title_suffix);
+                    out.push(')');
+                }
+                Err(_) => {
+                    // File not found — leave unchanged so the viewer shows a
+                    // broken-image placeholder rather than silently doing nothing.
+                    out.push_str(prefix);
+                    out.push_str(inner);
+                    out.push(')');
+                }
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+/// Converts an absolute `Path` to a `file://` URI that is valid on all platforms.
+/// Windows paths (`C:\…`) become `file:///C:/…`; Unix paths become `file:///…`.
+fn path_to_file_uri(path: &Path) -> String {
+    let mut s = path.to_string_lossy().into_owned();
+    #[cfg(windows)]
+    {
+        s = s.replace('\\', "/");
+    }
+    // Unix absolute paths start with `/`; Windows paths start with the drive letter.
+    if s.starts_with('/') {
+        format!("file://{s}") // file:// + /unix/path = file:///unix/path
+    } else {
+        format!("file:///{s}") // file:/// + C:/... = file:///C:/...
+    }
+}
+
 fn main() -> eframe::Result<()> {
     let help = auto_help!();
     check_help_and_exit(&help);
@@ -115,18 +204,22 @@ fn main() -> eframe::Result<()> {
     };
     let selected_path = PathBuf::from(&selected_file);
     let canonical_initial_path = selected_path.canonicalize().unwrap_or(selected_path);
-    // Keep the process CWD in sync with the file so egui_extras resolves
-    // relative image URIs correctly from the start.
-    if let Some(parent) = canonical_initial_path.parent() {
-        let _ = env::set_current_dir(parent);
-    }
+    let initial_base_dir = canonical_initial_path
+        .parent()
+        .unwrap_or(Path::new("."))
+        .to_path_buf();
+    // Keep CWD in sync for canonicalize() calls inside the viewer.
+    let _ = env::set_current_dir(&initial_base_dir);
 
-    let markdown_content = std::fs::read_to_string(&canonical_initial_path).unwrap_or_else(|_| {
+    let raw_content = std::fs::read_to_string(&canonical_initial_path).unwrap_or_else(|_| {
         format!(
             "# Error\nFailed to read `{}`.",
             canonical_initial_path.display()
         )
     });
+    // Rewrite relative image paths to absolute file:// URIs so they resolve
+    // correctly on all platforms (CWD-based resolution fails on Windows).
+    let markdown_content = absolutize_image_paths(&raw_content, &initial_base_dir);
 
     let options = eframe::NativeOptions {
         renderer: eframe::Renderer::Wgpu,
@@ -208,14 +301,14 @@ impl MarkdownApp {
     /// Returns `true` on success.
     fn load_file(&mut self, path: PathBuf) -> bool {
         match std::fs::read_to_string(&path) {
-            Ok(new_content) => {
-                // Keep CWD in sync so future canonicalize() calls and image loading work correctly.
-                if let Some(dir) = path.parent() {
-                    let _ = env::set_current_dir(dir);
-                }
-                self.content = new_content;
+            Ok(raw_content) => {
+                let base_dir = path.parent().unwrap_or(Path::new(".")).to_path_buf();
+                // Keep CWD in sync for future canonicalize() calls.
+                let _ = env::set_current_dir(&base_dir);
+                // Rewrite relative image paths to absolute file:// URIs.
+                self.content = absolutize_image_paths(&raw_content, &base_dir);
                 self.current_file_path = path;
-                // Clear the cache so egui_commonmark doesn't carry over scroll positions.
+                // Clear the cache so egui_commonmark doesn't carry over stale state.
                 self.cache = CommonMarkCache::default();
                 true
             }
@@ -446,49 +539,55 @@ impl eframe::App for MarkdownApp {
                 scroll.interact_handle_opacity = 0.55; // visible but soft on hover
                 scroll.active_handle_opacity = 0.80; // clear while dragging
             }
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                // Scale content text styles locally so the toolbar is unaffected.
-                // Read the current base sizes from the inherited style so zoom
-                let cz = content_zoom;
-                if (cz - 1.0).abs() > 0.005 {
-                    use egui::{FontFamily, FontId, TextStyle};
-                    let s = ui.style_mut();
-                    let base_body = s.text_styles.get(&TextStyle::Body).map_or(14.0, |f| f.size);
-                    let base_mono = s
-                        .text_styles
-                        .get(&TextStyle::Monospace)
-                        .map_or(14.0, |f| f.size);
-                    let base_heading = s
-                        .text_styles
-                        .get(&TextStyle::Heading)
-                        .map_or(21.0, |f| f.size);
-                    let base_small = s
-                        .text_styles
-                        .get(&TextStyle::Small)
-                        .map_or(10.0, |f| f.size);
-                    s.text_styles.insert(
-                        TextStyle::Body,
-                        FontId::new(base_body * cz, FontFamily::Proportional),
-                    );
-                    s.text_styles.insert(
-                        TextStyle::Monospace,
-                        FontId::new(base_mono * cz, FontFamily::Monospace),
-                    );
-                    s.text_styles.insert(
-                        TextStyle::Heading,
-                        FontId::new(base_heading * cz, FontFamily::Proportional),
-                    );
-                    s.text_styles.insert(
-                        TextStyle::Small,
-                        FontId::new(base_small * cz, FontFamily::Proportional),
-                    );
-                }
-                CommonMarkViewer::new()
-                    .syntax_theme_dark("base16-ocean.dark")
-                    .syntax_theme_light("InspiredGitHub")
-                    .enable_scroll_to_heading(true)
-                    .show(ui, &mut self.cache, &self.content);
-            });
+            // Give each file path its own scroll-state key so that:
+            //   • navigating to a new file always starts at the top, and
+            //   • back/forward navigation restores the previous scroll position.
+            egui::ScrollArea::vertical()
+                .id_salt(&current_path_label)
+                .show(ui, |ui| {
+                    // Scale content text styles locally so the toolbar is unaffected.
+                    // Read the current base sizes from the inherited style so zoom
+                    let cz = content_zoom;
+                    if (cz - 1.0).abs() > 0.005 {
+                        use egui::{FontFamily, FontId, TextStyle};
+                        let s = ui.style_mut();
+                        let base_body =
+                            s.text_styles.get(&TextStyle::Body).map_or(14.0, |f| f.size);
+                        let base_mono = s
+                            .text_styles
+                            .get(&TextStyle::Monospace)
+                            .map_or(14.0, |f| f.size);
+                        let base_heading = s
+                            .text_styles
+                            .get(&TextStyle::Heading)
+                            .map_or(21.0, |f| f.size);
+                        let base_small = s
+                            .text_styles
+                            .get(&TextStyle::Small)
+                            .map_or(10.0, |f| f.size);
+                        s.text_styles.insert(
+                            TextStyle::Body,
+                            FontId::new(base_body * cz, FontFamily::Proportional),
+                        );
+                        s.text_styles.insert(
+                            TextStyle::Monospace,
+                            FontId::new(base_mono * cz, FontFamily::Monospace),
+                        );
+                        s.text_styles.insert(
+                            TextStyle::Heading,
+                            FontId::new(base_heading * cz, FontFamily::Proportional),
+                        );
+                        s.text_styles.insert(
+                            TextStyle::Small,
+                            FontId::new(base_small * cz, FontFamily::Proportional),
+                        );
+                    }
+                    CommonMarkViewer::new()
+                        .syntax_theme_dark("base16-ocean.dark")
+                        .syntax_theme_light("InspiredGitHub")
+                        .enable_scroll_to_heading(true)
+                        .show(ui, &mut self.cache, &self.content);
+                });
         });
 
         // egui_commonmark dispatches link clicks by pushing OutputCommand::OpenUrl onto the

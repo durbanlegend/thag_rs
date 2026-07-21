@@ -70,6 +70,7 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
         let mut v = egui::Visuals::dark();
         if enhanced {
             v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(240);
+            v.code_bg_color = egui::Color32::from_gray(100);
             v.hyperlink_color = egui::Color32::from_rgb(100, 185, 255);
         }
         v.image_loading_spinners = false; // always off in a document reader
@@ -89,6 +90,20 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
         v.image_loading_spinners = false; // always off in a document reader
         v
     });
+
+    // Ubuntu Mono renders visually larger than Ubuntu at equal point sizes (wider
+    // per-character advance, larger x-height).  Nudge it down to 12.0 px so that
+    // inline code and fenced code blocks feel balanced against 14 px body text.
+    // In egui 0.35 font styles are stored per-theme, so set both.
+    for theme in [egui::Theme::Dark, egui::Theme::Light] {
+        ctx.style_mut_of(theme, |style| {
+            use egui::{FontFamily, FontId, TextStyle};
+            style.text_styles.insert(
+                TextStyle::Monospace,
+                FontId::new(12.0, FontFamily::Monospace),
+            );
+        });
+    }
 }
 
 /// Rewrites relative image paths in Markdown to absolute `file://` URIs so they
@@ -597,7 +612,7 @@ impl eframe::App for MarkdownApp {
                         let base_mono = s
                             .text_styles
                             .get(&TextStyle::Monospace)
-                            .map_or(14.0, |f| f.size);
+                            .map_or(12.0, |f| f.size);
                         let base_heading = s
                             .text_styles
                             .get(&TextStyle::Heading)

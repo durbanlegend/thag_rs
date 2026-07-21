@@ -174,7 +174,7 @@ ___
   `thag` can run many crate examples without needing TOML information. The `thag_url` tool can run them directly as URLs including GitHub, GitLab, BitBucket and Rust Playground.
 
 ```bash
-thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "- is this the Krusty Krab?"
+thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "is this the Krusty Krab?"
 ```
 
   `thag_url` can run with options and arguments:

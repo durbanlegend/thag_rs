@@ -1,8 +1,10 @@
 /*[toml]
 [dependencies]
+egui_commonmark = { git = "https://github.com/durbanlegend/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
+
+egui_extras = { version = "0.35", features = ["svg"] }
 thag_proc_macros = { version = "1, thag-auto" }
 thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
-egui_extras = { version = "0.35", features = ["svg"] }
 resvg = { version = "0.45", features = ["text"] }
 fontdb = { version = "0.23", features = ["fs"] }
 rfd = { version = "0.15" }
@@ -19,7 +21,7 @@ opt-level = 3     # Apply maximum performance optimizations
 /// current markdown file, so navigation between linked documents works correctly. Supports back/forward history,
 /// light/dark/system theme switching via `egui_theme_switch`, zoom (Cmd-= / Cmd-- / Cmd-0), and opening a new
 /// file without quitting via a native file dialog (Cmd-O / "Open…" button).
-/// Improved readability over the egui defaults: 16pt body text, near-black text in light mode, near-white
+/// Improved readability over the egui defaults: near-black text in light mode, near-white
 /// in dark mode, warm paper background, higher-contrast code block backgrounds, and GitHub-style syntax
 /// highlighting for code blocks.
 /// Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
@@ -28,6 +30,7 @@ opt-level = 3     # Apply maximum performance optimizations
 /// well.
 /// See the `md-viewer` crate for a professional quality installable example using `egui_commonmark`
 /// vendored to address some issues.
+/// The MSRV of this program is 1.92.
 //# Purpose: Prototype a markdown viewer using the `egui_commonmark` crate.
 //# Categories: crates, demo, gui, prototype, tools
 //# Usage: egui_markdown_viewer [OPTIONS] [path_to_file]
@@ -47,84 +50,138 @@ use thag_styling::{
 
 file_navigator! {}
 
-/// Applies improved typography and contrast to both the dark and light egui themes.
+/// Applies contrast colours to both egui themes; font sizes are always left at
+/// egui defaults so toggling never causes a scroll-position jump.
 ///
-/// Called once at startup from the `CreationContext` so that `egui_theme_switch` can still
-/// toggle freely between the two themes while both benefit from the same improvements.
+/// `enhanced = true`  — high-contrast colours (near-white/near-black text, warm backgrounds).
+/// `enhanced = false` — stock egui colours.
 ///
-/// Improvements over the egui defaults:
-/// - Body text bumped from 14 → 16pt; headings to 24pt.
-/// - Dark mode: text raised from ~gray-200 to gray-240 (near-white).
-/// - Light mode: text dropped from gray-60 to gray-5 (near-black). The egui default is
-///   surprisingly faint — much weaker than GitHub, `MacDown`, or any OS markdown renderer.
-/// - Light mode background: warm off-white (252,252,248) instead of a stark neutral.
-/// - Code block backgrounds tightened for better inline-code legibility.
-/// - Links: slightly brighter/darker to read well against each background.
-fn setup_style(ctx: &egui::Context) {
-    // ── Typography ──────────────────────────────────────────────────────────────────────
-    // Apply to both themes at once; egui_theme_switch only swaps visuals, not text styles.
-    ctx.all_styles_mut(|style| {
-        use egui::{FontFamily, FontId, TextStyle};
-        style
-            .text_styles
-            .insert(TextStyle::Body, FontId::new(16.0, FontFamily::Proportional));
-        style.text_styles.insert(
-            TextStyle::Monospace,
-            FontId::new(14.0, FontFamily::Monospace),
-        );
-        style.text_styles.insert(
-            TextStyle::Button,
-            FontId::new(14.0, FontFamily::Proportional),
-        );
-        style.text_styles.insert(
-            TextStyle::Heading,
-            FontId::new(24.0, FontFamily::Proportional),
-        );
-        // A little more vertical breathing room between adjacent items.
-        style.spacing.item_spacing.y = 6.0; // default 4.0
-    });
-
-    // ── Dark mode: higher-contrast text ─────────────────────────────────────────────────
+/// Called once at startup and again whenever the toolbar "Contrast+/-" toggle changes.
+/// `image_loading_spinners` is kept `false` in both modes.
+fn apply_style(ctx: &egui::Context, enhanced: bool) {
+    // ── Dark mode ─────────────────────────────────────────────────────────────────────────
     ctx.set_visuals_of(egui::Theme::Dark, {
         let mut v = egui::Visuals::dark();
-        // Default noninteractive text is gray-200 (~78%); raise it to near-white.
-        v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(240);
-        // Slightly lighter panel so the document surface is distinct from absolute black.
-        v.panel_fill = egui::Color32::from_gray(32);
-        v.window_fill = egui::Color32::from_gray(32);
-        // Inline code blocks: just enough contrast against the panel.
-        v.code_bg_color = egui::Color32::from_gray(55);
-        // Brighter, more GitHub-like link colour.
-        v.hyperlink_color = egui::Color32::from_rgb(100, 185, 255);
-        // Suppress image-loading spinners; in a document reader they are just noise.
-        v.image_loading_spinners = false;
+        if enhanced {
+            v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(240);
+            v.panel_fill = egui::Color32::from_gray(32);
+            v.window_fill = egui::Color32::from_gray(32);
+            v.code_bg_color = egui::Color32::from_gray(55);
+            v.hyperlink_color = egui::Color32::from_rgb(100, 185, 255);
+        }
+        v.image_loading_spinners = false; // always off in a document reader
         v
     });
 
-    // ── Light mode: near-black text, warm paper background ──────────────────────────────
+    // ── Light mode ────────────────────────────────────────────────────────────────────────
     ctx.set_visuals_of(egui::Theme::Light, {
         let mut v = egui::Visuals::light();
-        // Default noninteractive text is gray-60 — very faint for document reading.
-        // Push it to near-black (gray-5) for document-quality contrast.
-        v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(5);
-        // Warm, slightly off-white background like GitHub's rendered Markdown page.
-        v.panel_fill = egui::Color32::from_rgb(252, 252, 248);
-        v.window_fill = egui::Color32::from_rgb(252, 252, 248);
-        // Inline code: a clear light gray to visually distinguish it from body text.
-        v.code_bg_color = egui::Color32::from_rgb(225, 225, 230);
-        // Slightly deeper blue — more readable on a near-white background.
-        v.hyperlink_color = egui::Color32::from_rgb(0, 100, 210);
-        // Suppress image-loading spinners; in a document reader they are just noise.
-        v.image_loading_spinners = false;
+        if enhanced {
+            v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(5);
+            v.panel_fill = egui::Color32::from_rgb(252, 252, 248);
+            v.window_fill = egui::Color32::from_rgb(252, 252, 248);
+            v.code_bg_color = egui::Color32::from_rgb(225, 225, 230);
+            v.hyperlink_color = egui::Color32::from_rgb(0, 100, 210);
+        }
+        v.image_loading_spinners = false; // always off in a document reader
         v
     });
+}
+
+/// Rewrites relative image paths in Markdown to absolute `file://` URIs so they
+/// load correctly regardless of platform CWD behaviour.
+///
+/// Paths that already carry a URI scheme (`http://`, `file://`, `data:`, …) are
+/// left untouched. If a relative path cannot be resolved (file does not exist)
+/// it is also left untouched so existing error behaviour is preserved.
+///
+/// Note: processes the raw text, so a path inside a fenced code block is also
+/// rewritten if it matches the image syntax — an acceptable trade-off for the
+/// cross-platform fix.
+fn absolutize_image_paths(content: &str, base_dir: &Path) -> String {
+    let mut out = String::with_capacity(content.len() + 128);
+    let mut rest = content;
+
+    while let Some(bang) = rest.find("![") {
+        out.push_str(&rest[..bang]);
+        rest = &rest[bang..];
+
+        // Find `](`  — alt text must not contain `]`
+        let Some(close_bracket) = rest.find("](") else {
+            out.push_str(&rest[..2]);
+            rest = &rest[2..];
+            continue;
+        };
+
+        let prefix = &rest[..close_bracket + 2]; // `![alt](`
+        rest = &rest[close_bracket + 2..];
+
+        let Some(close_paren) = rest.find(')') else {
+            out.push_str(prefix);
+            continue;
+        };
+
+        let inner = &rest[..close_paren]; // path, possibly with `"title"`
+        rest = &rest[close_paren + 1..];
+
+        // Split optional title: `path "title"` or `path 'title'`
+        let (raw_path, title_suffix) = inner
+            .find(" \"")
+            .or_else(|| inner.find(" '"))
+            .map_or((inner.trim(), ""), |i| (&inner[..i], &inner[i..]));
+
+        let is_schemed = raw_path.starts_with("http://")
+            || raw_path.starts_with("https://")
+            || raw_path.starts_with("file://")
+            || raw_path.starts_with("data:");
+
+        if is_schemed {
+            out.push_str(prefix);
+            out.push_str(inner);
+            out.push(')');
+        } else {
+            match base_dir.join(raw_path).canonicalize() {
+                Ok(abs) => {
+                    out.push_str(prefix);
+                    out.push_str(&path_to_file_uri(&abs));
+                    out.push_str(title_suffix);
+                    out.push(')');
+                }
+                Err(_) => {
+                    // File not found — leave unchanged so the viewer shows a
+                    // broken-image placeholder rather than silently doing nothing.
+                    out.push_str(prefix);
+                    out.push_str(inner);
+                    out.push(')');
+                }
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+/// Converts an absolute `Path` to a `file://` URI that is valid on all platforms.
+/// Windows paths (`C:\…`) become `file:///C:/…`; Unix paths become `file:///…`.
+fn path_to_file_uri(path: &Path) -> String {
+    let s = path.to_string_lossy().into_owned();
+    #[cfg(windows)]
+    {
+        s = s.replace('\\', "/");
+    }
+    // Unix absolute paths start with `/`; Windows paths start with the drive letter.
+    if s.starts_with('/') {
+        format!("file://{s}") // file:// + /unix/path = file:///unix/path
+    } else {
+        format!("file:///{s}") // file:/// + C:/... = file:///C:/...
+    }
 }
 
 fn main() -> eframe::Result<()> {
     let help = auto_help!();
     check_help_and_exit(&help);
 
-    let args: Vec<String> = std::env::args().collect();
+    let args: Vec<String> = env::args().collect();
 
     let selected_file: PathBuf = if args.len() > 1 {
         let input_path = Path::new(&args[1]);
@@ -148,18 +205,22 @@ fn main() -> eframe::Result<()> {
     };
     let selected_path = PathBuf::from(&selected_file);
     let canonical_initial_path = selected_path.canonicalize().unwrap_or(selected_path);
-    // Keep the process CWD in sync with the file so egui_extras resolves
-    // relative image URIs correctly from the start.
-    if let Some(parent) = canonical_initial_path.parent() {
-        let _ = std::env::set_current_dir(parent);
-    }
+    let initial_base_dir = canonical_initial_path
+        .parent()
+        .unwrap_or(Path::new("."))
+        .to_path_buf();
+    // Keep CWD in sync for canonicalize() calls inside the viewer.
+    let _ = env::set_current_dir(&initial_base_dir);
 
-    let markdown_content = std::fs::read_to_string(&canonical_initial_path).unwrap_or_else(|_| {
+    let raw_content = std::fs::read_to_string(&canonical_initial_path).unwrap_or_else(|_| {
         format!(
             "# Error\nFailed to read `{}`.",
             canonical_initial_path.display()
         )
     });
+    // Rewrite relative image paths to absolute file:// URIs so they resolve
+    // correctly on all platforms (CWD-based resolution fails on Windows).
+    let markdown_content = absolutize_image_paths(&raw_content, &initial_base_dir);
 
     let options = eframe::NativeOptions {
         renderer: eframe::Renderer::Wgpu,
@@ -182,7 +243,7 @@ fn main() -> eframe::Result<()> {
             // registered, the default `SvgLoader::default()` (which calls the
             // 20-second `load_system_fonts()`) is never constructed.
             cc.egui_ctx.add_image_loader(Arc::new(FastSvgLoader::new()));
-            setup_style(&cc.egui_ctx);
+            apply_style(&cc.egui_ctx, true);
             Ok(Box::new(MarkdownApp::new(
                 markdown_content,
                 canonical_initial_path,
@@ -204,7 +265,7 @@ struct MarkdownApp {
     content: String,
     /// The canonicalized path of the file we are viewing (so we know its parent folder).
     current_file_path: PathBuf,
-    /// Required by egui_commonmark for rendering images/styles.
+    /// Required by `egui_commonmark` for rendering images/styles.
     cache: CommonMarkCache,
     /// Ordered list of visited file paths.
     history: Vec<PathBuf>,
@@ -212,6 +273,8 @@ struct MarkdownApp {
     history_index: usize,
     /// Multiplicative scale applied to content text only (toolbar stays at 1×).
     content_zoom: f32,
+    /// Whether high-contrast colours are active (`true`) or stock egui colours (`false`).
+    enhanced_contrast: bool,
 }
 
 impl MarkdownApp {
@@ -223,6 +286,7 @@ impl MarkdownApp {
             history: vec![path],
             history_index: 0,
             content_zoom: 1.0,
+            enhanced_contrast: true,
         }
     }
 
@@ -238,14 +302,14 @@ impl MarkdownApp {
     /// Returns `true` on success.
     fn load_file(&mut self, path: PathBuf) -> bool {
         match std::fs::read_to_string(&path) {
-            Ok(new_content) => {
-                // Keep CWD in sync so future canonicalize() calls and image loading work correctly.
-                if let Some(dir) = path.parent() {
-                    let _ = env::set_current_dir(dir);
-                }
-                self.content = new_content;
+            Ok(raw_content) => {
+                let base_dir = path.parent().unwrap_or(Path::new(".")).to_path_buf();
+                // Keep CWD in sync for future canonicalize() calls.
+                let _ = env::set_current_dir(&base_dir);
+                // Rewrite relative image paths to absolute file:// URIs.
+                self.content = absolutize_image_paths(&raw_content, &base_dir);
                 self.current_file_path = path;
-                // Clear the cache so egui_commonmark doesn't carry over scroll positions.
+                // Clear the cache so egui_commonmark doesn't carry over stale state.
                 self.cache = CommonMarkCache::default();
                 true
             }
@@ -316,6 +380,7 @@ impl MarkdownApp {
 }
 
 impl eframe::App for MarkdownApp {
+    #[allow(clippy::too_many_lines)]
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         // Pre-compute toolbar state before any closures borrow self.
         let can_go_back = self.can_go_back();
@@ -341,6 +406,8 @@ impl eframe::App for MarkdownApp {
         // text styles, so the toolbar always stays at its natural size.
         let mut new_content_zoom = self.content_zoom;
         let zoom_label = format!("{:.0}%", self.content_zoom * 100.0);
+        let enhanced_contrast = self.enhanced_contrast;
+        let mut new_enhanced_contrast = enhanced_contrast;
 
         // ── Global keyboard shortcuts ─────────────────────────────────────────────────────
         // Collect key states first, then act — acting inside input() re-locks
@@ -370,6 +437,24 @@ impl eframe::App for MarkdownApp {
             ui.horizontal(|ui| {
                 ui.label("Theme");
                 egui_theme_switch::global_theme_switch(ui);
+                if ui
+                    .selectable_label(
+                        enhanced_contrast,
+                        if enhanced_contrast {
+                            "Contrast-"
+                        } else {
+                            "Contrast+"
+                        },
+                    )
+                    .on_hover_text(if enhanced_contrast {
+                        "Restore default egui contrast"
+                    } else {
+                        "Apply high-contrast colours"
+                    })
+                    .clicked()
+                {
+                    new_enhanced_contrast = !enhanced_contrast;
+                }
                 ui.separator();
                 if ui
                     .add_enabled(can_go_back, egui::Button::new("◀ Back"))
@@ -455,37 +540,55 @@ impl eframe::App for MarkdownApp {
                 scroll.interact_handle_opacity = 0.55; // visible but soft on hover
                 scroll.active_handle_opacity = 0.80; // clear while dragging
             }
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                // Scale content text styles locally so the toolbar is unaffected.
-                // Multiply from the fixed base sizes set in setup_style() so that
-                // repeated zoom steps never accumulate floating-point drift.
-                let cz = content_zoom;
-                if (cz - 1.0).abs() > 0.005 {
-                    use egui::{FontFamily, FontId, TextStyle};
-                    let s = ui.style_mut();
-                    s.text_styles.insert(
-                        TextStyle::Body,
-                        FontId::new(16.0 * cz, FontFamily::Proportional),
-                    );
-                    s.text_styles.insert(
-                        TextStyle::Monospace,
-                        FontId::new(14.0 * cz, FontFamily::Monospace),
-                    );
-                    s.text_styles.insert(
-                        TextStyle::Heading,
-                        FontId::new(24.0 * cz, FontFamily::Proportional),
-                    );
-                    s.text_styles.insert(
-                        TextStyle::Small,
-                        FontId::new(10.0 * cz, FontFamily::Proportional),
-                    );
-                }
-                CommonMarkViewer::new()
-                    .syntax_theme_dark("base16-ocean.dark")
-                    .syntax_theme_light("InspiredGitHub")
-                    .enable_scroll_to_heading(true)
-                    .show(ui, &mut self.cache, &self.content);
-            });
+            // Give each file path its own scroll-state key so that:
+            //   • navigating to a new file always starts at the top, and
+            //   • back/forward navigation restores the previous scroll position.
+            egui::ScrollArea::vertical()
+                .id_salt(&current_path_label)
+                .show(ui, |ui| {
+                    // Scale content text styles locally so the toolbar is unaffected.
+                    // Read the current base sizes from the inherited style so zoom
+                    let cz = content_zoom;
+                    if (cz - 1.0).abs() > 0.005 {
+                        use egui::{FontFamily, FontId, TextStyle};
+                        let s = ui.style_mut();
+                        let base_body =
+                            s.text_styles.get(&TextStyle::Body).map_or(14.0, |f| f.size);
+                        let base_mono = s
+                            .text_styles
+                            .get(&TextStyle::Monospace)
+                            .map_or(14.0, |f| f.size);
+                        let base_heading = s
+                            .text_styles
+                            .get(&TextStyle::Heading)
+                            .map_or(21.0, |f| f.size);
+                        let base_small = s
+                            .text_styles
+                            .get(&TextStyle::Small)
+                            .map_or(10.0, |f| f.size);
+                        s.text_styles.insert(
+                            TextStyle::Body,
+                            FontId::new(base_body * cz, FontFamily::Proportional),
+                        );
+                        s.text_styles.insert(
+                            TextStyle::Monospace,
+                            FontId::new(base_mono * cz, FontFamily::Monospace),
+                        );
+                        s.text_styles.insert(
+                            TextStyle::Heading,
+                            FontId::new(base_heading * cz, FontFamily::Proportional),
+                        );
+                        s.text_styles.insert(
+                            TextStyle::Small,
+                            FontId::new(base_small * cz, FontFamily::Proportional),
+                        );
+                    }
+                    CommonMarkViewer::new()
+                        .syntax_theme_dark("base16-ocean.dark")
+                        .syntax_theme_light("InspiredGitHub")
+                        .enable_scroll_to_heading(true)
+                        .show(ui, &mut self.cache, &self.content);
+                });
         });
 
         // egui_commonmark dispatches link clicks by pushing OutputCommand::OpenUrl onto the
@@ -519,8 +622,7 @@ impl eframe::App for MarkdownApp {
             let start_dir = self
                 .current_file_path
                 .parent()
-                .map(|p| p.to_path_buf())
-                .unwrap_or_else(|| PathBuf::from("."));
+                .map_or_else(|| PathBuf::from("."), |p| p.to_path_buf());
             if let Some(path) = FileDialog::new()
                 .add_filter("Markdown", &["md", "markdown"])
                 .set_directory(&start_dir)
@@ -548,6 +650,12 @@ impl eframe::App for MarkdownApp {
 
         // Commit zoom change (may have come from keyboard or toolbar buttons).
         self.content_zoom = new_content_zoom;
+
+        // Apply style toggle if it changed this frame.
+        if new_enhanced_contrast != enhanced_contrast {
+            self.enhanced_contrast = new_enhanced_contrast;
+            apply_style(ui.ctx(), new_enhanced_contrast);
+        }
 
         if navigated {
             ui.ctx()
@@ -609,7 +717,7 @@ impl FastSvgLoader {
         {
             db.load_fonts_dir("/System/Library/Fonts/");
             db.load_fonts_dir("/Library/Fonts/");
-            if let Ok(home) = std::env::var("HOME") {
+            if let Ok(home) = env::var("HOME") {
                 db.load_fonts_dir(Path::new(&home).join("Library/Fonts"));
             }
         }
@@ -617,7 +725,7 @@ impl FastSvgLoader {
         {
             db.load_fonts_dir("/usr/share/fonts/");
             db.load_fonts_dir("/usr/local/share/fonts/");
-            if let Ok(home) = std::env::var("HOME") {
+            if let Ok(home) = env::var("HOME") {
                 db.load_fonts_dir(Path::new(&home).join(".fonts"));
                 db.load_fonts_dir(Path::new(&home).join(".local/share/fonts"));
             }

@@ -1,8 +1,10 @@
 /*[toml]
 [dependencies]
+egui_commonmark = { git = "https://github.com/durbanlegend/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
+
+egui_extras = { version = "0.35", features = ["svg"] }
 thag_proc_macros = { version = "1, thag-auto" }
 thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
-egui_extras = { version = "0.35", features = ["svg"] }
 resvg = { version = "0.45", features = ["text"] }
 fontdb = { version = "0.23", features = ["fs"] }
 rfd = { version = "0.15" }
@@ -17,8 +19,8 @@ opt-level = 3     # Apply maximum performance optimizations
 /// A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
 /// `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the
 /// current markdown file, so navigation between linked documents works correctly. Supports back/forward history,
-/// light/dark/system theme switching via `egui_theme_switch`, zoom (Cmd-= / Cmd-- / Cmd-0), and opening a new
-/// file without quitting via a native file dialog (Cmd-O / "Open…" button).
+/// light/dark/system theme switching via `egui_theme_switch`, zoom, font scaling, and opening a new
+/// file without quitting via a native file dialog (Cmd/Ctrl-O / "Open…" button).
 /// Improved readability over the egui defaults: near-black text in light mode, near-white
 /// in dark mode, warm paper background, higher-contrast code block backgrounds, and GitHub-style syntax
 /// highlighting for code blocks.
@@ -47,6 +49,12 @@ use thag_styling::{
     auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config,
 };
 
+#[cfg(target_os = "macos")]
+const MOD: &str = "Cmd";
+
+#[cfg(not(target_os = "macos"))]
+const MOD: &str = "Ctrl";
+
 file_navigator! {}
 
 /// Applies contrast colours to both egui themes; font sizes are always left at
@@ -63,9 +71,7 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
         let mut v = egui::Visuals::dark();
         if enhanced {
             v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(240);
-            v.panel_fill = egui::Color32::from_gray(32);
-            v.window_fill = egui::Color32::from_gray(32);
-            v.code_bg_color = egui::Color32::from_gray(55);
+            v.code_bg_color = egui::Color32::from_gray(100);
             v.hyperlink_color = egui::Color32::from_rgb(100, 185, 255);
         }
         v.image_loading_spinners = false; // always off in a document reader
@@ -77,14 +83,28 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
         let mut v = egui::Visuals::light();
         if enhanced {
             v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(5);
-            v.panel_fill = egui::Color32::from_rgb(252, 252, 248);
-            v.window_fill = egui::Color32::from_rgb(252, 252, 248);
+            v.panel_fill = egui::Color32::from_rgb(255, 255, 255);
+            v.window_fill = egui::Color32::from_rgb(255, 255, 255);
             v.code_bg_color = egui::Color32::from_rgb(225, 225, 230);
             v.hyperlink_color = egui::Color32::from_rgb(0, 100, 210);
         }
         v.image_loading_spinners = false; // always off in a document reader
         v
     });
+
+    // Ubuntu Mono renders visually larger than Ubuntu at equal point sizes (wider
+    // per-character advance, larger x-height).  Nudge it down to 12.0 px so that
+    // inline code and fenced code blocks feel balanced against 14 px body text.
+    // In egui 0.35 font styles are stored per-theme, so set both.
+    for theme in [egui::Theme::Dark, egui::Theme::Light] {
+        ctx.style_mut_of(theme, |style| {
+            use egui::{FontFamily, FontId, TextStyle};
+            style.text_styles.insert(
+                TextStyle::Monospace,
+                FontId::new(12.0, FontFamily::Monospace),
+            );
+        });
+    }
 }
 
 /// Rewrites relative image paths in Markdown to absolute `file://` URIs so they
@@ -127,34 +147,25 @@ fn absolutize_image_paths(content: &str, base_dir: &Path) -> String {
         let (raw_path, title_suffix) = inner
             .find(" \"")
             .or_else(|| inner.find(" '"))
-            .map_or((inner.trim(), ""), |i| (&inner[..i], &inner[i..]));
+            .map_or_else(|| (inner.trim(), ""), |i| (&inner[..i], &inner[i..]));
 
         let is_schemed = raw_path.starts_with("http://")
             || raw_path.starts_with("https://")
             || raw_path.starts_with("file://")
             || raw_path.starts_with("data:");
 
+        out.push_str(prefix);
         if is_schemed {
-            out.push_str(prefix);
             out.push_str(inner);
-            out.push(')');
+        } else if let Ok(abs) = base_dir.join(raw_path).canonicalize() {
+            out.push_str(&path_to_file_uri(&abs));
+            out.push_str(title_suffix);
         } else {
-            match base_dir.join(raw_path).canonicalize() {
-                Ok(abs) => {
-                    out.push_str(prefix);
-                    out.push_str(&path_to_file_uri(&abs));
-                    out.push_str(title_suffix);
-                    out.push(')');
-                }
-                Err(_) => {
-                    // File not found — leave unchanged so the viewer shows a
-                    // broken-image placeholder rather than silently doing nothing.
-                    out.push_str(prefix);
-                    out.push_str(inner);
-                    out.push(')');
-                }
-            }
+            // File not found — leave unchanged so the viewer shows a
+            // broken-image placeholder rather than silently doing nothing.
+            out.push_str(inner);
         }
+        out.push(')');
     }
     out.push_str(rest);
     out
@@ -163,7 +174,7 @@ fn absolutize_image_paths(content: &str, base_dir: &Path) -> String {
 /// Converts an absolute `Path` to a `file://` URI that is valid on all platforms.
 /// Windows paths (`C:\…`) become `file:///C:/…`; Unix paths become `file:///…`.
 fn path_to_file_uri(path: &Path) -> String {
-    let mut s = path.to_string_lossy().into_owned();
+    let s = path.to_string_lossy().into_owned();
     #[cfg(windows)]
     {
         s = s.replace('\\', "/");
@@ -206,7 +217,7 @@ fn main() -> eframe::Result<()> {
     let canonical_initial_path = selected_path.canonicalize().unwrap_or(selected_path);
     let initial_base_dir = canonical_initial_path
         .parent()
-        .unwrap_or(Path::new("."))
+        .unwrap_or_else(|| Path::new("."))
         .to_path_buf();
     // Keep CWD in sync for canonicalize() calls inside the viewer.
     let _ = env::set_current_dir(&initial_base_dir);
@@ -271,7 +282,7 @@ struct MarkdownApp {
     /// Current position within `history`.
     history_index: usize,
     /// Multiplicative scale applied to content text only (toolbar stays at 1×).
-    content_zoom: f32,
+    font_scale: f32,
     /// Whether high-contrast colours are active (`true`) or stock egui colours (`false`).
     enhanced_contrast: bool,
 }
@@ -284,7 +295,7 @@ impl MarkdownApp {
             cache: CommonMarkCache::default(),
             history: vec![path],
             history_index: 0,
-            content_zoom: 1.0,
+            font_scale: 1.0,
             enhanced_contrast: true,
         }
     }
@@ -302,7 +313,10 @@ impl MarkdownApp {
     fn load_file(&mut self, path: PathBuf) -> bool {
         match std::fs::read_to_string(&path) {
             Ok(raw_content) => {
-                let base_dir = path.parent().unwrap_or(Path::new(".")).to_path_buf();
+                let base_dir = path
+                    .parent()
+                    .unwrap_or_else(|| Path::new("."))
+                    .to_path_buf();
                 // Keep CWD in sync for future canonicalize() calls.
                 let _ = env::set_current_dir(&base_dir);
                 // Rewrite relative image paths to absolute file:// URIs.
@@ -313,7 +327,7 @@ impl MarkdownApp {
                 true
             }
             Err(e) => {
-                eprintln!("Failed to read {path:?}: {e}");
+                eprintln!("Failed to read {}: {e}", path.display());
                 false
             }
         }
@@ -358,7 +372,7 @@ impl MarkdownApp {
         let current_dir = self
             .current_file_path
             .parent()
-            .map_or_else(|| PathBuf::from("."), |parent| parent.to_path_buf());
+            .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
         let mut target_path = current_dir.join(url_path);
         // Canonicalize to resolve '..' / '.' and confirm the file exists.
         // Setting CWD first (in load_file) ensures canonicalize works for relative fallbacks.
@@ -397,52 +411,71 @@ impl eframe::App for MarkdownApp {
             .unwrap_or_default();
         let current_path_label = self.current_file_path.display().to_string();
         // Snapshot for use inside closures (closures can't borrow self).
-        let content_zoom = self.content_zoom;
+        let font_scale = self.font_scale;
 
         let mut nav_action = NavAction::None;
         let mut open_file_requested = false;
-        // Zoom is stored in self.content_zoom and applied only to the content
+        // Font scale is stored in self.font_scale and applied only to the content
         // text styles, so the toolbar always stays at its natural size.
-        let mut new_content_zoom = self.content_zoom;
-        let zoom_label = format!("{:.0}%", self.content_zoom * 100.0);
+        let mut new_font_scale = self.font_scale;
+        let font_scale_label = format!("Aa {:.0}%", self.font_scale * 100.0);
         let enhanced_contrast = self.enhanced_contrast;
         let mut new_enhanced_contrast = enhanced_contrast;
 
         // ── Global keyboard shortcuts ─────────────────────────────────────────────────────
         // Collect key states first, then act — acting inside input() re-locks
         // the context and causes a deadlock.
-        let (close, open_key, zoom_in_key, zoom_out_key) = ui.ctx().input(|i| {
+        let (
+            close,
+            open_key,
+            zoom_in_key,
+            zoom_out_key,
+            zoom_reset_key,
+            font_enlarge_key,
+            font_reduce_key,
+            font_reset_key,
+        ) = ui.ctx().input(|i| {
             (
                 i.modifiers.command && (i.key_pressed(egui::Key::W) || i.key_pressed(egui::Key::Q)),
                 i.modifiers.command && i.key_pressed(egui::Key::O),
                 i.modifiers.command && i.key_pressed(egui::Key::Equals),
                 i.modifiers.command && i.key_pressed(egui::Key::Minus),
+                i.modifiers.command && i.key_pressed(egui::Key::Z),
+                i.modifiers.command && i.modifiers.shift && i.key_pressed(egui::Key::A),
+                i.modifiers.command && i.key_pressed(egui::Key::A),
+                i.modifiers.command && i.key_pressed(egui::Key::Num0),
             )
         });
         if close {
             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
-        }
-        if open_key {
+        } else if open_key {
             open_file_requested = true;
-        }
-        if zoom_in_key {
-            new_content_zoom = (new_content_zoom * 1.1).min(3.0);
-        }
-        if zoom_out_key {
-            new_content_zoom = (new_content_zoom / 1.1).max(0.4);
+        } else if zoom_in_key {
+            let zoom = ui.ctx().zoom_factor();
+            ui.ctx().set_zoom_factor((zoom * 1.1).min(3.0));
+        } else if zoom_out_key {
+            let zoom = ui.ctx().zoom_factor();
+            ui.ctx().set_zoom_factor((zoom / 1.1).max(0.4));
+        } else if zoom_reset_key {
+            ui.ctx().set_zoom_factor(1.0);
+        } else if font_enlarge_key {
+            new_font_scale = (new_font_scale * 1.1).min(3.0);
+        } else if font_reduce_key {
+            new_font_scale = (new_font_scale / 1.1).max(0.4);
+        } else if font_reset_key {
+            new_font_scale = 1.0;
         }
 
         egui::Panel::top("nav_bar").show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.label("Theme");
                 egui_theme_switch::global_theme_switch(ui);
                 if ui
                     .selectable_label(
                         enhanced_contrast,
                         if enhanced_contrast {
-                            "Contrast-"
+                            "◑➖" // \u{25d1}
                         } else {
-                            "Contrast+"
+                            "◑➕"
                         },
                     )
                     .on_hover_text(if enhanced_contrast {
@@ -456,14 +489,14 @@ impl eframe::App for MarkdownApp {
                 }
                 ui.separator();
                 if ui
-                    .add_enabled(can_go_back, egui::Button::new("◀ Back"))
+                    .add_enabled(can_go_back, egui::Button::new("◀"))
                     .on_hover_text(&back_tip)
                     .clicked()
                 {
                     nav_action = NavAction::Back;
                 }
                 if ui
-                    .add_enabled(can_go_forward, egui::Button::new("Forward ▶"))
+                    .add_enabled(can_go_forward, egui::Button::new("▶"))
                     .on_hover_text(&forward_tip)
                     .clicked()
                 {
@@ -471,58 +504,79 @@ impl eframe::App for MarkdownApp {
                 }
                 ui.separator();
                 if ui
-                    .button("Open…")
-                    .on_hover_text("Open a markdown file (Cmd-O)")
+                    // .button("Open…")
+                    .button("📖…")
+                    .on_hover_text(format!("Open a markdown file ({MOD}-O)"))
                     .clicked()
                 {
                     open_file_requested = true;
                 }
+
                 ui.separator();
-                // Reserve space for the right-hand controls before sizing the
-                // path label, so the label never spills into the zoom widgets.
-                // Estimate: − 20 + label 35 + + 20 + ↺ 20 + sep 8 + Quit 40
-                //           + inter-widget spacing ≈ 200 px at toolbar font size.
-                let right_reserve = 200.0_f32;
-                let label_max = (ui.available_width() - right_reserve).max(40.0);
-                ui.scope(|ui| {
-                    ui.set_max_width(label_max);
-                    ui.add(egui::Label::new(&current_path_label).truncate())
-                        .on_hover_text(&current_path_label);
-                });
+
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui
                         .button("Quit")
-                        .on_hover_text("Close (Cmd-W / Ctrl-W)")
+                        .on_hover_text(format!("Close ({MOD}-W)"))
                         .clicked()
                     {
                         ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                     ui.separator();
-                    // Zoom controls (content text only; toolbar stays at 1×).
-                    // RTL layout: first-added = rightmost, so render ↺, +, label, −
-                    // to produce the visual sequence  − | 100% | + | ↺  left-to-right.
-                    if ui
-                        .small_button("↺")
-                        .on_hover_text("Reset content zoom to 100%")
-                        .clicked()
-                    {
-                        new_content_zoom = 1.0;
-                    }
+                    // Font scale controls (content text only; toolbar stays at 1×).
+                    // RTL layout: first-added = rightmost, so render `+, label, −`
+                    // to produce the visual sequence `− | 100% | +` left-to-right.
                     if ui
                         .small_button("+")
-                        .on_hover_text("Zoom content in (Cmd-=)")
+                        .on_hover_text(format!("Enlarge fonts ({MOD}-Shift-A)"))
                         .clicked()
                     {
-                        new_content_zoom = (new_content_zoom * 1.1).min(3.0);
+                        new_font_scale = (new_font_scale * 1.1).min(3.0);
                     }
-                    ui.label(&zoom_label);
+                    // ui.label(&font_scale_label).on_hover_text("Font size");
+                    if ui
+                        .button(&font_scale_label)
+                        .on_hover_text(format!("Reset font size to 100% ({MOD}-0)"))
+                        .clicked()
+                    {
+                        new_font_scale = 1.0;
+                    }
                     if ui
                         .small_button("−")
-                        .on_hover_text("Zoom content out (Cmd-−)")
+                        .on_hover_text(format!("Reduce fonts ({MOD}-a)"))
                         .clicked()
                     {
-                        new_content_zoom = (new_content_zoom / 1.1).max(0.4);
+                        new_font_scale = (new_font_scale / 1.1).max(0.4);
                     }
+
+                    ui.separator();
+
+                    // Zoom controls. In right-to-left order, first-added = rightmost,
+                    // so render `+, %, −` to produce the visual sequence `− | 100% | +`.
+                    let zoom = ui.ctx().zoom_factor();
+                    if ui
+                        .small_button("+")
+                        .on_hover_text(format!("Zoom in ({MOD}-=)"))
+                        .clicked()
+                    {
+                        ui.ctx().set_zoom_factor((zoom * 1.1).min(3.0));
+                    }
+                    if ui
+                        .button(format!("↕{:.0}%", zoom * 100.0))
+                        .on_hover_text(format!("Reset zoom to 100% ({MOD}-Z)"))
+                        .clicked()
+                    {
+                        ui.ctx().set_zoom_factor(1.0);
+                    }
+                    if ui
+                        .small_button("−")
+                        .on_hover_text(format!("Zoom out ({MOD}-−)"))
+                        .clicked()
+                    {
+                        ui.ctx().set_zoom_factor((zoom / 1.1).max(0.4));
+                    }
+
+                    ui.separator();
                 });
             });
         });
@@ -547,8 +601,7 @@ impl eframe::App for MarkdownApp {
                 .show(ui, |ui| {
                     // Scale content text styles locally so the toolbar is unaffected.
                     // Read the current base sizes from the inherited style so zoom
-                    let cz = content_zoom;
-                    if (cz - 1.0).abs() > 0.005 {
+                    if (font_scale - 1.0).abs() > 0.005 {
                         use egui::{FontFamily, FontId, TextStyle};
                         let s = ui.style_mut();
                         let base_body =
@@ -556,7 +609,7 @@ impl eframe::App for MarkdownApp {
                         let base_mono = s
                             .text_styles
                             .get(&TextStyle::Monospace)
-                            .map_or(14.0, |f| f.size);
+                            .map_or(12.0, |f| f.size);
                         let base_heading = s
                             .text_styles
                             .get(&TextStyle::Heading)
@@ -567,19 +620,19 @@ impl eframe::App for MarkdownApp {
                             .map_or(10.0, |f| f.size);
                         s.text_styles.insert(
                             TextStyle::Body,
-                            FontId::new(base_body * cz, FontFamily::Proportional),
+                            FontId::new(base_body * font_scale, FontFamily::Proportional),
                         );
                         s.text_styles.insert(
                             TextStyle::Monospace,
-                            FontId::new(base_mono * cz, FontFamily::Monospace),
+                            FontId::new(base_mono * font_scale, FontFamily::Monospace),
                         );
                         s.text_styles.insert(
                             TextStyle::Heading,
-                            FontId::new(base_heading * cz, FontFamily::Proportional),
+                            FontId::new(base_heading * font_scale, FontFamily::Proportional),
                         );
                         s.text_styles.insert(
                             TextStyle::Small,
-                            FontId::new(base_small * cz, FontFamily::Proportional),
+                            FontId::new(base_small * font_scale, FontFamily::Proportional),
                         );
                     }
                     CommonMarkViewer::new()
@@ -621,7 +674,7 @@ impl eframe::App for MarkdownApp {
             let start_dir = self
                 .current_file_path
                 .parent()
-                .map_or_else(|| PathBuf::from("."), |p| p.to_path_buf());
+                .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
             if let Some(path) = FileDialog::new()
                 .add_filter("Markdown", &["md", "markdown"])
                 .set_directory(&start_dir)
@@ -647,8 +700,8 @@ impl eframe::App for MarkdownApp {
             }
         };
 
-        // Commit zoom change (may have come from keyboard or toolbar buttons).
-        self.content_zoom = new_content_zoom;
+        // Commit font scaling change (may have come from keyboard or toolbar buttons).
+        self.font_scale = new_font_scale;
 
         // Apply style toggle if it changed this frame.
         if new_enhanced_contrast != enhanced_contrast {
@@ -767,12 +820,11 @@ impl ImageLoader for FastSvgLoader {
             return Err(LoadError::NotSupported);
         }
 
-        let mut state = self.state.lock().unwrap();
         let FastSvgState {
             pass_index,
             cache,
             options,
-        } = &mut *state;
+        } = &mut *(self.state.lock().unwrap());
 
         let bucket = cache.entry(uri.to_owned()).or_default();
         if let Some(entry) = bucket.get_mut(&size_hint) {

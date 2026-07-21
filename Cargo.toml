@@ -267,7 +267,8 @@ document-features = { version = "0.2", optional = true }
 documented = "0.10"
 edit = { version = "0.1", optional = true }
 eframe = { version = "0.35", features = ["wgpu"], optional = true }
-egui_commonmark = { version = "0.24", features = ["better_syntax_highlighting", "svg", "fetch"], optional = true }
+#  egui_commonmark = { version = "0.24", features = ["better_syntax_highlighting", "svg", "fetch"], optional = true }
+egui_commonmark = { git = "https://github.com/durbanlegend/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"], optional = true }
 egui_extras = { version = "0.35", features = ["svg"], optional = true }
 egui-theme-switch = { version = "0.8", optional = true }
 fontdb = { version = "0.23", features = ["fs"], optional = true }

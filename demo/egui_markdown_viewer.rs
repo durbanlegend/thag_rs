@@ -70,9 +70,6 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
         let mut v = egui::Visuals::dark();
         if enhanced {
             v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(240);
-            v.panel_fill = egui::Color32::from_gray(32);
-            v.window_fill = egui::Color32::from_gray(32);
-            v.code_bg_color = egui::Color32::from_gray(55);
             v.hyperlink_color = egui::Color32::from_rgb(100, 185, 255);
         }
         v.image_loading_spinners = false; // always off in a document reader
@@ -84,12 +81,9 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
         let mut v = egui::Visuals::light();
         if enhanced {
             v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(5);
-            // v.panel_fill = egui::Color32::from_rgb(252, 252, 248);
-            // v.window_fill = egui::Color32::from_rgb(252, 252, 248);
-            // v.code_bg_color = egui::Color32::from_rgb(225, 225, 230);
             v.panel_fill = egui::Color32::from_rgb(255, 255, 255);
             v.window_fill = egui::Color32::from_rgb(255, 255, 255);
-            v.code_bg_color = egui::Color32::from_rgb(255, 255, 255);
+            v.code_bg_color = egui::Color32::from_rgb(225, 225, 230);
             v.hyperlink_color = egui::Color32::from_rgb(0, 100, 210);
         }
         v.image_loading_spinners = false; // always off in a document reader
@@ -408,7 +402,6 @@ impl eframe::App for MarkdownApp {
         // Font scale is stored in self.font_scale and applied only to the content
         // text styles, so the toolbar always stays at its natural size.
         let mut new_font_scale = self.font_scale;
-        // let font_scale_label = format!("{} {:.0}%", '\u{1D487}', self.font_scale * 100.0); // florin symbol \u{1D487}
         let font_scale_label = format!("Aa {:.0}%", self.font_scale * 100.0);
         let enhanced_contrast = self.enhanced_contrast;
         let mut new_enhanced_contrast = enhanced_contrast;
@@ -509,20 +502,6 @@ impl eframe::App for MarkdownApp {
 
                 ui.separator();
 
-                // // Reserve space for the right-hand controls before sizing the
-                // // path label, so the label never spills into the zoom widgets.
-                // // Estimate: (− 20 + label 35 + + 20 /* ↺ 20 */ + sep 8) x 2 + Quit 40
-                // //           + inter-widget spacing ≈ 240 px at toolbar font size.
-                // let right_reserve = 240.0_f32;
-                // let label_max = (ui.available_width() - right_reserve).max(40.0);
-                // ui.scope(|ui| {
-                //     ui.set_max_width(label_max);
-                //     ui.add(egui::Label::new(&current_path_label).truncate())
-                //         .on_hover_text(&current_path_label);
-                // });
-
-                // ui.separator();
-
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui
                         .button("Quit")
@@ -533,15 +512,8 @@ impl eframe::App for MarkdownApp {
                     }
                     ui.separator();
                     // Font scale controls (content text only; toolbar stays at 1×).
-                    // RTL layout: first-added = rightmost, so render ↺, +, label, −
-                    // to produce the visual sequence  − | 100% | + | ↺  left-to-right.
-                    // if ui
-                    //     .small_button("↺")
-                    //     .on_hover_text("Reset fonts to 100%")
-                    //     .clicked()
-                    // {
-                    //     new_font_scale = 1.0;
-                    // }
+                    // RTL layout: first-added = rightmost, so render `+, label, −`
+                    // to produce the visual sequence `− | 100% | +` left-to-right.
                     if ui
                         .small_button("+")
                         .on_hover_text(format!("Enlarge fonts ({MOD}-Shift-A)"))
@@ -551,7 +523,7 @@ impl eframe::App for MarkdownApp {
                     }
                     // ui.label(&font_scale_label).on_hover_text("Font size");
                     if ui
-                        .button(&font_scale_label) // 🔍 ↔
+                        .button(&font_scale_label)
                         .on_hover_text(format!("Reset font size to 100% ({MOD}-0)"))
                         .clicked()
                     {
@@ -568,15 +540,8 @@ impl eframe::App for MarkdownApp {
                     ui.separator();
 
                     // Zoom controls. In right-to-left order, first-added = rightmost,
-                    // so render +, %, − to produce the visual sequence  − | 100% | +.
+                    // so render `+, %, −` to produce the visual sequence `− | 100% | +`.
                     let zoom = ui.ctx().zoom_factor();
-                    // if ui
-                    //     .small_button("↺")
-                    //     .on_hover_text("Reset zoom to 100%")
-                    //     .clicked()
-                    // {
-                    //     ui.ctx().set_zoom_factor(1.0);
-                    // }
                     if ui
                         .small_button("+")
                         .on_hover_text(format!("Zoom in ({MOD}-=)"))
@@ -585,7 +550,7 @@ impl eframe::App for MarkdownApp {
                         ui.ctx().set_zoom_factor((zoom * 1.1).min(3.0));
                     }
                     if ui
-                        .button(format!("↕{:.0}%", zoom * 100.0)) // 🔍 ↔
+                        .button(format!("↕{:.0}%", zoom * 100.0))
                         .on_hover_text(format!("Reset zoom to 100% ({MOD}-Z)"))
                         .clicked()
                     {
@@ -723,7 +688,7 @@ impl eframe::App for MarkdownApp {
             }
         };
 
-        // Commit zoom change (may have come from keyboard or toolbar buttons).
+        // Commit font scaling change (may have come from keyboard or toolbar buttons).
         self.font_scale = new_font_scale;
 
         // Apply style toggle if it changed this frame.

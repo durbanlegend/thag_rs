@@ -1,6 +1,8 @@
 # thag_styling
 
-[![Crates.io](https://img.shields.io/crates/v/thag_styling)](https://crates.io/crates/thag_styling)
+[![Crates.io](https://img.shields.io/crates/v/thag_styling.svg)](https://crates.io/crates/thag_styling)
+[![Crates.io size](https://img.shields.io/crates/size/thag_styling.svg)](https://img.shields.io/crates/size/thag_styling)
+[![Rust](https://img.shields.io/badge/rustc-stable+-green.svg)](https://img.shields.io/badge/rustc-stable+-green)
 [![Documentation](https://docs.rs/thag_styling/badge.svg)](https://docs.rs/thag_styling)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 

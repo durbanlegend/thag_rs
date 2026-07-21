@@ -467,18 +467,14 @@ impl eframe::App for MarkdownApp {
 
         egui::Panel::top("nav_bar").show(ui, |ui| {
             ui.horizontal(|ui| {
-                // ui.label("Theme");
-                // ui.label(&format!("{}", '\u{1f505}'));
                 egui_theme_switch::global_theme_switch(ui);
                 if ui
                     .selectable_label(
                         enhanced_contrast,
                         if enhanced_contrast {
                             "◑➖" // \u{25d1}
-                                  // format!("{}{}", '\u{25d1}', '\u{229f}');
                         } else {
                             "◑➕"
-                            // format!("{}{}", '\u{25d1}', '\u{229e}');
                         },
                     )
                     .on_hover_text(if enhanced_contrast {
@@ -823,12 +819,10 @@ impl ImageLoader for FastSvgLoader {
             return Err(LoadError::NotSupported);
         }
 
-        // let mut state = self.state.lock().unwrap();
         let FastSvgState {
             pass_index,
             cache,
             options,
-            // } = &mut *state;
         } = &mut *(self.state.lock().unwrap());
 
         let bucket = cache.entry(uri.to_owned()).or_default();

@@ -152,3 +152,4 @@ demo/fib_doubling_iterative_ibig_instrumented.rs
 demo/egui_load_fonts copy.rs
 demo/egui_markdown_viewer copy 1.rs
 demo/egui_markdown_viewer copy.rs
+demo/egui_markdown_viewer_zoom.rs

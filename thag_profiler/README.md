@@ -1,5 +1,11 @@
 # thag_profiler
 
+[![Crates.io](https://img.shields.io/crates/v/thag_profiler.svg)](https://img.shields.io/crates/v/thag_profiler)
+[![Crates.io size](https://img.shields.io/crates/size/thag_profiler.svg)](https://img.shields.io/crates/size/thag_profiler)
+[![Rust](https://img.shields.io/badge/rustc-stable+-green.svg)](https://img.shields.io/badge/rustc-stable+-green)
+[![Documentation](https://docs.rs/thag_profiler/badge.svg)](https://docs.rs/thag_profiler)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
+
 An accurate lightweight cross-platform profiling library and toolkit for Rust applications that aims to lower the barriers to analysing code performance.
 
 `thag_profiler` offers time and/or memory profiling with minimal instrumentation, graphical output with your choice of color schemes, and tabular reports.

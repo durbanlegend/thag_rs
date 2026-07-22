@@ -1061,6 +1061,7 @@ impl eframe::App for MarkdownApp {
                                     );
                                 }
                                 if row_resp
+                                    .on_hover_text(&entry.text)
                                     .on_hover_cursor(egui::CursorIcon::PointingHand)
                                     .clicked()
                                 {

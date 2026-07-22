@@ -1,6 +1,6 @@
 ## Running the built-in tools
 
-`thag_rs` includes several built-in tools that are compiled as separate binaries. These tools are available after installing `thag_rs` with the `tools` feature enabled.
+`thag_rs` includes several built-in tools that are compiled as separate binaries. These tools are available after installing `thag_rs` with the `tools` feature enabled. The `thag_md_view` markdown viewer requires the `gui_viewer` feature enabled (which includes `tools`) owing to its larger `egui` dependencies.
 
 ### Installation with tools
 

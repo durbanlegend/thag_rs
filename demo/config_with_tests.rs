@@ -1,5 +1,6 @@
 /*[toml]
 [dependencies]
+serde = "=1.0.228"
 thag_rs = { version = "1, thag-auto", default-features = false, features = ["config", "core", "simplelog"] }
 toml = "0.9"
 

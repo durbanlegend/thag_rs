@@ -418,6 +418,7 @@ gui_viewer = [
   "dep:rfd",
   "dep:resvg",
   "thag_styling/inquire_theming",
+  "tools"
 ]
 
 ## All features

@@ -85,7 +85,7 @@ Whether you're:
 
   - Over 30 other independently installable [command-line tools](src/bin/README.md) promoted from `thag` scripts
   
-    - fast (WGPU) full-featured markdown viewer
+    - fast (WGPU) competitive markdown viewer
   
     - AST display tool
   
@@ -254,6 +254,12 @@ Full `thag` binary install with additional tools (recommended):
 
 ```bash
 cargo install thag_rs --features tools
+```
+
+To include the markdown viewer tool `thag_md_view`:
+
+```bash
+cargo install thag_rs --features tools,gui_viewer
 ```
 
 [The additional tools](src/bin/README.md)
@@ -565,9 +571,9 @@ You have the choice of installing `thag_rs` (recommended), or you may prefer to 
 
 * Installing gives you speed out of the box and a simpler command-line interface without invoking Cargo yourself. You have a choice:
 ```bash
-cargo install thag_rs
+cargo install thag_rs [--features [tools,gui_viewer]]
 ```
-or choose an appropriate installer for your environment from the Github releases page `https://github.com/durbanlegend/thag_rs/releases`, as from `v0.1.1`.
+or choose an appropriate installer for your environment from the Github releases page `https://github.com/durbanlegend/thag_rs/releases`.
 
 You can also download the starter kit of demo scripts as `demo.zip`
 from the same page.

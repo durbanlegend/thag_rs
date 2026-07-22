@@ -65,7 +65,7 @@ Whether you're:
 ### `thag` includes:
 
 
-  - A command ***thag_url*** to intelligently run example scripts directly from URLs
+  - A command ***`thag_url`*** to intelligently run example scripts directly from URLs
 
   - Automatically resolves straightforward dependencies.
 

@@ -1003,47 +1003,68 @@ impl eframe::App for MarkdownApp {
                     ui.separator();
                     egui::ScrollArea::vertical()
                         .id_salt("toc_scroll")
+                        .auto_shrink([false, false])
                         .show(ui, |ui| {
-                            ui.with_layout(
-                                egui::Layout::top_down_justified(egui::Align::LEFT),
-                                |ui| {
-                                    for entry in &self.toc {
-                                        let indent =
-                                            f32::from(entry.level.saturating_sub(1)) * 10.0;
-                                        ui.horizontal(|ui| {
-                                            ui.add_space(indent);
-                                            // Reserve a painter slot BEFORE the label so the
-                                            // hover background sits behind the text in the draw list.
-                                            let bg_idx = ui.painter().add(egui::Shape::Noop);
-                                            // Truncating Label: reports only the available width
-                                            // as its desired size, so the panel cannot grow.
-                                            // egui automatically shows the full text as a tooltip
-                                            // when the entry is elided — no explicit on_hover_text needed.
-                                            let response = ui
-                                                .add(
-                                                    egui::Label::new(&entry.text)
-                                                        .truncate()
-                                                        .sense(egui::Sense::click()),
-                                                )
-                                                .on_hover_cursor(egui::CursorIcon::PointingHand);
-                                            if response.hovered() {
-                                                ui.painter().set(
-                                                    bg_idx,
-                                                    egui::Shape::rect_filled(
-                                                        response.rect.expand(1.0),
-                                                        egui::CornerRadius::ZERO,
-                                                        ui.visuals().widgets.hovered.weak_bg_fill,
-                                                    ),
-                                                );
-                                            }
-                                            if response.clicked() {
-                                                *self.cache.scroll_to_id_target_mut() =
-                                                    Some(entry.slug.clone());
-                                            }
-                                        });
-                                    }
-                                },
-                            );
+                            for entry in &self.toc {
+                                let indent = f32::from(entry.level.saturating_sub(1)) * 10.0;
+                                // Reserve a background slot BEFORE the row so it sits
+                                // behind the text in the draw-list (correct z-order).
+                                let bg_idx = ui.painter().add(egui::Shape::Noop);
+                                // Full-width row: click/hover sense covers the whole
+                                // row, not just the label text.
+                                let row_h = ui.spacing().interact_size.y;
+                                let (row_rect, row_resp) = ui.allocate_exact_size(
+                                    egui::vec2(ui.available_width(), row_h),
+                                    egui::Sense::click(),
+                                );
+                                if row_resp.hovered() {
+                                    ui.painter().set(
+                                        bg_idx,
+                                        egui::Shape::rect_filled(
+                                            row_rect,
+                                            egui::CornerRadius::ZERO,
+                                            ui.visuals().widgets.hovered.weak_bg_fill,
+                                        ),
+                                    );
+                                }
+                                // Paint the truncated label in the indented portion.
+                                // allocate_new_ui does not advance the parent cursor
+                                // (row_rect was already accounted for above), and the
+                                // explicit Layout prevents put()'s centred-and-justified
+                                // default from pushing text to the middle of the panel.
+                                if ui.is_rect_visible(row_rect) {
+                                    // Paint the text directly so we control both position
+                                    // and truncation without fighting the layout system.
+                                    let color = ui.visuals().text_color();
+                                    let font_id = egui::TextStyle::Body.resolve(ui.style());
+                                    let max_w = (row_rect.width() - indent).max(0.0);
+                                    let mut job = egui::text::LayoutJob::single_section(
+                                        entry.text.clone(),
+                                        egui::TextFormat {
+                                            font_id,
+                                            color,
+                                            ..Default::default()
+                                        },
+                                    );
+                                    job.wrap.max_rows = 1;
+                                    job.wrap.overflow_character = Some('\u{2026}'); // …
+                                    job.wrap.max_width = max_w;
+                                    let galley = ui.ctx().fonts_mut(|f| f.layout_job(job));
+                                    let y = row_rect.center().y - galley.size().y * 0.5;
+                                    ui.painter().galley(
+                                        egui::pos2(row_rect.min.x + indent, y),
+                                        galley,
+                                        color,
+                                    );
+                                }
+                                if row_resp
+                                    .on_hover_cursor(egui::CursorIcon::PointingHand)
+                                    .clicked()
+                                {
+                                    *self.cache.scroll_to_id_target_mut() =
+                                        Some(entry.slug.clone());
+                                }
+                            }
                         });
                 });
         } // end TOC panel

@@ -81,8 +81,8 @@ const HELP_TEXT: &str = "\
 | Key | Action |
 |---|---|
 | Cmd/Ctrl-F | Open / close the search bar |
-| Enter  or  ↓ button | Next match |
-| Shift-Enter  or  ↑ button | Previous match |
+| Enter  or  ⬇ button | Next match |
+| Shift-Enter  or  ⬆ button | Previous match |
 | Escape | Close the search bar |
 
 > **Note:** Search navigates to the section containing each match (section-level navigation).
@@ -840,7 +840,7 @@ impl eframe::App for MarkdownApp {
                     open_file_requested = true;
                 }
                 if ui
-                    .button("↺")
+                    .button("🔄")
                     .on_hover_text(format!("Reload current file from disk ({MOD}-R)"))
                     .clicked()
                 {
@@ -965,14 +965,14 @@ impl eframe::App for MarkdownApp {
                     // Prev / next buttons.
                     let has_matches = match_count > 0;
                     if ui
-                        .add_enabled(has_matches, egui::Button::new("↑"))
+                        .add_enabled(has_matches, egui::Button::new("⬆"))
                         .on_hover_text("Previous match (Shift-Enter)")
                         .clicked()
                     {
                         search_nav = -1;
                     }
                     if ui
-                        .add_enabled(has_matches, egui::Button::new("↓"))
+                        .add_enabled(has_matches, egui::Button::new("⬇"))
                         .on_hover_text("Next match (Enter)")
                         .clicked()
                     {
@@ -981,7 +981,7 @@ impl eframe::App for MarkdownApp {
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui
-                            .small_button("✕")
+                            .small_button("x")
                             .on_hover_text("Close search (Esc)")
                             .clicked()
                         {

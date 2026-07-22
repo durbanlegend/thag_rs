@@ -1049,6 +1049,9 @@ impl eframe::App for MarkdownApp {
                                     job.wrap.max_rows = 1;
                                     job.wrap.overflow_character = Some('\u{2026}'); // …
                                     job.wrap.max_width = max_w;
+                                    // Allow breaking mid-word so truncation is progressive
+                                    // (letter by letter) rather than dropping a whole word.
+                                    job.wrap.break_anywhere = true;
                                     let galley = ui.ctx().fonts_mut(|f| f.layout_job(job));
                                     let y = row_rect.center().y - galley.size().y * 0.5;
                                     ui.painter().galley(

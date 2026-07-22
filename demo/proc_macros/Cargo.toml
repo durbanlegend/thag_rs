@@ -1,6 +1,6 @@
 [package]
 name = "thag_demo_proc_macros"
-version = "1.0.1"
+version = "1.1.0"
 description = "Demo proc macros for the thag_rs crate"
 license = "MIT OR Apache-2.0"
 edition = "2021"
@@ -10,7 +10,7 @@ inline_colorization = "0.1.6"
 prettyplease = "0.2"
 proc-macro2 = "1.0"
 quote = "1.0"
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "=1.0.228", features = ["derive"] }
 syn = { version = "2.0", default-features = false, features = [
     "full",
     "parsing",

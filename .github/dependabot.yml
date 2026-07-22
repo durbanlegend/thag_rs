@@ -35,6 +35,9 @@ updates:
       - dependency-name: "predicates"
         update-types:
           ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "prettyplease" # Will clash with strum in thag_proc_macros until strum supports syn v3
+        versions:
+          - ">=0.29.0"
       - dependency-name: "ratatui"
         versions:
           - ">=0.29.0"
@@ -46,3 +49,6 @@ updates:
           ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"]
+      - dependency-name: "syn"
+        update-types:
+          ["version-update:semver-major"]

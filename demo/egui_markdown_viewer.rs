@@ -67,20 +67,20 @@ const HELP_TEXT: &str = "\
 ### File
 | Key | Action |
 |---|---|
-| Cmd/Ctrl-O | Open a markdown file |
-| Cmd/Ctrl-R | Refresh — reload the current file from disk |
-| Cmd/Ctrl-W  /  Cmd/Ctrl-Q | Quit |
+| Cmd/Ctrl-o | Open a markdown file |
+| Cmd/Ctrl-r | Refresh — reload the current file from disk |
+| Cmd/Ctrl-w  /  Cmd/Ctrl-q | Quit |
 
 ### Navigation
 | Key | Action |
 |---|---|
 | ◀ / ▶ buttons | Back / Forward in history |
-| Cmd/Ctrl-T | Toggle the table of contents panel |
+| Cmd/Ctrl-t | Toggle the table of contents panel |
 
 ### Search
 | Key | Action |
 |---|---|
-| Cmd/Ctrl-F | Open / close the search bar |
+| Cmd/Ctrl-f | Open / close the search bar |
 | Enter  or  ⬇ button | Next match |
 | Shift-Enter  or  ⬆ button | Previous match |
 | Escape | Close the search bar |
@@ -93,9 +93,9 @@ const HELP_TEXT: &str = "\
 |---|---|
 | Cmd/Ctrl-= | Zoom in |
 | Cmd/Ctrl-− | Zoom out |
-| Cmd/Ctrl-Z | Reset zoom to 100% |
-| Cmd/Ctrl-Shift-A | Enlarge font |
-| Cmd/Ctrl-A | Reduce font |
+| Cmd/Ctrl-z | Reset zoom to 100% |
+| Cmd/Ctrl-Shift-a | Enlarge font |
+| Cmd/Ctrl-a | Reduce font |
 | Cmd/Ctrl-0 | Reset font to 100% |
 
 ### Help
@@ -868,14 +868,14 @@ impl eframe::App for MarkdownApp {
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui
-                        .button("Quit")
+                        .button("Quit") // 👋
                         .on_hover_text(format!("Close ({MOD}-W)"))
                         .clicked()
                     {
                         ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                     if ui
-                        .selectable_label(new_show_help, "?")
+                        .selectable_label(new_show_help, "❓")
                         .on_hover_text("Help (F1)")
                         .clicked()
                     {
@@ -1012,14 +1012,21 @@ impl eframe::App for MarkdownApp {
                                             f32::from(entry.level.saturating_sub(1)) * 10.0;
                                         ui.horizontal(|ui| {
                                             ui.add_space(indent);
-                                            let clicked = ui
-                                                .selectable_label(false, &entry.text)
+                                            // Use a truncating Label so the panel width is
+                                            // governed by the user's resize, not the longest
+                                            // heading. Text beyond the available width gets '…'.
+                                            let response = ui
+                                                .add(
+                                                    egui::Label::new(&entry.text)
+                                                        .truncate()
+                                                        .sense(egui::Sense::click()),
+                                                )
                                                 .on_hover_text(format!(
-                                                    "Level {} heading",
-                                                    entry.level
+                                                    "{} (level {})",
+                                                    entry.text, entry.level
                                                 ))
-                                                .clicked();
-                                            if clicked {
+                                                .on_hover_cursor(egui::CursorIcon::PointingHand);
+                                            if response.clicked() {
                                                 *self.cache.scroll_to_id_target_mut() =
                                                     Some(entry.slug.clone());
                                             }

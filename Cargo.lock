@@ -3217,6 +3217,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "prettyplease"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bfe0f4c752e450fc2faf62654f1c134747922825d5b04ca717b8874f41a40c0"
+dependencies = [
+ "proc-macro2 1.0.106",
+ "syn 3.0.3",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "0.4.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4296,6 +4306,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "syn"
+version = "3.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53e9bae58849f64dfa4f5d5ae372c8341f7305f82a3868709269343628b659a3"
+dependencies = [
+ "proc-macro2 1.0.106",
+ "unicode-ident",
+]
+
+[[package]]
 name = "sync_wrapper"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4434,7 +4454,7 @@ version = "1.0.1"
 dependencies = [
  "crossterm 0.29.0",
  "inline_colorization",
- "prettyplease",
+ "prettyplease 0.3.0",
  "proc-macro2 1.0.106",
  "quote 1.0.45",
  "strict",
@@ -4505,7 +4525,7 @@ dependencies = [
  "pathdiff",
  "phf 0.12.1",
  "predicates",
- "prettyplease",
+ "prettyplease 0.3.0",
  "proc-macro2 1.0.106",
  "quote 1.0.45",
  "ratatui",
@@ -5613,7 +5633,7 @@ dependencies = [
  "anyhow",
  "heck",
  "indexmap",
- "prettyplease",
+ "prettyplease 0.2.37",
  "syn 2.0.117",
  "wasm-metadata",
  "wit-bindgen-core",
@@ -5627,7 +5647,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c0f9bfd77e6a48eccf51359e3ae77140a7f50b1e2ebfe62422d8afdaffab17a"
 dependencies = [
  "anyhow",
- "prettyplease",
+ "prettyplease 0.2.37",
  "proc-macro2 1.0.106",
  "quote 1.0.45",
  "syn 2.0.117",

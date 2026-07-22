@@ -1012,20 +1012,30 @@ impl eframe::App for MarkdownApp {
                                             f32::from(entry.level.saturating_sub(1)) * 10.0;
                                         ui.horizontal(|ui| {
                                             ui.add_space(indent);
-                                            // Use a truncating Label so the panel width is
-                                            // governed by the user's resize, not the longest
-                                            // heading. Text beyond the available width gets '…'.
+                                            // Reserve a painter slot BEFORE the label so the
+                                            // hover background sits behind the text in the draw list.
+                                            let bg_idx = ui.painter().add(egui::Shape::Noop);
+                                            // Truncating Label: reports only the available width
+                                            // as its desired size, so the panel cannot grow.
+                                            // egui automatically shows the full text as a tooltip
+                                            // when the entry is elided — no explicit on_hover_text needed.
                                             let response = ui
                                                 .add(
                                                     egui::Label::new(&entry.text)
                                                         .truncate()
                                                         .sense(egui::Sense::click()),
                                                 )
-                                                .on_hover_text(format!(
-                                                    "{} (level {})",
-                                                    entry.text, entry.level
-                                                ))
                                                 .on_hover_cursor(egui::CursorIcon::PointingHand);
+                                            if response.hovered() {
+                                                ui.painter().set(
+                                                    bg_idx,
+                                                    egui::Shape::rect_filled(
+                                                        response.rect.expand(1.0),
+                                                        egui::CornerRadius::ZERO,
+                                                        ui.visuals().widgets.hovered.weak_bg_fill,
+                                                    ),
+                                                );
+                                            }
                                             if response.clicked() {
                                                 *self.cache.scroll_to_id_target_mut() =
                                                     Some(entry.slug.clone());

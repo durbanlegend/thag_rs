@@ -9,6 +9,7 @@ thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 resvg = { version = "0.45", features = ["text"] }
 fontdb = { version = "0.23", features = ["fs"] }
 notify = { version = "8" }
+pulldown-cmark = { version = "0.13" }
 rfd = { version = "0.15" }
 
 [features]
@@ -46,6 +47,7 @@ use eframe::egui;
 use egui::load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint};
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
 use notify::{RecursiveMode, Watcher};
+use pulldown_cmark::{Event, Options, Parser, Tag};
 use rfd::FileDialog;
 use std::{
     collections::HashMap,
@@ -181,8 +183,6 @@ struct TocEntry {
     text: String,
     /// The `{#slug}` injected into the rendered content, used as the scroll target.
     slug: String,
-    /// Byte offset of the heading line in the *raw* file content (for search section lookup).
-    byte_start: usize,
 }
 
 /// Converts heading text to a URL-safe slug: lowercased, non-alphanumeric runs replaced by `-`.
@@ -245,19 +245,14 @@ fn extract_heading_id(line: &str) -> Option<&str> {
 
 /// Scans `raw` markdown, builds a `Vec<TocEntry>` from ATX headings, and returns a version
 /// of the content with `{#slug}` attributes injected into every heading that lacks one.
-/// `byte_start` values in each `TocEntry` are byte offsets into `raw`.
 fn extract_toc_and_inject_ids(raw: &str) -> (String, Vec<TocEntry>) {
     let mut out = String::with_capacity(raw.len() + 512);
     let mut toc = Vec::new();
     let mut slug_counts: HashMap<String, usize> = HashMap::new();
     let mut in_fence = false;
     let mut fence_char = b'`';
-    let mut byte_pos: usize = 0;
 
     for line in raw.lines() {
-        let line_byte_start = byte_pos;
-        byte_pos += line.len() + 1; // +1 approximates the \n
-
         let trimmed = line.trim_start_matches(' ');
 
         // Track fenced code blocks (``` or ~~~, optionally indented up to 3 spaces).
@@ -298,7 +293,6 @@ fn extract_toc_and_inject_ids(raw: &str) -> (String, Vec<TocEntry>) {
                     level,
                     text: plain_text.to_string(),
                     slug,
-                    byte_start: line_byte_start,
                 });
                 out.push_str(&line_out);
                 out.push('\n');
@@ -381,6 +375,23 @@ fn absolutize_image_paths(content: &str, base_dir: &Path) -> String {
 
 /// Converts an absolute `Path` to a `file://` URI that is valid on all platforms.
 /// Windows paths (`C:\…`) become `file:///C:/…`; Unix paths become `file:///…`.
+/// Append byte-offset positions of all case-insensitive occurrences of `query`
+/// within a single pulldown-cmark text event into `out`.
+/// `span_start` is the event's `src_span.start` (byte offset into the full source).
+fn collect_matches(text: &str, span_start: usize, query: &str, qlen: usize, out: &mut Vec<usize>) {
+    let lower = text.to_lowercase();
+    let mut pos = 0;
+    while pos < lower.len() {
+        match lower[pos..].find(query) {
+            Some(rel) => {
+                out.push(span_start + pos + rel);
+                pos += rel + qlen;
+            }
+            None => break,
+        }
+    }
+}
+
 fn path_to_file_uri(path: &Path) -> String {
     let s = path.to_string_lossy().into_owned();
     #[cfg(windows)]
@@ -583,6 +594,11 @@ struct MarkdownApp {
     show_help: bool,
     /// Separate cache for the help window's `CommonMarkViewer`.
     help_cache: CommonMarkCache,
+    /// Heading positions extracted from `self.content` (content-relative bytes, not
+    /// raw-content bytes). Used by `scroll_to_active_match` for accurate section
+    /// navigation — avoids the offset errors that arise when comparing content
+    /// positions against `toc.byte_start` values (which are raw-content relative).
+    content_heading_positions: Vec<(usize, String)>, // (content byte start, slug)
     // ── File watcher ──────────────────────────────────────────────────────────
     /// Stored `egui::Context` so background threads can call `request_repaint()`.
     egui_ctx: egui::Context,
@@ -621,11 +637,13 @@ impl MarkdownApp {
             show_help: false,
             help_cache: CommonMarkCache::default(),
             egui_ctx: ctx,
+            content_heading_positions: Vec::new(),
             watcher: None,
             watcher_rx: None,
             last_auto_reload: None,
         };
         app.start_watching();
+        app.build_content_headings();
         app
     }
 
@@ -738,6 +756,8 @@ impl MarkdownApp {
                 }
                 // Re-arm the watcher for the (possibly different) new file.
                 self.start_watching();
+                // Build content-relative heading positions for accurate scroll navigation.
+                self.build_content_headings();
                 true
             }
             Err(e) => {
@@ -811,11 +831,45 @@ impl MarkdownApp {
         }
     }
 
-    /// Rebuild `search_matches` from `search_query` against `self.content`.
-    /// Positions are byte offsets into `self.content` (the processed markdown
-    /// passed to the renderer) so they align with `src_span` values from
-    /// `pulldown_cmark` for accurate inline highlighting.
-    /// Resets `search_active` to 0.
+    /// Populate `content_heading_positions` by parsing `self.content` with
+    /// pulldown-cmark. These content-relative positions are used instead of
+    /// `toc.byte_start` (which is raw-content-relative) when scrolling to the
+    /// section containing a search match.
+    ///
+    /// Pairs headings by document order with `self.toc` entries rather than
+    /// relying on `id: Some(...)` — robust even if a heading's injected
+    /// `{#slug}` is absent or unparsed for any reason.
+    fn build_content_headings(&mut self) {
+        self.content_heading_positions.clear();
+        let opts = Options::ENABLE_TABLES
+            | Options::ENABLE_TASKLISTS
+            | Options::ENABLE_STRIKETHROUGH
+            | Options::ENABLE_FOOTNOTES
+            | Options::ENABLE_HEADING_ATTRIBUTES;
+        let mut toc_idx = 0usize;
+        for (event, span) in Parser::new_ext(&self.content, opts).into_offset_iter() {
+            if let Event::Start(Tag::Heading { .. }) = event {
+                if let Some(entry) = self.toc.get(toc_idx) {
+                    self.content_heading_positions
+                        .push((span.start, entry.slug.clone()));
+                }
+                toc_idx += 1;
+            }
+        }
+    }
+
+    /// Rebuild `search_matches` by parsing `self.content` with pulldown-cmark
+    /// and searching inside every text-bearing event.
+    ///
+    /// Guarantees the previous whole-string search couldn't provide:
+    /// 1. Positions exactly align with the renderer's `src_span` values —
+    ///    inline highlighting is accurate.
+    /// 2. Link/image destinations are excluded — no extra hits from absolutized
+    ///    `file:///…` URLs that never appear as visible text.
+    ///
+    /// Fenced code-block matches are counted (so the N/M counter matches what a
+    /// plain-text search would give) but produce no highlight because the code
+    /// block renderer bypasses `render_body_text`.
     fn rebuild_search(&mut self) {
         self.search_matches.clear();
         self.search_active = 0;
@@ -823,29 +877,43 @@ impl MarkdownApp {
             return;
         }
         let query = self.search_query.to_lowercase();
-        let haystack = self.content.to_lowercase(); // processed content, not raw
         let qlen = query.len().max(1);
-        let mut start = 0;
-        while start < haystack.len() {
-            match haystack[start..].find(&query) {
-                Some(rel) => {
-                    let abs = start + rel;
-                    self.search_matches.push(abs);
-                    start = abs + qlen;
+        let opts = Options::ENABLE_TABLES
+            | Options::ENABLE_TASKLISTS
+            | Options::ENABLE_STRIKETHROUGH
+            | Options::ENABLE_FOOTNOTES
+            | Options::ENABLE_HEADING_ATTRIBUTES;
+        for (event, span) in Parser::new_ext(&self.content, opts).into_offset_iter() {
+            match event {
+                // Text events cover all prose text, heading text, list items,
+                // table cells, and fenced code block content.
+                Event::Text(ref text) => {
+                    collect_matches(text, span.start, &query, qlen, &mut self.search_matches);
                 }
-                None => break,
+                // Inline code (‘backtick’ spans) — rendered via event_text, highlighted.
+                Event::Code(ref text) => {
+                    collect_matches(text, span.start, &query, qlen, &mut self.search_matches);
+                }
+                _ => {}
             }
         }
     }
 
     /// Scroll the document to the heading section that contains the active search match.
+    /// Uses `content_heading_positions` (content-relative bytes) rather than
+    /// `toc.byte_start` (raw-content-relative) to avoid offset errors from
+    /// injected heading IDs and absolutized image paths.
     fn scroll_to_active_match(&mut self) {
         let Some(&byte_pos) = self.search_matches.get(self.search_active) else {
             return;
         };
-        // Find the last heading whose byte_start is <= the match position.
-        if let Some(entry) = self.toc.iter().rev().find(|e| e.byte_start <= byte_pos) {
-            *self.cache.scroll_to_id_target_mut() = Some(entry.slug.clone());
+        if let Some((_, slug)) = self
+            .content_heading_positions
+            .iter()
+            .rev()
+            .find(|(pos, _)| *pos <= byte_pos)
+        {
+            *self.cache.scroll_to_id_target_mut() = Some(slug.clone());
         }
     }
 }
@@ -1342,14 +1410,18 @@ impl eframe::App for MarkdownApp {
                     }
                     // Push the current search state into the cache so the
                     // renderer can paint inline highlights this frame.
+                    // Gate on `new_search_open` so highlights clear immediately
+                    // when the bar is closed — the query is preserved for
+                    // when the bar is reopened.
                     {
                         let qlen = self.search_query.len();
-                        let ranges: Vec<std::ops::Range<usize>> = if qlen > 0 {
+                        let active_search = new_search_open && qlen > 0;
+                        let ranges: Vec<std::ops::Range<usize>> = if active_search {
                             self.search_matches.iter().map(|&s| s..s + qlen).collect()
                         } else {
                             Vec::new()
                         };
-                        let active = if qlen > 0 {
+                        let active = if active_search {
                             self.search_matches
                                 .get(self.search_active)
                                 .map(|&s| s..s + qlen)

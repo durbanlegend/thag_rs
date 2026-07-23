@@ -532,7 +532,7 @@ impl MarkdownApp {
         self.history_index + 1 < self.history.len()
     }
 
-    /// Load `path` from disk, update content, TOC, raw_content, cache, and CWD.
+    /// Load `path` from disk and update content, TOC, raw_content, cache, and CWD.
     /// Returns `true` on success.
     fn load_file(&mut self, path: PathBuf) -> bool {
         match std::fs::read_to_string(&path) {
@@ -868,7 +868,7 @@ impl eframe::App for MarkdownApp {
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui
-                        .button("Quit") // 👋
+                        .button("🇽")
                         .on_hover_text(format!("Close ({MOD}-W)"))
                         .clicked()
                     {
@@ -901,7 +901,7 @@ impl eframe::App for MarkdownApp {
                     }
                     if ui
                         .small_button("−")
-                        .on_hover_text(format!("Reduce fonts ({MOD}-A)"))
+                        .on_hover_text(format!("Reduce fonts ({MOD}-a)"))
                         .clicked()
                     {
                         new_font_scale = (new_font_scale / 1.1).max(0.4);

@@ -567,3 +567,11 @@ debug = false
 [profile.dist]
 inherits = "release"
 lto = "thin"
+
+# ── Development override: use the local egui_commonmark fork ─────────────────
+# Remove this section once the search-highlighting changes are pushed to the
+# remote fork and the git dependency is updated to include the new commit.
+[patch."https://github.com/durbanlegend/egui_commonmark"]
+egui_commonmark = { path = "../egui_commonmark/egui_commonmark" }
+egui_commonmark_backend = { path = "../egui_commonmark/egui_commonmark_backend" }
+egui_commonmark_macros = { path = "../egui_commonmark/egui_commonmark_macros" }

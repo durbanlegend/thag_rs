@@ -57,9 +57,7 @@ use std::{
     },
     time::{Duration, Instant},
 };
-use thag_styling::{
-    auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config,
-};
+use thag_styling::{auto_help, file_navigator, themed_inquire_config};
 
 #[cfg(target_os = "macos")]
 const MOD: &str = "Cmd";
@@ -99,8 +97,8 @@ Use `--no-detach` or `--foreground` on the command line to keep it attached to t
 | Shift-Enter  or  ⬆ button | Previous match |
 | Escape | Close the search bar |
 
-> **Note:** Search navigates to the section containing each match (section-level navigation).
-> Inline text highlighting is planned for a future version.
+> Search navigates to the section containing each match and highlights matched text inline.
+> The active match is shown in orange; other matches in yellow.
 
 ### Auto-reload
 The viewer watches the open file for changes on disk and reloads it automatically.
@@ -813,7 +811,10 @@ impl MarkdownApp {
         }
     }
 
-    /// Rebuild `search_matches` from `search_query` against `raw_content`.
+    /// Rebuild `search_matches` from `search_query` against `self.content`.
+    /// Positions are byte offsets into `self.content` (the processed markdown
+    /// passed to the renderer) so they align with `src_span` values from
+    /// `pulldown_cmark` for accurate inline highlighting.
     /// Resets `search_active` to 0.
     fn rebuild_search(&mut self) {
         self.search_matches.clear();
@@ -822,7 +823,7 @@ impl MarkdownApp {
             return;
         }
         let query = self.search_query.to_lowercase();
-        let haystack = self.raw_content.to_lowercase();
+        let haystack = self.content.to_lowercase(); // processed content, not raw
         let qlen = query.len().max(1);
         let mut start = 0;
         while start < haystack.len() {
@@ -1338,6 +1339,25 @@ impl eframe::App for MarkdownApp {
                             TextStyle::Small,
                             FontId::new(base_small * font_scale, FontFamily::Proportional),
                         );
+                    }
+                    // Push the current search state into the cache so the
+                    // renderer can paint inline highlights this frame.
+                    {
+                        let qlen = self.search_query.len();
+                        let ranges: Vec<std::ops::Range<usize>> = if qlen > 0 {
+                            self.search_matches.iter().map(|&s| s..s + qlen).collect()
+                        } else {
+                            Vec::new()
+                        };
+                        let active = if qlen > 0 {
+                            self.search_matches
+                                .get(self.search_active)
+                                .map(|&s| s..s + qlen)
+                        } else {
+                            None
+                        };
+                        self.cache.set_search_ranges(ranges);
+                        self.cache.set_active_search_range(active);
                     }
                     CommonMarkViewer::new()
                         .syntax_theme_dark("base16-ocean.dark")

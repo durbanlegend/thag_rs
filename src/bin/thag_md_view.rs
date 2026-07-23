@@ -396,7 +396,7 @@ fn path_to_file_uri(path: &Path) -> String {
     let s = path.to_string_lossy().into_owned();
     #[cfg(windows)]
     {
-        s = s.replace('\\', "/");
+        let s = s.replace('\\', "/");
     }
     // Unix absolute paths start with `/`; Windows paths start with the drive letter.
     if s.starts_with('/') {

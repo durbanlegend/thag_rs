@@ -153,6 +153,18 @@ impl HelpSystem {
                             help.categories =
                                 value.split(',').map(|cat| cat.trim().to_string()).collect();
                         }
+                        // //# Option: <flags>: <description>
+                        // The second colon separates the flags string from the description.
+                        // If no second colon is present, the whole value is treated as the
+                        // flags string with an empty description.
+                        "option" => {
+                            if let Some((flags, desc)) = value.split_once(':') {
+                                help.options
+                                    .push((flags.trim().to_string(), desc.trim().to_string()));
+                            } else {
+                                help.options.push((value.to_string(), String::new()));
+                            }
+                        }
                         _ => {}
                     }
                 }

@@ -38,7 +38,9 @@ opt-level = 3     # Apply maximum performance optimizations
 //# Purpose: GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature
 //  in addition to `tools` when built as a tool, on account of its significant additional dependencies.
 //# Categories: crates, gui, tools
-//# Usage: thag_md_view [OPTIONS] [path_to_file]
+//# Usage: thag_md_view [OPTIONS] [PATH]
+//# Option: PATH: Markdown file to open; launches an interactive file-picker if omitted
+//# Option: --no-detach, --foreground: Stay attached to the launching terminal (Unix only)
 use eframe::egui;
 use egui::load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint};
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
@@ -453,17 +455,7 @@ fn detach_if_tty() {
 fn main() -> eframe::Result<()> {
     // Help check MUST come before detach: detached children have stdout/stderr
     // set to null, so any output would be silently lost.
-    let help = auto_help!().with_options([
-        (
-            "<PATH>",
-            "Markdown file to open (launches file-picker if omitted)",
-        ),
-        #[cfg(unix)]
-        (
-            "--no-detach, --foreground",
-            "Keep process attached to the launching terminal (Unix only)",
-        ),
-    ]);
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     // Detach from the controlling terminal on Unix so the shell prompt

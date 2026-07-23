@@ -451,13 +451,25 @@ fn detach_if_tty() {
 }
 
 fn main() -> eframe::Result<()> {
+    // Help check MUST come before detach: detached children have stdout/stderr
+    // set to null, so any output would be silently lost.
+    let help = auto_help!().with_options([
+        (
+            "<PATH>",
+            "Markdown file to open (launches file-picker if omitted)",
+        ),
+        #[cfg(unix)]
+        (
+            "--no-detach, --foreground",
+            "Keep process attached to the launching terminal (Unix only)",
+        ),
+    ]);
+    check_help_and_exit(&help);
+
     // Detach from the controlling terminal on Unix so the shell prompt
     // returns immediately after launch. A no-op on Windows.
     #[cfg(unix)]
     detach_if_tty();
-
-    let help = auto_help!();
-    check_help_and_exit(&help);
 
     // Strip internal markers before processing positional arguments.
     let args: Vec<String> = env::args()

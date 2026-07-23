@@ -21,6 +21,9 @@ pub struct HelpSystem {
     pub categories: Vec<String>,
     /// Version information
     pub version: Option<String>,
+    /// Named options: `(flags_string, description)`, e.g. `("-o, --output <FILE>", "Output path")`.
+    /// Populated via [`HelpSystem::with_options`]; displayed below the hard-coded `-h, --help` entry.
+    pub options: Vec<(String, String)>,
 }
 
 impl Default for HelpSystem {
@@ -42,6 +45,7 @@ impl HelpSystem {
             usage: None,
             categories: Vec::new(),
             version: None,
+            options: Vec::new(),
         }
     }
 
@@ -90,6 +94,22 @@ impl HelpSystem {
     #[must_use]
     pub fn with_version(mut self, version: impl Into<String>) -> Self {
         self.version = Some(version.into());
+        self
+    }
+
+    /// Append named options to the OPTIONS section.
+    ///
+    /// Each entry is `(flags, description)` where `flags` is a string such as
+    /// `"-n, --no-watch"` and `description` is a short explanation.
+    /// Descriptions are aligned to the same column in the output.
+    #[must_use]
+    pub fn with_options(
+        mut self,
+        options: impl IntoIterator<Item = (&'static str, &'static str)>,
+    ) -> Self {
+        for (flags, desc) in options {
+            self.options.push((flags.to_string(), desc.to_string()));
+        }
         self
     }
 
@@ -195,7 +215,18 @@ impl fmt::Display for HelpSystem {
         }
 
         writeln!(f, "\nOPTIONS:")?;
-        writeln!(f, "    -h, --help       Print help")?;
+        // Compute column width: longest flags string (including the always-present --help entry).
+        let col_width = self
+            .options
+            .iter()
+            .map(|(flags, _)| flags.len())
+            .max()
+            .unwrap_or(0)
+            .max("-h, --help".len());
+        writeln!(f, "    {:<col_width$}   Print help", "-h, --help")?;
+        for (flags, desc) in &self.options {
+            writeln!(f, "    {flags:<col_width$}   {desc}")?;
+        }
 
         if !self.categories.is_empty() {
             writeln!(f, "\nCATEGORIES: {}", self.categories.join(", "))?;

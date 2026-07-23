@@ -1,5 +1,6 @@
 /*[toml]
 [dependencies]
+eframe = { version = "0.35", features = ["wgpu"] }
 egui_commonmark = { git = "https://github.com/durbanlegend/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
 
 egui_extras = { version = "0.35", features = ["svg"] }
@@ -455,8 +456,12 @@ fn detach_if_tty() {
 fn main() -> eframe::Result<()> {
     // Help check MUST come before detach: detached children have stdout/stderr
     // set to null, so any output would be silently lost.
+    // Use a normal return (not process::exit) so macOS framework atexit handlers
+    // run against a cleanly initialised state rather than a partially-started GUI.
     let help = auto_help!();
-    check_help_and_exit(&help);
+    if help.check_help() {
+        return Ok(());
+    }
 
     // Detach from the controlling terminal on Unix so the shell prompt
     // returns immediately after launch. A no-op on Windows.

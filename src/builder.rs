@@ -1355,7 +1355,13 @@ fn cache_executable(build_state: &BuildState) -> ThagResult<()> {
 
     // Copy executable to cache
     if source_exe.exists() {
-        fs::copy(&source_exe, &dest_exe)?;
+        let result = fs::copy(&source_exe, &dest_exe);
+        // Prevent a corrupt-but-correctly-sized file from being trusted as "up to date."
+        // We had some issues with SIGKILL.
+        if let Err(io_err) = result {
+            let _ = fs::remove_file(&dest_exe);
+            return Err(io_err.into());
+        }
         sveprtln!(
             Role::INFO,
             V::VV,

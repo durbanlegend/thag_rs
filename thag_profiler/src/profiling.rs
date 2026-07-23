@@ -2276,7 +2276,7 @@ pub fn extract_profile_callstack() -> Vec<String> {
                         // Rust v0 mangling ("<..::Profile>::new") introduced as
                         // default in Rust ~1.78.
                         let is_profile_new = name.contains(START_PATTERN)
-                            || (name.contains("Profile") && name.contains(">" ) && name.ends_with("::new"));
+                            || (name.contains("Profile") && name.contains('>' ) && name.ends_with("::new"));
                         if is_profile_new && !name.contains("{{closure}}") {
                             start = true;
                             is_current_fn = true;
@@ -2957,7 +2957,7 @@ pub fn clean_function_name(name: &mut str) -> String {
     let trimmed_owned: String;
     let trimmed = if trimmed.contains('[') {
         let mut out = String::with_capacity(trimmed.len());
-        let mut chars = trimmed.chars().peekable();
+        let mut chars = trimmed.chars();
         while let Some(c) = chars.by_ref().next() {
             if c == '[' {
                 // Collect until ']', check it's exactly 16 hex digits

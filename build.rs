@@ -208,7 +208,7 @@ fn check_{subdir_name}_{test_name}() {{
 }}
 "#,
                 // source_name = &source_name,
-                source_path = &path.to_str().expect("Failed to get source path"),
+                source_path = path.to_str().expect("Failed to get source path"),
                 more_options = if multimain.contains(&source_name) {
                     "mq"
                 } else if source_name == "hyper_hello_server.rs" || source_name == "just_a_test_expression.rs" {

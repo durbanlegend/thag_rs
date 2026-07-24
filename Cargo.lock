@@ -1867,6 +1867,7 @@ dependencies = [
 [[package]]
 name = "egui_commonmark"
 version = "0.24.0"
+source = "git+https://github.com/durbanlegend/egui_commonmark#36654bff68d0013a3e207ac8384ef82676b69e06"
 dependencies = [
  "egui",
  "egui_commonmark_backend",
@@ -1877,6 +1878,7 @@ dependencies = [
 [[package]]
 name = "egui_commonmark_backend"
 version = "0.24.0"
+source = "git+https://github.com/durbanlegend/egui_commonmark#36654bff68d0013a3e207ac8384ef82676b69e06"
 dependencies = [
  "egui",
  "egui_extras",
@@ -8840,7 +8842,3 @@ dependencies = [
  "syn 2.0.117",
  "winnow 1.0.3",
 ]
-
-[[patch.unused]]
-name = "egui_commonmark_macros"
-version = "0.24.0"

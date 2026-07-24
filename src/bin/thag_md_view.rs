@@ -406,6 +406,135 @@ fn path_to_file_uri(path: &Path) -> String {
     }
 }
 
+// ─── Code fence pre-screening ────────────────────────────────────────────────
+
+/// A code-fence problem detected before rendering.
+enum FenceError {
+    /// Total fence boundary count is odd — at least one fence is unclosed.
+    OddCount { total: usize },
+    /// An even-numbered boundary carries a language tag, meaning the preceding
+    /// typed opener was never closed.
+    UnclosedBeforeTyped {
+        at_line: usize,
+        at_header: String,
+        prev_typed: Option<(usize, String)>,
+    },
+}
+
+/// Scan `content` for fence problems without a full parser.
+///
+/// A fence boundary is a line with ≤ 3 leading spaces that starts with `\`\`\``
+/// or `~~~` (matching the same rule used by `extract_toc_and_inject_ids`).
+///
+/// Two invariants are checked:
+/// - **(a)** Total boundary count must be even — odd means at least one unclosed.
+/// - **(b)** Every *typed* boundary (one with a language tag) must be
+///   odd-numbered in sequence; an even-numbered typed boundary means the
+///   previous typed opener was never closed.
+fn validate_code_fences(content: &str) -> Result<(), FenceError> {
+    let mut fence_count = 0usize;
+    let mut last_typed: Option<(usize, String)> = None;
+
+    for (idx, line) in content.lines().enumerate() {
+        let line_num = idx + 1;
+        let trimmed = line.trim_start_matches(' ');
+        if line.len() - trimmed.len() > 3 {
+            continue;
+        }
+        let is_backtick = trimmed.starts_with("```");
+        let is_tilde = trimmed.starts_with("~~~");
+        if !is_backtick && !is_tilde {
+            continue;
+        }
+
+        fence_count += 1;
+
+        // Strip all leading fence chars to get the language tag (if any).
+        let lang = if is_backtick {
+            trimmed.trim_start_matches('`')
+        } else {
+            trimmed.trim_start_matches('~')
+        }
+        .trim();
+
+        if !lang.is_empty() {
+            if fence_count % 2 == 0 {
+                // Even-numbered typed boundary → previous opener was never closed.
+                return Err(FenceError::UnclosedBeforeTyped {
+                    at_line: line_num,
+                    at_header: trimmed.trim_end().to_string(),
+                    prev_typed: last_typed,
+                });
+            }
+            last_typed = Some((line_num, trimmed.trim_end().to_string()));
+        }
+    }
+
+    if fence_count % 2 != 0 {
+        return Err(FenceError::OddCount { total: fence_count });
+    }
+    Ok(())
+}
+
+/// Return a one-line description of a fence error suitable for `eprintln!`.
+fn fence_err_brief(err: &FenceError, path: &Path) -> String {
+    let p = path.display();
+    match err {
+        FenceError::OddCount { total } => {
+            format!("malformed code fence in '{p}': odd boundary count ({total} total)")
+        }
+        FenceError::UnclosedBeforeTyped {
+            at_line,
+            at_header,
+            prev_typed,
+        } => match prev_typed {
+            Some((pl, ph)) => format!(
+                "malformed code fence in '{p}': unclosed fence between \
+                     '{ph}' (line {pl}) and '{at_header}' (line {at_line})"
+            ),
+            None => format!(
+                "malformed code fence in '{p}': unclosed fence before \
+                     '{at_header}' (line {at_line})"
+            ),
+        },
+    }
+}
+
+/// Build a markdown error page to display instead of a broken file.
+/// The error renders nicely in the viewer; the user can fix the file and
+/// press Cmd/Ctrl-R to reload.
+fn fence_error_content(path: &Path, err: &FenceError) -> String {
+    let file = path.display();
+    let mod_key = MOD;
+    match err {
+        FenceError::OddCount { total } => format!(
+            "# \u{26a0} Malformed Code Fence\n\n\
+             Cannot render `{file}`.\n\n\
+             **Odd number of fence boundaries detected ({total} total)** \u{2014} \
+             at least one code fence is unclosed.\n\n\
+             Please fix the file, then press **{mod_key}-R** to reload."
+        ),
+        FenceError::UnclosedBeforeTyped {
+            at_line,
+            at_header,
+            prev_typed,
+        } => {
+            let location = match prev_typed {
+                Some((pl, ph)) => {
+                    format!("between `{ph}` on line {pl} and `{at_header}` on line {at_line}")
+                }
+                None => format!("before `{at_header}` on line {at_line}"),
+            };
+            format!(
+                "# \u{26a0} Malformed Code Fence\n\n\
+                 Cannot render `{file}`.\n\n\
+                 **Unclosed code fence detected** \u{2014} {location}.\n\n\
+                 Please fix the file, then press **{mod_key}-R** to reload."
+            )
+        }
+    }
+}
+
 /// On Unix systems: if any stdio stream is a real terminal and `--no-detach`/`--foreground`
 /// is not present, spawn a detached child with a new session and exit the parent immediately,
 /// freeing the terminal. Errors (e.g. can't find the current exe) fall through silently so
@@ -472,15 +601,18 @@ fn main() -> eframe::Result<()> {
         return Ok(());
     }
 
-    // Detach from the controlling terminal on Unix so the shell prompt
-    // returns immediately after launch. A no-op on Windows.
-    #[cfg(unix)]
-    detach_if_tty();
-
     // Strip internal markers before processing positional arguments.
     let args: Vec<String> = env::args()
         .filter(|a| a != "--no-detach" && a != "--foreground")
         .collect();
+
+    // Only detach when a file path is already provided on the command line.
+    // The inquire picker needs a live stdin/stdout, so we must NOT detach
+    // before it runs — doing so spawns an orphan with null stdio.
+    #[cfg(unix)]
+    if args.len() > 1 {
+        detach_if_tty();
+    }
 
     let selected_file: PathBuf = if args.len() > 1 {
         let input_path = Path::new(&args[1]);
@@ -514,6 +646,17 @@ fn main() -> eframe::Result<()> {
             canonical_initial_path.display()
         )
     });
+    // Pre-screen for malformed code fences before any processing.
+    let raw_content = match validate_code_fences(&raw_content) {
+        Ok(()) => raw_content,
+        Err(ref fence_err) => {
+            eprintln!(
+                "thag_md_view: {}",
+                fence_err_brief(fence_err, &canonical_initial_path)
+            );
+            fence_error_content(&canonical_initial_path, fence_err)
+        }
+    };
     // Extract TOC headings and inject {#slug} attributes, then absolutize image paths.
     let (id_injected, toc) = extract_toc_and_inject_ids(&raw_content);
     let markdown_content = absolutize_image_paths(&id_injected, &initial_base_dir);
@@ -735,6 +878,14 @@ impl MarkdownApp {
     fn load_file(&mut self, path: PathBuf) -> bool {
         match std::fs::read_to_string(&path) {
             Ok(raw) => {
+                // Pre-screen for malformed code fences.
+                let raw = match validate_code_fences(&raw) {
+                    Ok(()) => raw,
+                    Err(ref fence_err) => {
+                        eprintln!("thag_md_view: {}", fence_err_brief(fence_err, &path));
+                        fence_error_content(&path, fence_err)
+                    }
+                };
                 let base_dir = path
                     .parent()
                     .unwrap_or_else(|| Path::new("."))
@@ -1555,6 +1706,7 @@ impl eframe::App for MarkdownApp {
                 self.show_help = false;
             }
         }
+        ui.ctx().request_repaint_after(Duration::from_millis(250))
     }
 }
 

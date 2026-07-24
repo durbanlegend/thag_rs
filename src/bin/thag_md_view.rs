@@ -1,8 +1,7 @@
 /*[toml]
 [dependencies]
 eframe = { version = "0.35", features = ["wgpu"] }
-# egui_commonmark = { git = "https://github.com/durbanlegend/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
-egui_commonmark = { path = "/Users/donf/projects/egui_commonmark/egui_commonmark" }
+egui_commonmark = { git = "https://github.com/durbanlegend/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
 
 egui_extras = { version = "0.35", features = ["svg"] }
 thag_proc_macros = { version = "1, thag-auto" }
@@ -1653,11 +1652,10 @@ impl eframe::App for MarkdownApp {
                 });
         } // end TOC panel
 
-        // ── Central panel: the markdown document ──────────────────────────────────────────────
+        // ── Central panel: the markdown document ──────────────────────────────────────────
         egui::CentralPanel::default().show(ui, |ui| {
-            // ── Style the scroll bar that show_scrollable will create internally ─
-            // These settings propagate into the inner ScrollArea because
-            // show_scrollable inherits ui.style() from this outer ui.
+            // Floating scrollbar that reserves its own layout space so the
+            // code-block copy icon is never obscured by the bar on hover.
             {
                 let scroll = &mut ui.style_mut().spacing.scroll;
                 scroll.floating = true;
@@ -1667,101 +1665,102 @@ impl eframe::App for MarkdownApp {
                 scroll.interact_handle_opacity = 0.55;
                 scroll.active_handle_opacity = 0.80;
             }
-
-            // ── Keyboard scrolling ───────────────────────────────────────────
-            // Deltas are threaded through CommonMarkCache so show_scrollable
-            // can apply them inside its own internal ScrollArea.
-            if !wants_text {
-                let line_h = ui.text_style_height(&egui::TextStyle::Body);
-                let page_h = ui.available_height();
-                if scroll_line_up {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, line_h));
-                }
-                if scroll_line_down {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, -line_h));
-                }
-                if scroll_page_up {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, page_h));
-                }
-                if scroll_page_down {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, -page_h));
-                }
-                if scroll_doc_top {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, f32::MAX / 2.0));
-                }
-                if scroll_doc_bottom {
-                    self.cache
-                        .set_scroll_delta(egui::vec2(0.0, -f32::MAX / 2.0));
-                }
-            }
-
-            // ── Font scale ──────────────────────────────────────────────────────────
-            // Applying to the outer ui propagates into show_scrollable’s
-            // inner ScrollArea since it inherits style from us.
-            if (font_scale - 1.0).abs() > 0.005 {
-                use egui::{FontFamily, FontId, TextStyle};
-                let s = ui.style_mut();
-                let base_body = s.text_styles.get(&TextStyle::Body).map_or(14.0, |f| f.size);
-                let base_mono = s
-                    .text_styles
-                    .get(&TextStyle::Monospace)
-                    .map_or(12.0, |f| f.size);
-                let base_heading = s
-                    .text_styles
-                    .get(&TextStyle::Heading)
-                    .map_or(21.0, |f| f.size);
-                let base_small = s
-                    .text_styles
-                    .get(&TextStyle::Small)
-                    .map_or(10.0, |f| f.size);
-                s.text_styles.insert(
-                    TextStyle::Body,
-                    FontId::new(base_body * font_scale, FontFamily::Proportional),
-                );
-                s.text_styles.insert(
-                    TextStyle::Monospace,
-                    FontId::new(base_mono * font_scale, FontFamily::Monospace),
-                );
-                s.text_styles.insert(
-                    TextStyle::Heading,
-                    FontId::new(base_heading * font_scale, FontFamily::Proportional),
-                );
-                s.text_styles.insert(
-                    TextStyle::Small,
-                    FontId::new(base_small * font_scale, FontFamily::Proportional),
-                );
-            }
-
-            // ── Search highlighting ───────────────────────────────────────────────
-            {
-                let qlen = self.search_query.len();
-                let active_search = new_search_open && qlen > 0;
-                let ranges: Vec<std::ops::Range<usize>> = if active_search {
-                    self.search_matches.iter().map(|&s| s..s + qlen).collect()
-                } else {
-                    Vec::new()
-                };
-                let active = if active_search {
-                    self.search_matches
-                        .get(self.search_active)
-                        .map(|&s| s..s + qlen)
-                } else {
-                    None
-                };
-                self.cache.set_search_ranges(ranges);
-                self.cache.set_active_search_range(active);
-            }
-
-            // ── Render with viewport culling ─────────────────────────────────────────
-            // show_scrollable does a full render on first open to populate
-            // split-point and heading-position caches, then culls to the
-            // visible viewport on all subsequent frames.  The source_id is
-            // keyed to the file path so navigating to a new file resets state.
-            CommonMarkViewer::new()
-                .syntax_theme_dark("base16-ocean.dark")
-                .syntax_theme_light("InspiredGitHub")
-                .enable_scroll_to_heading(true)
-                .show_scrollable(&current_path_label, ui, &mut self.cache, &self.content);
+            // Give each file path its own scroll-state key so that:
+            //   • navigating to a new file always starts at the top, and
+            //   • back/forward navigation restores the previous scroll position.
+            egui::ScrollArea::vertical()
+                .id_salt(&current_path_label)
+                .show(ui, |ui| {
+                    // ── Keyboard scrolling ─────────────────────────────────────────
+                    // `scroll_with_delta` must be called inside the ScrollArea
+                    // closure so it targets this specific area.
+                    // Convention: positive y → scroll toward top; negative → toward bottom.
+                    if !wants_text {
+                        let line_h = ui.text_style_height(&egui::TextStyle::Body);
+                        let page_h = ui.available_height();
+                        if scroll_line_up {
+                            ui.scroll_with_delta(egui::vec2(0.0, line_h));
+                        }
+                        if scroll_line_down {
+                            ui.scroll_with_delta(egui::vec2(0.0, -line_h));
+                        }
+                        if scroll_page_up {
+                            ui.scroll_with_delta(egui::vec2(0.0, page_h));
+                        }
+                        if scroll_page_down {
+                            ui.scroll_with_delta(egui::vec2(0.0, -page_h));
+                        }
+                        if scroll_doc_top {
+                            ui.scroll_with_delta(egui::vec2(0.0, f32::MAX / 2.0));
+                        }
+                        if scroll_doc_bottom {
+                            ui.scroll_with_delta(egui::vec2(0.0, -f32::MAX / 2.0));
+                        }
+                    }
+                    // Scale content text styles locally so the toolbar is unaffected.
+                    if (font_scale - 1.0).abs() > 0.005 {
+                        use egui::{FontFamily, FontId, TextStyle};
+                        let s = ui.style_mut();
+                        let base_body =
+                            s.text_styles.get(&TextStyle::Body).map_or(14.0, |f| f.size);
+                        let base_mono = s
+                            .text_styles
+                            .get(&TextStyle::Monospace)
+                            .map_or(12.0, |f| f.size);
+                        let base_heading = s
+                            .text_styles
+                            .get(&TextStyle::Heading)
+                            .map_or(21.0, |f| f.size);
+                        let base_small = s
+                            .text_styles
+                            .get(&TextStyle::Small)
+                            .map_or(10.0, |f| f.size);
+                        s.text_styles.insert(
+                            TextStyle::Body,
+                            FontId::new(base_body * font_scale, FontFamily::Proportional),
+                        );
+                        s.text_styles.insert(
+                            TextStyle::Monospace,
+                            FontId::new(base_mono * font_scale, FontFamily::Monospace),
+                        );
+                        s.text_styles.insert(
+                            TextStyle::Heading,
+                            FontId::new(base_heading * font_scale, FontFamily::Proportional),
+                        );
+                        s.text_styles.insert(
+                            TextStyle::Small,
+                            FontId::new(base_small * font_scale, FontFamily::Proportional),
+                        );
+                    }
+                    // Push the current search state into the cache so the
+                    // renderer can paint inline highlights this frame.
+                    // Gate on `new_search_open` so highlights clear immediately
+                    // when the bar is closed — the query is preserved for
+                    // when the bar is reopened.
+                    {
+                        let qlen = self.search_query.len();
+                        let active_search = new_search_open && qlen > 0;
+                        let ranges: Vec<std::ops::Range<usize>> = if active_search {
+                            self.search_matches.iter().map(|&s| s..s + qlen).collect()
+                        } else {
+                            Vec::new()
+                        };
+                        let active = if active_search {
+                            self.search_matches
+                                .get(self.search_active)
+                                .map(|&s| s..s + qlen)
+                        } else {
+                            None
+                        };
+                        self.cache.set_search_ranges(ranges);
+                        self.cache.set_active_search_range(active);
+                    }
+                    CommonMarkViewer::new()
+                        .syntax_theme_dark("base16-ocean.dark")
+                        .syntax_theme_light("InspiredGitHub")
+                        .enable_scroll_to_heading(true)
+                        .show(ui, &mut self.cache, &self.content);
+                });
         });
 
         // ── Intercept link clicks from egui_commonmark ────────────────────────────────────

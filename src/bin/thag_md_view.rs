@@ -116,6 +116,14 @@ A brief \"↻ Reloaded\" notice appears in the toolbar after each auto-reload.
 | Cmd/Ctrl-a | Reduce font |
 | Cmd/Ctrl-0 | Reset font to 100% |
 
+### Scrolling (when no text field is focused)
+| Key | Action |
+|---|---|
+| Up / Down arrow | Scroll one line |
+| Page Up / Page Down | Scroll one viewport (Fn-Up / Fn-Down on Mac) |
+| Home / Cmd-Up | Jump to top of document (Fn-Left on Mac) |
+| End / Cmd-Down | Jump to bottom of document (Fn-Right on Mac) |
+
 ### Help
 | Key | Action |
 |---|---|
@@ -243,66 +251,87 @@ fn extract_heading_id(line: &str) -> Option<&str> {
     }
 }
 
-/// Scans `raw` markdown, builds a `Vec<TocEntry>` from ATX headings, and returns a version
+/// Scans `raw` markdown, builds a `Vec<TocEntry>` from headings, and returns a version
 /// of the content with `{#slug}` attributes injected into every heading that lacks one.
+///
+/// **Uses pulldown-cmark as the heading oracle** rather than a hand-rolled fence
+/// tracker. This guarantees that the TOC and injected IDs are consistent with what
+/// the renderer sees. A custom fence tracker diverges from pulldown-cmark in edge
+/// cases such as XML-like tags (`<context>`, `<files>`) being treated as type-6 HTML
+/// blocks that can swallow a code-fence opener — leading to headings that are
+/// unreachable by the scroll mechanism.
 fn extract_toc_and_inject_ids(raw: &str) -> (String, Vec<TocEntry>) {
-    let mut out = String::with_capacity(raw.len() + 512);
-    let mut toc = Vec::new();
+    let pc_opts = Options::ENABLE_TABLES
+        | Options::ENABLE_TASKLISTS
+        | Options::ENABLE_STRIKETHROUGH
+        | Options::ENABLE_FOOTNOTES
+        | Options::ENABLE_HEADING_ATTRIBUTES;
+
+    // Pass 1 — ask pulldown-cmark where headings actually begin.
+    let heading_starts: Vec<usize> = Parser::new_ext(raw, pc_opts)
+        .into_offset_iter()
+        .filter_map(|(event, span)| {
+            matches!(event, Event::Start(Tag::Heading { .. })).then_some(span.start)
+        })
+        .collect();
+
+    // Pass 2 — rebuild content, injecting `{#slug}` at each pulldown-cmark-verified heading.
+    let mut out = String::with_capacity(raw.len() + heading_starts.len() * 24);
+    let mut toc: Vec<TocEntry> = Vec::new();
     let mut slug_counts: HashMap<String, usize> = HashMap::new();
-    let mut in_fence = false;
-    let mut fence_char = b'`';
+    let mut pos = 0usize; // read cursor into `raw`
 
-    for line in raw.lines() {
-        let trimmed = line.trim_start_matches(' ');
+    for line_start in heading_starts {
+        // Emit everything between the last position and this heading.
+        out.push_str(&raw[pos..line_start]);
 
-        // Track fenced code blocks (``` or ~~~, optionally indented up to 3 spaces).
-        let is_fence_candidate = trimmed.starts_with("```") || trimmed.starts_with("~~~");
-        if is_fence_candidate && line.len() - trimmed.len() <= 3 {
-            let ch = trimmed.as_bytes()[0];
-            if !in_fence {
-                in_fence = true;
-                fence_char = ch;
-            } else if ch == fence_char {
-                in_fence = false;
-            }
-            out.push_str(line);
-            out.push('\n');
-            continue;
-        }
+        // Extract the heading line (up to but not including the trailing `\n`).
+        let newline = raw[line_start..]
+            .find('\n')
+            .map(|p| line_start + p)
+            .unwrap_or(raw.len());
+        let line = &raw[line_start..newline];
 
-        if !in_fence {
-            if let Some((level, plain_text)) = parse_heading_line(line) {
-                let (slug, line_out) = if let Some(id) = extract_heading_id(line) {
-                    // Preserve the existing explicit ID.
-                    (id.to_string(), line.to_string())
+        // Use our ATX parser to get the level and plain text.
+        if let Some((level, plain_text)) = parse_heading_line(line) {
+            let (slug, injected) = if let Some(id) = extract_heading_id(line) {
+                // Preserve an existing explicit `{#id}`.
+                (id.to_string(), line.to_string())
+            } else {
+                let base = slugify(plain_text);
+                let n = slug_counts.entry(base.clone()).or_insert(0);
+                let slug = if *n == 0 {
+                    base.clone()
                 } else {
-                    // Auto-generate a deduplicated slug.
-                    let base = slugify(plain_text);
-                    let count = slug_counts.entry(base.clone()).or_insert(0);
-                    let slug = if *count == 0 {
-                        base.clone()
-                    } else {
-                        format!("{base}-{count}")
-                    };
-                    *count += 1;
-                    let injected = format!("{} {{#{slug}}}", line.trim_end());
-                    (slug, injected)
+                    format!("{base}-{n}")
                 };
-
-                toc.push(TocEntry {
-                    level,
-                    text: plain_text.to_string(),
-                    slug,
-                });
-                out.push_str(&line_out);
-                out.push('\n');
-                continue;
-            }
+                *n += 1;
+                let with_id = format!("{} {{#{slug}}}", line.trim_end());
+                (slug, with_id)
+            };
+            toc.push(TocEntry {
+                level,
+                text: plain_text.to_string(),
+                slug,
+            });
+            out.push_str(&injected);
+        } else {
+            // pulldown-cmark found a heading our ATX parser doesn't recognise
+            // (e.g. setext style). Pass it through without injection.
+            out.push_str(line);
         }
 
-        out.push_str(line);
-        out.push('\n');
+        // Advance past the newline (or to end-of-file).
+        pos = if newline < raw.len() {
+            out.push('\n');
+            newline + 1
+        } else {
+            newline
+        };
     }
+
+    // Emit the tail of the file after the last heading.
+    out.push_str(&raw[pos..]);
 
     (out, toc)
 }
@@ -646,6 +675,26 @@ fn main() -> eframe::Result<()> {
             canonical_initial_path.display()
         )
     });
+    // Hard size limit — refuse immediately so the GUI doesn't freeze.
+    const MAX_BYTES: usize = 50_000_000;
+    let raw_content = if raw_content.len() > MAX_BYTES {
+        let size_mb = raw_content.len() as f64 / 1e6;
+        eprintln!(
+            "thag_md_view: file too large ({size_mb:.1} MB): {}",
+            canonical_initial_path.display()
+        );
+        format!(
+            "# ⚠ File Too Large\n\n\
+             Cannot render `{}`.\n\n\
+             **File size: {size_mb:.1} MB** — exceeds the {:.0} MB limit.\n\n\
+             Rendering files this large would make the UI unresponsive.\n\
+             Consider splitting the file into smaller sections.",
+            canonical_initial_path.display(),
+            MAX_BYTES as f64 / 1e6,
+        )
+    } else {
+        raw_content
+    };
     // Pre-screen for malformed code fences before any processing.
     let raw_content = match validate_code_fences(&raw_content) {
         Ok(()) => raw_content,
@@ -878,6 +927,41 @@ impl MarkdownApp {
     fn load_file(&mut self, path: PathBuf) -> bool {
         match std::fs::read_to_string(&path) {
             Ok(raw) => {
+                // Hard size limit: refuse files that would make the UI unusable.
+                const MAX_BYTES: usize = 50_000_000; // 50 MB
+                if raw.len() > MAX_BYTES {
+                    let size_mb = raw.len() as f64 / 1e6;
+                    let err = format!(
+                        "# ⚠ File Too Large\n\n\
+                         Cannot render `{}`.\n\n\
+                         **File size: {size_mb:.1} MB** — exceeds the {:.0} MB limit.\n\n\
+                         Rendering files this large would make the UI unresponsive.\n\
+                         Consider splitting the file into smaller sections.",
+                        path.display(),
+                        MAX_BYTES as f64 / 1e6,
+                    );
+                    eprintln!(
+                        "thag_md_view: file too large ({size_mb:.1} MB): {}",
+                        path.display()
+                    );
+                    // Still "load" the error page so the watcher can detect a fix.
+                    let base_dir = path
+                        .parent()
+                        .unwrap_or_else(|| Path::new("."))
+                        .to_path_buf();
+                    let _ = env::set_current_dir(&base_dir);
+                    let (id_injected, toc) = extract_toc_and_inject_ids(&err);
+                    self.content = absolutize_image_paths(&id_injected, &base_dir);
+                    self.raw_content = err;
+                    self.current_file_path = path;
+                    self.toc = toc;
+                    self.cache = CommonMarkCache::default();
+                    self.search_matches.clear();
+                    self.search_active = 0;
+                    self.start_watching();
+                    self.build_content_headings();
+                    return true;
+                }
                 // Pre-screen for malformed code fences.
                 let raw = match validate_code_fences(&raw) {
                     Ok(()) => raw,
@@ -1140,6 +1224,12 @@ impl eframe::App for MarkdownApp {
             search_enter,
             search_shift_enter,
             search_escape,
+            scroll_line_up,
+            scroll_line_down,
+            scroll_page_up,
+            scroll_page_down,
+            scroll_doc_top,
+            scroll_doc_bottom,
         ) = ui.ctx().input(|i| {
             use egui::Key;
             (
@@ -1158,6 +1248,14 @@ impl eframe::App for MarkdownApp {
                 i.key_pressed(Key::Enter),
                 i.modifiers.shift && i.key_pressed(Key::Enter),
                 i.key_pressed(Key::Escape),
+                // Scroll keys — only plain (non-Cmd) arrow keys for line scroll.
+                !i.modifiers.command && i.key_pressed(Key::ArrowUp),
+                !i.modifiers.command && i.key_pressed(Key::ArrowDown),
+                i.key_pressed(Key::PageUp),
+                i.key_pressed(Key::PageDown),
+                // Home / End: physical key OR Cmd+Arrow (standard macOS navigation).
+                i.key_pressed(Key::Home) || (i.modifiers.command && i.key_pressed(Key::ArrowUp)),
+                i.key_pressed(Key::End) || (i.modifiers.command && i.key_pressed(Key::ArrowDown)),
             )
         });
 
@@ -1287,13 +1385,49 @@ impl eframe::App for MarkdownApp {
                 if show_reload_notice {
                     ui.separator();
                     ui.label(
-                        egui::RichText::new("↻ reloaded")
+                        egui::RichText::new("\u{21bb} reloaded")
                             .color(ui.visuals().hyperlink_color)
                             .small(),
                     )
-                    .on_hover_text("File changed on disk — reloaded automatically");
+                    .on_hover_text("File changed on disk \u{2014} reloaded automatically");
                     // Keep asking for repaints until the notice expires.
                     ui.ctx().request_repaint_after(Duration::from_millis(250));
+                }
+
+                // Persistent file-size badge for large documents.
+                // Uses a coloured Frame (white text on solid background) for
+                // legibility in both light and dark themes.
+                {
+                    let sz = self.raw_content.len();
+                    if sz > 2_000_000 {
+                        let size_str = if sz >= 1_000_000_000 {
+                            format!("{:.1} GB", sz as f64 / 1e9)
+                        } else {
+                            format!("{:.1} MB", sz as f64 / 1e6)
+                        };
+                        let fill = if sz > 10_000_000 {
+                            egui::Color32::from_rgb(185, 50, 50) // red: very large
+                        } else {
+                            egui::Color32::from_rgb(170, 100, 0) // amber: large
+                        };
+                        ui.separator();
+                        egui::Frame::new()
+                            .fill(fill)
+                            .corner_radius(egui::CornerRadius::same(4))
+                            .inner_margin(egui::Margin::symmetric(5, 2))
+                            .show(ui, |ui| {
+                                ui.label(
+                                    egui::RichText::new(format!("\u{26a0} {size_str}"))
+                                        .color(egui::Color32::WHITE)
+                                        .strong(), // .small(),
+                                )
+                                .on_hover_text(
+                                    "Large file \u{2014} initial render is slow. \
+                                     Scroll responsiveness improves once the \
+                                     document is fully laid out.",
+                                );
+                            });
+                    }
                 }
 
                 ui.separator();
@@ -1497,6 +1631,19 @@ impl eframe::App for MarkdownApp {
                                     .on_hover_cursor(egui::CursorIcon::PointingHand)
                                     .clicked()
                                 {
+                                    // Sanity-check: confirm the injected ID is actually
+                                    // present in the rendered content. If it is not, the
+                                    // scroll will silently do nothing and the target will
+                                    // be lost (egui_commonmark clears it at end of show).
+                                    let pat = format!("{{#{}}}", &entry.slug);
+                                    if !self.content.contains(&pat) {
+                                        eprintln!(
+                                            "thag_md_view: TOC scroll MISS: \
+                                             {pat} not found in rendered content. \
+                                             slug={:?} heading={:?}",
+                                            entry.slug, entry.text
+                                        );
+                                    }
                                     *self.cache.scroll_to_id_target_mut() =
                                         Some(entry.slug.clone());
                                 }
@@ -1524,6 +1671,32 @@ impl eframe::App for MarkdownApp {
             egui::ScrollArea::vertical()
                 .id_salt(&current_path_label)
                 .show(ui, |ui| {
+                    // ── Keyboard scrolling ─────────────────────────────────────────
+                    // `scroll_with_delta` must be called inside the ScrollArea
+                    // closure so it targets this specific area.
+                    // Convention: positive y → scroll toward top; negative → toward bottom.
+                    if !wants_text {
+                        let line_h = ui.text_style_height(&egui::TextStyle::Body);
+                        let page_h = ui.available_height();
+                        if scroll_line_up {
+                            ui.scroll_with_delta(egui::vec2(0.0, line_h));
+                        }
+                        if scroll_line_down {
+                            ui.scroll_with_delta(egui::vec2(0.0, -line_h));
+                        }
+                        if scroll_page_up {
+                            ui.scroll_with_delta(egui::vec2(0.0, page_h));
+                        }
+                        if scroll_page_down {
+                            ui.scroll_with_delta(egui::vec2(0.0, -page_h));
+                        }
+                        if scroll_doc_top {
+                            ui.scroll_with_delta(egui::vec2(0.0, f32::MAX / 2.0));
+                        }
+                        if scroll_doc_bottom {
+                            ui.scroll_with_delta(egui::vec2(0.0, -f32::MAX / 2.0));
+                        }
+                    }
                     // Scale content text styles locally so the toolbar is unaffected.
                     if (font_scale - 1.0).abs() > 0.005 {
                         use egui::{FontFamily, FontId, TextStyle};
@@ -1694,7 +1867,7 @@ impl eframe::App for MarkdownApp {
             let mut open = true;
             egui::Window::new("Help")
                 .resizable(true)
-                .default_size([620.0, 480.0])
+                .default_size([1000.0, 700.0])
                 .collapsible(false)
                 .open(&mut open)
                 .show(ui, |ui| {

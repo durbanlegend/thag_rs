@@ -1,7 +1,8 @@
 /*[toml]
 [dependencies]
 eframe = { version = "0.35", features = ["wgpu"] }
-egui_commonmark = { git = "https://github.com/durbanlegend/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
+# egui_commonmark = { git = "https://github.com/durbanlegend/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
+egui_commonmark = { path = "/Users/donf/projects/egui_commonmark/egui_commonmark" }
 
 egui_extras = { version = "0.35", features = ["svg"] }
 thag_proc_macros = { version = "1, thag-auto" }

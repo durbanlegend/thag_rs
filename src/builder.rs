@@ -1353,6 +1353,10 @@ fn cache_executable(build_state: &BuildState) -> ThagResult<()> {
     // Destination: executable cache
     let dest_exe = cache_dir.join(&exe_name);
 
+    // Remove any existing executable due to unexplained SIGKILL failures
+    if dest_exe.exists() {
+        fs::remove_file(&dest_exe)?;
+    }
     // Copy executable to cache
     if source_exe.exists() {
         let result = fs::copy(&source_exe, &dest_exe);

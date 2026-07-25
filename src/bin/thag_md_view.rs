@@ -19,6 +19,7 @@ default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_com
 # Make sure the result runs fast
 [profile.dev]
 opt-level = 3     # Apply maximum performance optimizations
+debug = true
 */
 /// A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
 /// `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the

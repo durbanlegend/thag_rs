@@ -821,6 +821,7 @@ impl MarkdownApp {
         toc: Vec<TocEntry>,
         ctx: egui::Context,
     ) -> Self {
+        let content_len = content.len();
         let mut app = Self {
             content,
             raw_content,
@@ -844,7 +845,7 @@ impl MarkdownApp {
             watcher: None,
             watcher_rx: None,
             last_auto_reload: None,
-            use_viewport_cache: false, // updated by load_file before first render
+            use_viewport_cache: content_len >= VIEWPORT_CACHE_THRESHOLD,
         };
         app.start_watching();
         app.build_content_headings();
@@ -1207,8 +1208,8 @@ impl eframe::App for MarkdownApp {
         let show_reload_notice = self
             .last_auto_reload
             .is_some_and(|t| t.elapsed() < Duration::from_secs(2));
-        let use_viewport_cache = self.use_viewport_cache;
         let doc_is_large = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
+        let use_viewport_cache = self.use_viewport_cache & doc_is_large;
 
         // ── Mutable locals updated by keyboard / buttons, applied at end of frame ─────────
         let mut nav_action = NavAction::None;
@@ -1417,7 +1418,11 @@ impl eframe::App for MarkdownApp {
                     if ui
                         .selectable_label(
                             use_viewport_cache,
-                            if use_viewport_cache { "⚡" } else { "⚡" },
+                            if use_viewport_cache {
+                                "⚡ cache"
+                            } else {
+                                "🐢 plain" // 🐌
+                            },
                         )
                         .on_hover_text(if use_viewport_cache {
                             "Viewport cache ON — faster for large docs, may have scroll \
@@ -1801,7 +1806,7 @@ impl eframe::App for MarkdownApp {
                 .syntax_theme_dark("base16-ocean.dark")
                 .syntax_theme_light("InspiredGitHub")
                 .enable_scroll_to_heading(true)
-                .viewport_cache(self.use_viewport_cache)
+                .viewport_cache(new_use_viewport_cache)
                 .show_scrollable(&current_path_label, ui, &mut self.cache, &self.content);
         });
 
@@ -1890,8 +1895,12 @@ impl eframe::App for MarkdownApp {
         self.show_toc = new_show_toc;
         self.search_open = new_search_open;
         self.show_help = new_show_help;
-        self.use_viewport_cache = new_use_viewport_cache;
-
+        // Never enable caching for docs below the threshold, regardless of how the state
+        // got set (e.g. load_file runs mid-frame and correctly sets self.use_viewport_cache
+        // = false, but the snapshotted new_use_viewport_cache is still the old large-file
+        // value and would overwrite it without this guard).
+        self.use_viewport_cache =
+            new_use_viewport_cache && (self.content.len() >= VIEWPORT_CACHE_THRESHOLD);
         if new_enhanced_contrast != enhanced_contrast {
             self.enhanced_contrast = new_enhanced_contrast;
             apply_style(ui.ctx(), new_enhanced_contrast);

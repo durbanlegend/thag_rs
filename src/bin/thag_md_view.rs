@@ -69,6 +69,11 @@ const MOD: &str = "Cmd";
 #[cfg(not(target_os = "macos"))]
 const MOD: &str = "Ctrl";
 
+/// Documents at or above this byte count get the viewport-cache toggle shown in
+/// the toolbar and have caching auto-enabled.  Below this size the simple
+/// full-document render path is always used (accurate + fast enough).
+const VIEWPORT_CACHE_THRESHOLD: usize = 200_000; // 200 KB
+
 file_navigator! {}
 
 /// Help text rendered in the F1 help window.
@@ -802,6 +807,10 @@ struct MarkdownApp {
     watcher_rx: Option<Receiver<()>>,
     /// When set, a brief "reloaded" notice is shown in the toolbar until this instant.
     last_auto_reload: Option<Instant>,
+    /// Whether the viewport-cache performance mode is active.
+    /// Auto-enabled for documents ≥ [`VIEWPORT_CACHE_THRESHOLD`] bytes.
+    /// Hidden from the UI for smaller documents.
+    use_viewport_cache: bool,
 }
 
 impl MarkdownApp {
@@ -835,6 +844,7 @@ impl MarkdownApp {
             watcher: None,
             watcher_rx: None,
             last_auto_reload: None,
+            use_viewport_cache: false, // updated by load_file before first render
         };
         app.start_watching();
         app.build_content_headings();
@@ -958,6 +968,7 @@ impl MarkdownApp {
                     self.current_file_path = path;
                     self.toc = toc;
                     self.cache = CommonMarkCache::default();
+                    self.use_viewport_cache = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
                     self.search_matches.clear();
                     self.search_active = 0;
                     self.start_watching();
@@ -985,6 +996,7 @@ impl MarkdownApp {
                 self.toc = toc;
                 // Clear the cache so egui_commonmark doesn't carry over stale state.
                 self.cache = CommonMarkCache::default();
+                self.use_viewport_cache = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
                 // Invalidate and rebuild search for the new content.
                 self.search_matches.clear();
                 self.search_active = 0;
@@ -1195,6 +1207,8 @@ impl eframe::App for MarkdownApp {
         let show_reload_notice = self
             .last_auto_reload
             .is_some_and(|t| t.elapsed() < Duration::from_secs(2));
+        let use_viewport_cache = self.use_viewport_cache;
+        let doc_is_large = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
 
         // ── Mutable locals updated by keyboard / buttons, applied at end of frame ─────────
         let mut nav_action = NavAction::None;
@@ -1205,6 +1219,7 @@ impl eframe::App for MarkdownApp {
         let mut new_show_toc = show_toc;
         let mut new_search_open = search_open;
         let mut new_show_help = show_help;
+        let mut new_use_viewport_cache = use_viewport_cache;
         let mut search_nav: i32 = 0; // +1 = next match, -1 = prev match
         let font_scale_label = format!("Aa {:.0}%", self.font_scale * 100.0);
 
@@ -1394,6 +1409,30 @@ impl eframe::App for MarkdownApp {
                     .on_hover_text("File changed on disk \u{2014} reloaded automatically");
                     // Keep asking for repaints until the notice expires.
                     ui.ctx().request_repaint_after(Duration::from_millis(250));
+                }
+
+                // Viewport-cache toggle — only shown for large documents.
+                if doc_is_large {
+                    ui.separator();
+                    if ui
+                        .selectable_label(
+                            use_viewport_cache,
+                            if use_viewport_cache { "⚡" } else { "⚡" },
+                        )
+                        .on_hover_text(if use_viewport_cache {
+                            "Viewport cache ON — faster for large docs, may have scroll \
+                             artefacts. Click to switch to accurate full-render mode."
+                        } else {
+                            "Viewport cache OFF — accurate scrolling for all doc sizes. \
+                             Click to enable for large-doc speed."
+                        })
+                        .clicked()
+                    {
+                        new_use_viewport_cache = !use_viewport_cache;
+                        // Clear stale split-point cache so toggling ON triggers a fresh
+                        // full render, and toggling OFF starts clean.
+                        self.cache = CommonMarkCache::default();
+                    }
                 }
 
                 // Persistent file-size badge for large documents.
@@ -1762,6 +1801,7 @@ impl eframe::App for MarkdownApp {
                 .syntax_theme_dark("base16-ocean.dark")
                 .syntax_theme_light("InspiredGitHub")
                 .enable_scroll_to_heading(true)
+                .viewport_cache(self.use_viewport_cache)
                 .show_scrollable(&current_path_label, ui, &mut self.cache, &self.content);
         });
 
@@ -1850,6 +1890,7 @@ impl eframe::App for MarkdownApp {
         self.show_toc = new_show_toc;
         self.search_open = new_search_open;
         self.show_help = new_show_help;
+        self.use_viewport_cache = new_use_viewport_cache;
 
         if new_enhanced_contrast != enhanced_contrast {
             self.enhanced_contrast = new_enhanced_contrast;

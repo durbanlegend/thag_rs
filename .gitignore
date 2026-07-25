@@ -153,3 +153,4 @@ demo/egui_load_fonts_copy.rs
 demo/egui_markdown_viewer_zoom.rs
 demo/md_toc.rs
 demo/thag_md_view_instr.rs
+README_debug.md

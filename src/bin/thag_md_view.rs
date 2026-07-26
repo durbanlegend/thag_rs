@@ -812,7 +812,6 @@ impl MarkdownApp {
         toc: Vec<TocEntry>,
         ctx: egui::Context,
     ) -> Self {
-        let content_len = content.len();
         let mut app = Self {
             content,
             raw_content,

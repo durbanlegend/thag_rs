@@ -1721,20 +1721,15 @@ impl eframe::App for MarkdownApp {
                 let page_h = ui.available_height();
                 if scroll_line_up {
                     self.cache.set_scroll_delta(egui::vec2(0.0, line_h));
-                }
-                if scroll_line_down {
+                } else if scroll_line_down {
                     self.cache.set_scroll_delta(egui::vec2(0.0, -line_h));
-                }
-                if scroll_page_up {
+                } else if scroll_page_up {
                     self.cache.set_scroll_delta(egui::vec2(0.0, page_h));
-                }
-                if scroll_page_down {
+                } else if scroll_page_down {
                     self.cache.set_scroll_delta(egui::vec2(0.0, -page_h));
-                }
-                if scroll_doc_top {
+                } else if scroll_doc_top {
                     self.cache.set_scroll_delta(egui::vec2(0.0, f32::MAX / 2.0));
-                }
-                if scroll_doc_bottom {
+                } else if scroll_doc_bottom {
                     self.cache
                         .set_scroll_delta(egui::vec2(0.0, -f32::MAX / 2.0));
                 }

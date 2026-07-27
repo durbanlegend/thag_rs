@@ -140,7 +140,10 @@ A brief \"↻ Reloaded\" notice appears in the toolbar after each auto-reload.
 ///
 /// Called once at startup and again whenever the toolbar "Contrast+/-" toggle changes.
 /// `image_loading_spinners` is kept `false` in both modes.
+#[allow(dead_code)]
 fn apply_style(ctx: &egui::Context, enhanced: bool) {
+    const BRIGHTEN: f32 = 1.3;
+    const DARKEN: f32 = 1.0 / BRIGHTEN;
     // ── Dark mode ─────────────────────────────────────────────────────────────────────────
     ctx.set_visuals_of(egui::Theme::Dark, {
         let mut v = egui::Visuals::dark();
@@ -162,6 +165,19 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
             v.window_fill = egui::Color32::from_rgb(255, 255, 255);
             v.code_bg_color = egui::Color32::from_rgb(225, 225, 230);
             v.hyperlink_color = egui::Color32::from_rgb(0, 100, 210);
+            // v.widgets.noninteractive.fg_stroke.color =
+            //     adjust_color(v.widgets.noninteractive.fg_stroke.color, DARKEN);
+            // v.panel_fill = adjust_color(v.panel_fill, BRIGHTEN);
+            // v.window_fill = adjust_color(v.window_fill, BRIGHTEN);
+            // // v.code_bg_color = adjust_color(v.code_bg_color, DARKEN);
+            // v.extreme_bg_color = adjust_color(v.extreme_bg_color, BRIGHTEN);
+            // v.faint_bg_color = adjust_color(v.faint_bg_color, BRIGHTEN);
+            // v.hyperlink_color = adjust_color(v.hyperlink_color, DARKEN);
+            // // } else {
+            // //     v.code_bg_color = egui::Color32::LIGHT_GRAY;
+            // //     v.extreme_bg_color = egui::Color32::from_gray(120);
+        } else {
+            v.code_bg_color = egui::Color32::from_rgb(225, 225, 230);
         }
         v.image_loading_spinners = false; // always off in a document reader
         v
@@ -180,6 +196,18 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
             );
         });
     }
+}
+
+use egui::ecolor::Hsva;
+use egui::Color32;
+
+/// Adjusts a Color32 by a given factor (e.g., 1.2 for +20% brightness).
+#[allow(dead_code)]
+fn adjust_color(color: Color32, factor: f32) -> Color32 {
+    let mut hsva = Hsva::from(color);
+    // Scale the Value (brightness) component, keeping it clamped between 0.0 and 1.0
+    hsva.v = (hsva.v * factor).clamp(0.0, 1.0);
+    Color32::from(hsva)
 }
 
 // ─── TOC / heading extraction ──────────────────────────────────────────────────
@@ -217,6 +245,7 @@ fn slugify(text: &str) -> String {
 /// Parses an ATX heading line and returns `(level, plain_text)`.
 /// `plain_text` is the heading content with any trailing `{…}` attribute block stripped.
 /// Returns `None` for non-heading lines, indented lines, or malformed ATX syntax.
+#[allow(clippy::cast_possible_truncation)]
 fn parse_heading_line(line: &str) -> Option<(u8, &str)> {
     let hashes = line.bytes().take_while(|&b| b == b'#').count();
     if hashes == 0 || hashes > 6 {
@@ -290,8 +319,7 @@ fn extract_toc_and_inject_ids(raw: &str) -> (String, Vec<TocEntry>) {
         // Extract the heading line (up to but not including the trailing `\n`).
         let newline = raw[line_start..]
             .find('\n')
-            .map(|p| line_start + p)
-            .unwrap_or(raw.len());
+            .map_or(raw.len(), |p| line_start + p);
         let line = &raw[line_start..newline];
 
         // Use our ATX parser to get the level and plain text.
@@ -454,8 +482,8 @@ enum FenceError {
 
 /// Scan `content` for fence problems without a full parser.
 ///
-/// A fence boundary is a line with ≤ 3 leading spaces that starts with `\`\`\``
-/// or `~~~` (matching the same rule used by `extract_toc_and_inject_ids`).
+/// A fence boundary is a line with ≤ 3 leading spaces that starts with a triple backtick
+/// or triple tilde (`~~~`) (matching the same rule used by `extract_toc_and_inject_ids`).
 ///
 /// Two invariants are checked:
 /// - **(a)** Total boundary count must be even — odd means at least one unclosed.
@@ -489,7 +517,7 @@ fn validate_code_fences(content: &str) -> Result<(), FenceError> {
         .trim();
 
         if !lang.is_empty() {
-            if fence_count % 2 == 0 {
+            if fence_count.is_multiple_of(2) {
                 // Even-numbered typed boundary → previous opener was never closed.
                 return Err(FenceError::UnclosedBeforeTyped {
                     at_line: line_num,
@@ -501,7 +529,7 @@ fn validate_code_fences(content: &str) -> Result<(), FenceError> {
         }
     }
 
-    if fence_count % 2 != 0 {
+    if !fence_count.is_multiple_of(2) {
         return Err(FenceError::OddCount { total: fence_count });
     }
     Ok(())
@@ -622,7 +650,11 @@ fn detach_if_tty() {
     // spawn failed — fall through and run in the foreground.
 }
 
+#[allow(clippy::cast_precision_loss)]
 fn main() -> eframe::Result<()> {
+    // Hard size limit — refuse immediately so the GUI doesn't freeze.
+    const MAX_BYTES: usize = 50_000_000;
+
     // Help check MUST come before detach: detached children have stdout/stderr
     // set to null, so any output would be silently lost.
     // Use a normal return (not process::exit) so macOS framework atexit handlers
@@ -640,10 +672,10 @@ fn main() -> eframe::Result<()> {
     // Only detach when a file path is already provided on the command line.
     // The inquire picker needs a live stdin/stdout, so we must NOT detach
     // before it runs — doing so spawns an orphan with null stdio.
-    #[cfg(unix)]
-    if args.len() > 1 {
-        detach_if_tty();
-    }
+    // #[cfg(unix)]
+    // if args.len() > 1 {
+    //     detach_if_tty();
+    // }
 
     let selected_file: PathBuf = if args.len() > 1 {
         let input_path = Path::new(&args[1]);
@@ -662,6 +694,12 @@ fn main() -> eframe::Result<()> {
         let mut navigator = FileNavigator::new();
         select_file(&mut navigator, Some("md"), false).unwrap()
     };
+
+    #[cfg(unix)]
+    if args.len() > 1 {
+        detach_if_tty();
+    }
+
     let selected_path = PathBuf::from(&selected_file);
     let canonical_initial_path = selected_path.canonicalize().unwrap_or(selected_path);
     let initial_base_dir = canonical_initial_path
@@ -677,8 +715,6 @@ fn main() -> eframe::Result<()> {
             canonical_initial_path.display()
         )
     });
-    // Hard size limit — refuse immediately so the GUI doesn't freeze.
-    const MAX_BYTES: usize = 50_000_000;
     let raw_content = if raw_content.len() > MAX_BYTES {
         let size_mb = raw_content.len() as f64 / 1e6;
         eprintln!(
@@ -753,6 +789,7 @@ enum NavAction {
 }
 
 /// The state holder for our egui app.
+#[allow(clippy::struct_excessive_bools)]
 struct MarkdownApp {
     /// Processed markdown text currently loaded (image paths absolutized, heading IDs injected).
     content: String,
@@ -844,7 +881,7 @@ impl MarkdownApp {
     /// (Re-)arm the file watcher for `self.current_file_path`.
     ///
     /// Drops any previous watcher first. Uses a `notify::RecommendedWatcher` — on macOS
-    /// that is FSEvents, on Linux inotify, on Windows ReadDirectoryChanges. A bridge
+    /// that is `FSEvents`, on Linux `inotify`, on Windows `ReadDirectoryChanges`. A bridge
     /// thread applies a short quiet-period debounce before forwarding a wake signal so
     /// that editors performing multi-step atomic writes don't trigger duplicate reloads.
     fn start_watching(&mut self) {
@@ -924,8 +961,9 @@ impl MarkdownApp {
         self.history_index + 1 < self.history.len()
     }
 
-    /// Load `path` from disk and update content, TOC, raw_content, cache, and CWD.
+    /// Load `path` from disk and update content, TOC, raw content, and CWD.
     /// Returns `true` on success. Re-arms the file watcher for the new path.
+    #[allow(clippy::cast_precision_loss)]
     fn load_file(&mut self, path: PathBuf) -> bool {
         match std::fs::read_to_string(&path) {
             Ok(raw) => {
@@ -1124,12 +1162,15 @@ impl MarkdownApp {
             match event {
                 // Text events cover all prose text, heading text, list items,
                 // table cells, and fenced code block content.
-                Event::Text(ref text) => {
-                    collect_matches(text, span.start, &query, qlen, &mut self.search_matches);
-                }
                 // Inline code (‘backtick’ spans) — rendered via event_text, highlighted.
-                Event::Code(ref text) => {
+                Event::Text(ref text) | Event::Code(ref text) => {
                     collect_matches(text, span.start, &query, qlen, &mut self.search_matches);
+                    // Event::Text(ref text) => {
+                    //     collect_matches(text, span.start, &query, qlen, &mut self.search_matches);
+                    // }
+                    // // Inline code (‘backtick’ spans) — rendered via event_text, highlighted.
+                    // Event::Code(ref text) => {
+                    //     collect_matches(text, span.start, &query, qlen, &mut self.search_matches);
                 }
                 _ => {}
             }
@@ -1156,7 +1197,7 @@ impl MarkdownApp {
 }
 
 impl eframe::App for MarkdownApp {
-    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::cast_precision_loss, clippy::too_many_lines)]
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         // ── Poll file watcher ─────────────────────────────────────────────────────────────
         // Drain all pending "file changed" signals from the bridge thread.
@@ -1637,7 +1678,7 @@ impl eframe::App for MarkdownApp {
                                     // present in the rendered content. If it is not, the
                                     // scroll will silently do nothing and the target will
                                     // be lost (egui_commonmark clears it at end of show).
-                                    let pat = format!("{{#{}}}", &entry.slug);
+                                    let pat = format!("{{#{}}}", entry.slug);
                                     if !self.content.contains(&pat) {
                                         eprintln!(
                                             "thag_md_view: TOC scroll MISS: \
@@ -1876,7 +1917,7 @@ impl eframe::App for MarkdownApp {
                 self.show_help = false;
             }
         }
-        ui.ctx().request_repaint_after(Duration::from_millis(250))
+        ui.ctx().request_repaint_after(Duration::from_millis(250));
     }
 }
 

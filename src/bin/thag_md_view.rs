@@ -839,6 +839,9 @@ struct MarkdownApp {
     watcher_rx: Option<Receiver<()>>,
     /// When set, a brief "reloaded" notice is shown in the toolbar until this instant.
     last_auto_reload: Option<Instant>,
+    /// `true` until the end of the very first frame; used to request key-window focus
+    /// on startup so that keyboard shortcuts work without requiring a prior mouse click.
+    first_frame: bool,
 }
 
 impl MarkdownApp {
@@ -872,6 +875,7 @@ impl MarkdownApp {
             watcher: None,
             watcher_rx: None,
             last_auto_reload: None,
+            first_frame: true,
         };
         app.start_watching();
         app.build_content_headings();
@@ -1199,6 +1203,13 @@ impl MarkdownApp {
 impl eframe::App for MarkdownApp {
     #[allow(clippy::cast_precision_loss, clippy::too_many_lines)]
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        // ── On the very first frame, claim key-window focus so shortcuts work immediately
+        // without requiring the user to click first (macOS key-window / winit issue).
+        if self.first_frame {
+            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Focus);
+            self.first_frame = false;
+        }
+
         // ── Poll file watcher ─────────────────────────────────────────────────────────────
         // Drain all pending "file changed" signals from the bridge thread.
         // We set a flag rather than reloading immediately so the reload happens
@@ -1866,6 +1877,12 @@ impl eframe::App for MarkdownApp {
                 NavAction::None => false,
             }
         };
+
+        // Re-claim key-window focus after the native file dialog releases it;
+        // without this the next keyboard shortcut typically needs two presses.
+        if open_file_requested {
+            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Focus);
+        }
 
         // ── Search navigation (applied after all panels are drawn) ────────────────────────
         if search_nav != 0 && match_count > 0 {

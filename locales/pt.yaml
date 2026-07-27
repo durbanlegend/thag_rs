@@ -1,0 +1,94 @@
+_version: 1
+
+toolbar:
+  contrast_restore: "Restaurar o contraste padrão do egui"
+  contrast_apply: "Aplicar cores de alto contraste"
+  open_file: "Abrir um arquivo Markdown (%{cmd}-O)"
+  reload: "Recarregar o arquivo atual do disco (%{cmd}-R)"
+  toc_toggle: "Alternar o índice (%{cmd}-T)"
+  search_toggle: "Pesquisar (%{cmd}-F)"
+  close: "Fechar (%{cmd}-W)"
+  help: "Ajuda (F1)"
+  font_enlarge: "Aumentar fontes (%{cmd}-Shift-A)"
+  font_reset: "Redefinir tamanho da fonte para 100% (%{cmd}-0)"
+  font_reduce: "Reduzir fontes (%{cmd}-a)"
+  zoom_in: "Ampliar (%{cmd}-=)"
+  zoom_reset: "Redefinir zoom para 100% (%{cmd}-Z)"
+  zoom_out: "Reduzir zoom (%{cmd}-−)"
+
+status:
+  reloaded: "↻ recarregado"
+  reloaded_tip: "Arquivo alterado no disco — recarregado automaticamente"
+  large_file_tip: "Arquivo grande — a renderização inicial é lenta. A resposta de rolagem melhora após o documento ser completamente carregado."
+
+search:
+  placeholder: "Pesquisar no documento…"
+  no_matches: "Sem resultados"
+  match_counter: "%{current} / %{total}"
+  prev_tip: "Correspondência anterior (Shift-Enter)"
+  next_tip: "Próxima correspondência (Enter)"
+  close_tip: "Fechar pesquisa (Esc)"
+
+toc:
+  title: "Índice"
+
+help:
+  window_title: "Ajuda"
+  text: |
+    # Visualizador de Markdown — Ajuda
+
+    ## Atalhos de Teclado
+
+    ### Arquivo
+    | Tecla | Ação |
+    |---|---|
+    | Cmd/Ctrl-o | Abrir um arquivo Markdown |
+    | Cmd/Ctrl-r | Atualizar — recarregar o arquivo atual do disco |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Sair |
+
+    O visualizador monitora o arquivo atual em busca de alterações e o recarrega automaticamente.
+    Use `--no-detach` ou `--foreground` na linha de comando para mantê-lo conectado ao terminal (somente Unix).
+
+    ### Navegação
+    | Tecla | Ação |
+    |---|---|
+    | Botões ◀ / ▶ | Voltar / Avançar no histórico |
+    | Cmd/Ctrl-t | Alternar o painel do índice |
+
+    ### Pesquisa
+    | Tecla | Ação |
+    |---|---|
+    | Cmd/Ctrl-f | Abrir / fechar a barra de pesquisa |
+    | Enter  ou  botão ⬇ | Próxima correspondência |
+    | Shift-Enter  ou  botão ⬆ | Correspondência anterior |
+    | Escape | Fechar a barra de pesquisa |
+
+    > A pesquisa navega até a seção que contém cada correspondência e destaca o texto encontrado.
+    > A correspondência ativa é exibida em laranja; as demais em amarelo.
+
+    ### Recarga automática
+    O visualizador monitora o arquivo aberto em busca de alterações no disco e o recarrega automaticamente.
+    Um breve aviso «↻ Recarregado» aparece na barra de ferramentas após cada recarga automática.
+
+    ### Zoom e Fonte
+    | Tecla | Ação |
+    |---|---|
+    | Cmd/Ctrl-= | Ampliar |
+    | Cmd/Ctrl-− | Reduzir zoom |
+    | Cmd/Ctrl-z | Redefinir zoom para 100% |
+    | Cmd/Ctrl-Shift-a | Aumentar fonte |
+    | Cmd/Ctrl-a | Reduzir fonte |
+    | Cmd/Ctrl-0 | Redefinir fonte para 100% |
+
+    ### Rolagem (quando nenhum campo de texto está em foco)
+    | Tecla | Ação |
+    |---|---|
+    | Seta para cima / baixo | Rolar uma linha |
+    | Page Up / Page Down | Rolar um viewport (Fn-Cima / Fn-Baixo no Mac) |
+    | Home / Cmd-Cima | Ir ao início do documento (Fn-Esquerda no Mac) |
+    | End / Cmd-Baixo | Ir ao final do documento (Fn-Direita no Mac) |
+
+    ### Ajuda
+    | Tecla | Ação |
+    |---|---|
+    | F1 | Alternar esta tela de ajuda |

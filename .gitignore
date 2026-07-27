@@ -159,3 +159,6 @@ demo/thag_md_view_499570e6.rs
 demo/thag_md_view_6447d1ca.rs
 demo/thag_md_view_82d75ade.rs
 src/bin/Markdown_Viewer_Enhancement_Strategy_and_Crates.io_Promotion.md
+locales/zh.yaml
+locales/ja.yaml
+locales/he.yaml

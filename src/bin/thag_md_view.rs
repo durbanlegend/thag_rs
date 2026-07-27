@@ -12,6 +12,8 @@ fontdb = { version = "0.23", features = ["fs"] }
 notify = { version = "8" }
 pulldown-cmark = { version = "0.13" }
 rfd = { version = "0.15" }
+rust-i18n = "4"
+sys-locale = "0.3"
 
 [features]
 default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_commonmark/svg","egui_commonmark/fetch"]
@@ -51,6 +53,7 @@ use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
 use notify::{RecursiveMode, Watcher};
 use pulldown_cmark::{Event, Options, Parser, Tag};
 use rfd::FileDialog;
+use rust_i18n::t;
 use std::{
     collections::HashMap,
     env,
@@ -71,66 +74,8 @@ const MOD: &str = "Ctrl";
 
 file_navigator! {}
 
-/// Help text rendered in the F1 help window.
-const HELP_TEXT: &str = "\
-# Markdown Viewer — Help
-
-## Keyboard Shortcuts
-
-### File
-| Key | Action |
-|---|---|
-| Cmd/Ctrl-o | Open a markdown file |
-| Cmd/Ctrl-r | Refresh — reload the current file from disk |
-| Cmd/Ctrl-w  /  Cmd/Ctrl-q | Quit |
-
-The viewer watches the current file for changes and reloads automatically.
-Use `--no-detach` or `--foreground` on the command line to keep it attached to the terminal (Unix only).
-
-### Navigation
-| Key | Action |
-|---|---|
-| ◀ / ▶ buttons | Back / Forward in history |
-| Cmd/Ctrl-t | Toggle the table of contents panel |
-
-### Search
-| Key | Action |
-|---|---|
-| Cmd/Ctrl-f | Open / close the search bar |
-| Enter  or  ⬇ button | Next match |
-| Shift-Enter  or  ⬆ button | Previous match |
-| Escape | Close the search bar |
-
-> Search navigates to the section containing each match and highlights matched text inline.
-> The active match is shown in orange; other matches in yellow.
-
-### Auto-reload
-The viewer watches the open file for changes on disk and reloads it automatically.
-A brief \"↻ Reloaded\" notice appears in the toolbar after each auto-reload.
-
-### Zoom & Font
-| Key | Action |
-|---|---|
-| Cmd/Ctrl-= | Zoom in |
-| Cmd/Ctrl-− | Zoom out |
-| Cmd/Ctrl-z | Reset zoom to 100% |
-| Cmd/Ctrl-Shift-a | Enlarge font |
-| Cmd/Ctrl-a | Reduce font |
-| Cmd/Ctrl-0 | Reset font to 100% |
-
-### Scrolling (when no text field is focused)
-| Key | Action |
-|---|---|
-| Up / Down arrow | Scroll one line |
-| Page Up / Page Down | Scroll one viewport (Fn-Up / Fn-Down on Mac) |
-| Home / Cmd-Up | Jump to top of document (Fn-Left on Mac) |
-| End / Cmd-Down | Jump to bottom of document (Fn-Right on Mac) |
-
-### Help
-| Key | Action |
-|---|---|
-| F1 | Toggle this help screen |
-";
+// rust_i18n::i18n!("/Users/donf/projects/thag_rs/locales", fallback = "en");
+rust_i18n::i18n!("locales", fallback = "en"); // Relative path won't work for scripting location on $TMPDIR
 
 /// Applies contrast colours to both egui themes; font sizes are always left at
 /// egui defaults so toggling never causes a scroll-position jump.
@@ -650,10 +595,28 @@ fn detach_if_tty() {
     // spawn failed — fall through and run in the foreground.
 }
 
+/// Detect the preferred UI locale from the operating system.
+/// Uses `sys-locale` which reads native OS APIs (CFPreferences on macOS,
+/// `GetUserDefaultLocaleName` on Windows, POSIX env-vars on Linux).
+/// Falls back to `"en"` when no usable locale is detected.
+fn detect_locale() -> String {
+    env::var("LOCALE").unwrap_or_else(|_| {
+        eprintln!("No LOCALE env var");
+        env::var("LANG").unwrap_or_else(|_| {
+            eprintln!("No LANG env var");
+            sys_locale::get_locale()
+                .filter(|loc| !loc.is_empty() && loc != "C" && loc != "POSIX")
+                .unwrap_or_else(|| "en".to_string())
+        })
+    })
+}
+
 #[allow(clippy::cast_precision_loss)]
 fn main() -> eframe::Result<()> {
     // Hard size limit — refuse immediately so the GUI doesn't freeze.
     const MAX_BYTES: usize = 50_000_000;
+
+    dbg!(&env!("CARGO_MANIFEST_DIR"));
 
     // Help check MUST come before detach: detached children have stdout/stderr
     // set to null, so any output would be silently lost.
@@ -663,6 +626,11 @@ fn main() -> eframe::Result<()> {
     if help.check_help() {
         return Ok(());
     }
+
+    // Set the UI locale from the operating system before any translatable string is used.
+    let locale = detect_locale();
+    rust_i18n::set_locale(&locale);
+    dbg!(&locale);
 
     // Strip internal markers before processing positional arguments.
     let args: Vec<String> = env::args()
@@ -1379,9 +1347,9 @@ impl eframe::App for MarkdownApp {
                         },
                     )
                     .on_hover_text(if enhanced_contrast {
-                        "Restore default egui contrast"
+                        t!("toolbar.contrast_restore").to_string()
                     } else {
-                        "Apply high-contrast colours"
+                        t!("toolbar.contrast_apply").to_string()
                     })
                     .clicked()
                 {
@@ -1405,28 +1373,28 @@ impl eframe::App for MarkdownApp {
                 ui.separator();
                 if ui
                     .button("📖…")
-                    .on_hover_text(format!("Open a markdown file ({MOD}-O)"))
+                    .on_hover_text(t!("toolbar.open_file", cmd = MOD).to_string())
                     .clicked()
                 {
                     open_file_requested = true;
                 }
                 if ui
                     .button("🔄")
-                    .on_hover_text(format!("Reload current file from disk ({MOD}-R)"))
+                    .on_hover_text(t!("toolbar.reload", cmd = MOD).to_string())
                     .clicked()
                 {
                     refresh_requested = true;
                 }
                 if ui
                     .selectable_label(new_show_toc, "§")
-                    .on_hover_text(format!("Toggle table of contents ({MOD}-T)"))
+                    .on_hover_text(t!("toolbar.toc_toggle", cmd = MOD).to_string())
                     .clicked()
                 {
                     new_show_toc = !new_show_toc;
                 }
                 if ui
                     .selectable_label(new_search_open, "🔍")
-                    .on_hover_text(format!("Search ({MOD}-F)"))
+                    .on_hover_text(t!("toolbar.search_toggle", cmd = MOD).to_string())
                     .clicked()
                 {
                     new_search_open = !new_search_open;
@@ -1439,11 +1407,11 @@ impl eframe::App for MarkdownApp {
                 if show_reload_notice {
                     ui.separator();
                     ui.label(
-                        egui::RichText::new("\u{21bb} reloaded")
+                        egui::RichText::new(t!("status.reloaded").to_string())
                             .color(ui.visuals().hyperlink_color)
                             .small(),
                     )
-                    .on_hover_text("File changed on disk \u{2014} reloaded automatically");
+                    .on_hover_text(t!("status.reloaded_tip").to_string());
                     // Keep asking for repaints until the notice expires.
                     ui.ctx().request_repaint_after(Duration::from_millis(250));
                 }
@@ -1475,11 +1443,7 @@ impl eframe::App for MarkdownApp {
                                         .color(egui::Color32::WHITE)
                                         .strong(), // .small(),
                                 )
-                                .on_hover_text(
-                                    "Large file \u{2014} initial render is slow. \
-                                     Scroll responsiveness improves once the \
-                                     document is fully laid out.",
-                                );
+                                .on_hover_text(t!("status.large_file_tip").to_string());
                             });
                     }
                 }
@@ -1489,14 +1453,14 @@ impl eframe::App for MarkdownApp {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui
                         .button("🇽")
-                        .on_hover_text(format!("Close ({MOD}-W)"))
+                        .on_hover_text(t!("toolbar.close", cmd = MOD).to_string())
                         .clicked()
                     {
                         ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                     if ui
                         .selectable_label(new_show_help, "❓")
-                        .on_hover_text("Help (F1)")
+                        .on_hover_text(t!("toolbar.help").to_string())
                         .clicked()
                     {
                         new_show_help = !new_show_help;
@@ -1507,21 +1471,21 @@ impl eframe::App for MarkdownApp {
                     // to produce the visual sequence `− | 100% | +` left-to-right.
                     if ui
                         .small_button("+")
-                        .on_hover_text(format!("Enlarge fonts ({MOD}-Shift-A)"))
+                        .on_hover_text(t!("toolbar.font_enlarge", cmd = MOD).to_string())
                         .clicked()
                     {
                         new_font_scale = (new_font_scale * 1.1).min(3.0);
                     }
                     if ui
                         .button(&font_scale_label)
-                        .on_hover_text(format!("Reset font size to 100% ({MOD}-0)"))
+                        .on_hover_text(t!("toolbar.font_reset", cmd = MOD).to_string())
                         .clicked()
                     {
                         new_font_scale = 1.0;
                     }
                     if ui
                         .small_button("−")
-                        .on_hover_text(format!("Reduce fonts ({MOD}-a)"))
+                        .on_hover_text(t!("toolbar.font_reduce", cmd = MOD).to_string())
                         .clicked()
                     {
                         new_font_scale = (new_font_scale / 1.1).max(0.4);
@@ -1531,21 +1495,21 @@ impl eframe::App for MarkdownApp {
                     let zoom = ui.ctx().zoom_factor();
                     if ui
                         .small_button("+")
-                        .on_hover_text(format!("Zoom in ({MOD}-=)"))
+                        .on_hover_text(t!("toolbar.zoom_in", cmd = MOD).to_string())
                         .clicked()
                     {
                         ui.ctx().set_zoom_factor((zoom * 1.1).min(3.0));
                     }
                     if ui
                         .button(format!("↕{:.0}%", zoom * 100.0))
-                        .on_hover_text(format!("Reset zoom to 100% ({MOD}-Z)"))
+                        .on_hover_text(t!("toolbar.zoom_reset", cmd = MOD).to_string())
                         .clicked()
                     {
                         ui.ctx().set_zoom_factor(1.0);
                     }
                     if ui
                         .small_button("−")
-                        .on_hover_text(format!("Zoom out ({MOD}-−)"))
+                        .on_hover_text(t!("toolbar.zoom_out", cmd = MOD).to_string())
                         .clicked()
                     {
                         ui.ctx().set_zoom_factor((zoom / 1.1).max(0.4));
@@ -1562,7 +1526,7 @@ impl eframe::App for MarkdownApp {
                     ui.label("🔍");
                     let response = ui.add(
                         egui::TextEdit::singleline(&mut self.search_query)
-                            .hint_text("Find in document…")
+                            .hint_text(t!("search.placeholder").to_string())
                             .desired_width(280.0),
                     );
                     // Grab focus when the bar first opens.
@@ -1577,23 +1541,30 @@ impl eframe::App for MarkdownApp {
 
                     // Match counter.
                     if match_count == 0 && !self.search_query.is_empty() {
-                        ui.weak("No matches");
+                        ui.weak(t!("search.no_matches").to_string());
                     } else if match_count > 0 {
-                        ui.weak(format!("{} / {}", search_active + 1, match_count));
+                        ui.weak(
+                            t!(
+                                "search.match_counter",
+                                current = search_active + 1,
+                                total = match_count
+                            )
+                            .to_string(),
+                        );
                     }
 
                     // Prev / next buttons.
                     let has_matches = match_count > 0;
                     if ui
                         .add_enabled(has_matches, egui::Button::new("⬆"))
-                        .on_hover_text("Previous match (Shift-Enter)")
+                        .on_hover_text(t!("search.prev_tip").to_string())
                         .clicked()
                     {
                         search_nav = -1;
                     }
                     if ui
                         .add_enabled(has_matches, egui::Button::new("⬇"))
-                        .on_hover_text("Next match (Enter)")
+                        .on_hover_text(t!("search.next_tip").to_string())
                         .clicked()
                     {
                         search_nav = 1;
@@ -1602,7 +1573,7 @@ impl eframe::App for MarkdownApp {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui
                             .small_button("x")
-                            .on_hover_text("Close search (Esc)")
+                            .on_hover_text(t!("search.close_tip").to_string())
                             .clicked()
                         {
                             new_search_open = false;
@@ -1619,7 +1590,7 @@ impl eframe::App for MarkdownApp {
                 .default_size(220.0)
                 .show(ui, |ui| {
                     ui.add_space(4.0);
-                    ui.strong("Contents");
+                    ui.strong(t!("toc.title").to_string());
                     ui.separator();
                     egui::ScrollArea::vertical()
                         .id_salt("toc_scroll")
@@ -1920,14 +1891,15 @@ impl eframe::App for MarkdownApp {
         // ── Help window (floats above everything else) ────────────────────────────────────
         if self.show_help {
             let mut open = true;
-            egui::Window::new("Help")
+            egui::Window::new(t!("help.window_title").to_string())
                 .resizable(true)
                 .default_size([1000.0, 700.0])
                 .collapsible(false)
                 .open(&mut open)
                 .show(ui, |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
-                        CommonMarkViewer::new().show(ui, &mut self.help_cache, HELP_TEXT);
+                        let help_text = t!("help.text").to_string();
+                        CommonMarkViewer::new().show(ui, &mut self.help_cache, &help_text);
                     });
                 });
             if !open {

@@ -1,0 +1,94 @@
+_version: 1
+
+toolbar:
+  contrast_restore: "Restaurer le contraste egui par défaut"
+  contrast_apply: "Appliquer les couleurs à contraste élevé"
+  open_file: "Ouvrir un fichier Markdown (%{cmd}-O)"
+  reload: "Recharger le fichier depuis le disque (%{cmd}-R)"
+  toc_toggle: "Afficher/masquer la table des matières (%{cmd}-T)"
+  search_toggle: "Rechercher (%{cmd}-F)"
+  close: "Fermer (%{cmd}-W)"
+  help: "Aide (F1)"
+  font_enlarge: "Agrandir les polices (%{cmd}-Maj-A)"
+  font_reset: "Réinitialiser la taille de police à 100 % (%{cmd}-0)"
+  font_reduce: "Réduire les polices (%{cmd}-a)"
+  zoom_in: "Zoom avant (%{cmd}-=)"
+  zoom_reset: "Réinitialiser le zoom à 100 % (%{cmd}-Z)"
+  zoom_out: "Zoom arrière (%{cmd}-−)"
+
+status:
+  reloaded: "↻ rechargé"
+  reloaded_tip: "Fichier modifié sur le disque — rechargé automatiquement"
+  large_file_tip: "Fichier volumineux — le rendu initial est lent. La réactivité du défilement s'améliore une fois le document entièrement mis en page."
+
+search:
+  placeholder: "Rechercher dans le document…"
+  no_matches: "Aucun résultat"
+  match_counter: "%{current} / %{total}"
+  prev_tip: "Correspondance précédente (Maj-Entrée)"
+  next_tip: "Correspondance suivante (Entrée)"
+  close_tip: "Fermer la recherche (Échap)"
+
+toc:
+  title: "Sommaire"
+
+help:
+  window_title: "Aide"
+  text: |
+    # Visionneuse Markdown — Aide
+
+    ## Raccourcis Clavier
+
+    ### Fichier
+    | Touche | Action |
+    |---|---|
+    | Cmd/Ctrl-o | Ouvrir un fichier Markdown |
+    | Cmd/Ctrl-r | Actualiser — recharger le fichier depuis le disque |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Quitter |
+
+    La visionneuse surveille le fichier courant et le recharge automatiquement en cas de modification.
+    Utilisez `--no-detach` ou `--foreground` en ligne de commande pour rester attaché au terminal (Unix uniquement).
+
+    ### Navigation
+    | Touche | Action |
+    |---|---|
+    | Boutons ◀ / ▶ | Précédent / Suivant dans l'historique |
+    | Cmd/Ctrl-t | Afficher/masquer le panneau de la table des matières |
+
+    ### Recherche
+    | Touche | Action |
+    |---|---|
+    | Cmd/Ctrl-f | Ouvrir / fermer la barre de recherche |
+    | Entrée  ou  bouton ⬇ | Correspondance suivante |
+    | Maj-Entrée  ou  bouton ⬆ | Correspondance précédente |
+    | Échap | Fermer la barre de recherche |
+
+    > La recherche navigue vers la section contenant chaque résultat et surligne le texte correspondant.
+    > Le résultat actif est affiché en orange ; les autres en jaune.
+
+    ### Rechargement automatique
+    La visionneuse surveille le fichier ouvert pour détecter les modifications sur le disque et le recharge automatiquement.
+    Une brève notification « ↻ Rechargé » apparaît dans la barre d'outils après chaque rechargement automatique.
+
+    ### Zoom et Police
+    | Touche | Action |
+    |---|---|
+    | Cmd/Ctrl-= | Zoom avant |
+    | Cmd/Ctrl-− | Zoom arrière |
+    | Cmd/Ctrl-z | Réinitialiser le zoom à 100 % |
+    | Cmd/Ctrl-Maj-a | Agrandir la police |
+    | Cmd/Ctrl-a | Réduire la police |
+    | Cmd/Ctrl-0 | Réinitialiser la police à 100 % |
+
+    ### Défilement (quand aucun champ de texte n'est actif)
+    | Touche | Action |
+    |---|---|
+    | Flèche haut / bas | Défiler d'une ligne |
+    | Page préc. / Page suiv. | Défiler d'un écran (Fn-Haut / Fn-Bas sur Mac) |
+    | Début / Cmd-Haut | Aller au début du document (Fn-Gauche sur Mac) |
+    | Fin / Cmd-Bas | Aller à la fin du document (Fn-Droite sur Mac) |
+
+    ### Aide
+    | Touche | Action |
+    |---|---|
+    | F1 | Afficher/masquer cet écran d'aide |

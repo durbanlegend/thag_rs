@@ -616,8 +616,6 @@ fn main() -> eframe::Result<()> {
     // Hard size limit — refuse immediately so the GUI doesn't freeze.
     const MAX_BYTES: usize = 50_000_000;
 
-    dbg!(&env!("CARGO_MANIFEST_DIR"));
-
     // Help check MUST come before detach: detached children have stdout/stderr
     // set to null, so any output would be silently lost.
     // Use a normal return (not process::exit) so macOS framework atexit handlers
@@ -630,7 +628,7 @@ fn main() -> eframe::Result<()> {
     // Set the UI locale from the operating system before any translatable string is used.
     let locale = detect_locale();
     rust_i18n::set_locale(&locale);
-    dbg!(&locale);
+    // dbg!(&locale);
 
     // Strip internal markers before processing positional arguments.
     let args: Vec<String> = env::args()
@@ -809,7 +807,7 @@ struct MarkdownApp {
     last_auto_reload: Option<Instant>,
     /// `true` until the end of the very first frame; used to request key-window focus
     /// on startup so that keyboard shortcuts work without requiring a prior mouse click.
-    first_frame: bool,
+    // first_frame: bool,
 }
 
 impl MarkdownApp {
@@ -843,7 +841,7 @@ impl MarkdownApp {
             watcher: None,
             watcher_rx: None,
             last_auto_reload: None,
-            first_frame: true,
+            // first_frame: true,
         };
         app.start_watching();
         app.build_content_headings();
@@ -1167,10 +1165,10 @@ impl eframe::App for MarkdownApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         // ── On the very first frame, claim key-window focus so shortcuts work immediately
         // without requiring the user to click first (macOS key-window / winit issue).
-        if self.first_frame {
-            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Focus);
-            self.first_frame = false;
-        }
+        // if self.first_frame {
+        //     ui.ctx().send_viewport_cmd(egui::ViewportCommand::Focus);
+        //     self.first_frame = false;
+        // }
 
         // ── Poll file watcher ─────────────────────────────────────────────────────────────
         // Drain all pending "file changed" signals from the bridge thread.
@@ -1277,6 +1275,7 @@ impl eframe::App for MarkdownApp {
 
         // Act on shortcuts (zoom/font only when text field does not have focus).
         let wants_text = ui.ctx().egui_wants_keyboard_input();
+
         if close {
             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
         } else if open_key {
@@ -1690,27 +1689,12 @@ impl eframe::App for MarkdownApp {
             egui::ScrollArea::vertical()
                 .id_salt(&current_path_label)
                 .show(ui, |ui| {
-                    // ── Keyboard scrolling ─────────────────────────────────────────
-                    // `scroll_with_delta` must be called inside the ScrollArea
-                    // closure so it targets this specific area.
-                    // Convention: positive y → scroll toward top; negative → toward bottom.
-                    if !wants_text {
-                        let line_h = ui.text_style_height(&egui::TextStyle::Body);
-                        let page_h = ui.available_height();
-                        if scroll_line_up {
-                            ui.scroll_with_delta(egui::vec2(0.0, line_h));
-                        } else if scroll_line_down {
-                            ui.scroll_with_delta(egui::vec2(0.0, -line_h));
-                        } else if scroll_page_up {
-                            ui.scroll_with_delta(egui::vec2(0.0, page_h));
-                        } else if scroll_page_down {
-                            ui.scroll_with_delta(egui::vec2(0.0, -page_h));
-                        } else if scroll_doc_top {
-                            ui.scroll_with_delta(egui::vec2(0.0, f32::MAX / 2.0));
-                        } else if scroll_doc_bottom {
-                            ui.scroll_with_delta(egui::vec2(0.0, -f32::MAX / 2.0));
-                        }
-                    }
+                    // ── Keyboard scrolling parameters (captured before content renders) ───
+                    // We compute line_h / page_h here but call scroll_with_delta AFTER
+                    // the content renders — see the note below at the call site.
+                    let line_h = ui.text_style_height(&egui::TextStyle::Body);
+                    let page_h = ui.available_height();
+
                     // Scale content text styles locally so the toolbar is unaffected.
                     if (font_scale - 1.0).abs() > 0.005 {
                         use egui::{FontFamily, FontId, TextStyle};
@@ -1774,6 +1758,33 @@ impl eframe::App for MarkdownApp {
                         .syntax_theme_light("InspiredGitHub")
                         .enable_scroll_to_heading(true)
                         .show(ui, &mut self.cache, &self.content);
+
+                    // ── Keyboard scrolling ─────────────────────────────────────────
+                    // IMPORTANT: scroll_with_delta must come AFTER the content renders.
+                    // egui stores the delta in a single global pass_state field and
+                    // every ScrollArea::show() drains it with std::mem::take when it
+                    // closes.  If we call scroll_with_delta first, any nested
+                    // ScrollArea::horizontal() inside egui_commonmark (table rows)
+                    // drains the delta before our outer vertical area can consume it,
+                    // silently discarding the vertical component.  By posting the delta
+                    // after all inner areas have already closed, the outer vertical
+                    // ScrollArea is guaranteed to be the next one to take it.
+                    // Convention: positive y → scroll toward top; negative → toward bottom.
+                    if !wants_text {
+                        if scroll_line_up {
+                            ui.scroll_with_delta(egui::vec2(0.0, line_h));
+                        } else if scroll_line_down {
+                            ui.scroll_with_delta(egui::vec2(0.0, -line_h));
+                        } else if scroll_page_up {
+                            ui.scroll_with_delta(egui::vec2(0.0, page_h));
+                        } else if scroll_page_down {
+                            ui.scroll_with_delta(egui::vec2(0.0, -page_h));
+                        } else if scroll_doc_top {
+                            ui.scroll_with_delta(egui::vec2(0.0, f32::MAX / 2.0));
+                        } else if scroll_doc_bottom {
+                            ui.scroll_with_delta(egui::vec2(0.0, -f32::MAX / 2.0));
+                        }
+                    }
                 });
         });
 
@@ -1843,11 +1854,11 @@ impl eframe::App for MarkdownApp {
             }
         };
 
-        // Re-claim key-window focus after the native file dialog releases it;
+        // Reclaim key-window focus after the native file dialog releases it;
         // without this the next keyboard shortcut typically needs two presses.
-        if open_file_requested {
-            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Focus);
-        }
+        // if open_file_requested {
+        //     ui.ctx().send_viewport_cmd(egui::ViewportCommand::Focus);
+        // }
 
         // ── Search navigation (applied after all panels are drawn) ────────────────────────
         if search_nav != 0 && match_count > 0 {

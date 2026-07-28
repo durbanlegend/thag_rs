@@ -74,8 +74,8 @@ const MOD: &str = "Ctrl";
 
 file_navigator! {}
 
-// rust_i18n::i18n!("/Users/donf/projects/thag_rs/locales", fallback = "en");
-rust_i18n::i18n!("locales", fallback = "en"); // Relative path won't work for scripting location on $TMPDIR
+rust_i18n::i18n!("/Users/donf/projects/thag_rs/locales", fallback = "en");
+// rust_i18n::i18n!("locales", fallback = "en"); // Relative path won't work for scripting location on $TMPDIR
 
 /// Applies contrast colours to both egui themes; font sizes are always left at
 /// egui defaults so toggling never causes a scroll-position jump.

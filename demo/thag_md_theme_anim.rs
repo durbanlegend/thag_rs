@@ -49,7 +49,9 @@ debug = true
 //# Option: --no-detach, --foreground: Stay attached to the launching terminal (Unix only)
 use eframe::egui;
 use egui::load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint};
+use egui::Visuals;
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
+use egui_theme_lerp::ThemeAnimator;
 use notify::{RecursiveMode, Watcher};
 use pulldown_cmark::{Event, Options, Parser, Tag};
 use rfd::FileDialog;
@@ -601,7 +603,7 @@ fn detach_if_tty() {
 /// Falls back to `"en"` when no usable locale is detected.
 fn detect_locale() -> String {
     env::var("LOCALE").unwrap_or_else(|_| {
-        // eprintln!("No LOCALE env var");
+        eprintln!("No LOCALE env var");
         env::var("LANG").unwrap_or_else(|_| {
             eprintln!("No LANG env var");
             sys_locale::get_locale()
@@ -805,9 +807,10 @@ struct MarkdownApp {
     watcher_rx: Option<Receiver<()>>,
     /// When set, a brief "reloaded" notice is shown in the toolbar until this instant.
     last_auto_reload: Option<Instant>,
-    // /// `true` until the end of the very first frame; used to request key-window focus
-    // /// on startup so that keyboard shortcuts work without requiring a prior mouse click.
+    /// `true` until the end of the very first frame; used to request key-window focus
+    /// on startup so that keyboard shortcuts work without requiring a prior mouse click.
     // first_frame: bool,
+    theme_animator: ThemeAnimator,
 }
 
 impl MarkdownApp {
@@ -842,6 +845,7 @@ impl MarkdownApp {
             watcher_rx: None,
             last_auto_reload: None,
             // first_frame: true,
+            theme_animator: ThemeAnimator::new(Visuals::light(), Visuals::dark()),
         };
         app.start_watching();
         app.build_content_headings();
@@ -1329,30 +1333,28 @@ impl eframe::App for MarkdownApp {
         // ── Top panel: toolbar ────────────────────────────────────────────────────────────
         egui::Panel::top("toolbar").show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 2.0;
-                    if ui.button("⚙").on_hover_text("Follow system").clicked() {
-                        if let Some(system_theme) = ui.ctx().system_theme() {
-                            ui.ctx().set_theme(system_theme);
-                        } else {
-                            eprintln!("Could not access system theme");
-                        }
+                egui_theme_switch::global_theme_switch(ui);
+                if self.theme_animator.anim_id.is_none() {
+                    self.theme_animator.create_id(ui);
+                } else {
+                    self.theme_animator.animate(ui);
+                }
+
+                let theme_emoji = if !self.theme_animator.animation_done {
+                    if self.theme_animator.theme_1_to_2 {
+                        "☀"
+                    } else {
+                        "🌙"
                     }
-                    if ui
-                        .button("🌙")
-                        .on_hover_text("Switch to dark mode")
-                        .clicked()
-                    {
-                        ui.ctx().set_theme(egui::Theme::Dark);
-                    }
-                    if ui
-                        .button("☀")
-                        .on_hover_text("Switch to light mode")
-                        .clicked()
-                    {
-                        ui.ctx().set_theme(egui::Theme::Light);
-                    }
-                });
+                } else if self.theme_animator.theme_1_to_2 {
+                    "🌙"
+                } else {
+                    "☀"
+                };
+
+                if ui.button(format!("Switch Theme {theme_emoji}")).clicked() {
+                    self.theme_animator.start();
+                }
 
                 if ui
                     .selectable_label(

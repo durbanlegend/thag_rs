@@ -1137,12 +1137,6 @@ impl MarkdownApp {
                 // Inline code (‘backtick’ spans) — rendered via event_text, highlighted.
                 Event::Text(ref text) | Event::Code(ref text) => {
                     collect_matches(text, span.start, &query, qlen, &mut self.search_matches);
-                    // Event::Text(ref text) => {
-                    //     collect_matches(text, span.start, &query, qlen, &mut self.search_matches);
-                    // }
-                    // // Inline code (‘backtick’ spans) — rendered via event_text, highlighted.
-                    // Event::Code(ref text) => {
-                    //     collect_matches(text, span.start, &query, qlen, &mut self.search_matches);
                 }
                 _ => {}
             }

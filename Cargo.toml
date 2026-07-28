@@ -290,6 +290,8 @@ regex = "1.11"
 reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"], default-features = false, optional = true }
 resvg = { version = "0.45", features = ["text"], optional = true }
 rfd = { version = "0.15", optional = true }
+rust-i18n = { version = "4", optional = true }
+sys-locale = { version = "0.3", optional = true }
 scopeguard = { version = "1.2", optional = true }
 semver = "1.0"
 serde = { version = "=1.0.228", features = ["derive"] }
@@ -421,6 +423,8 @@ gui_viewer = [
   "dep:pulldown-cmark",
   "dep:rfd",
   "dep:resvg",
+  "dep:rust-i18n",
+  "dep:sys-locale",
   "thag_styling/inquire_theming",
   "tools"
 ]

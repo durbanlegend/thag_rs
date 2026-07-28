@@ -1,0 +1,94 @@
+_version: 1
+
+toolbar:
+  contrast_restore: "Standard-egui-Kontrast wiederherstellen"
+  contrast_apply: "Hochkontrast-Farben anwenden"
+  open_file: "Eine Markdown-Datei öffnen (%{cmd}-O)"
+  reload: "Aktuelle Datei vom Datenträger neu laden (%{cmd}-R)"
+  toc_toggle: "Inhaltsverzeichnis ein-/ausblenden (%{cmd}-T)"
+  search_toggle: "Suchen (%{cmd}-F)"
+  close: "Schließen (%{cmd}-W)"
+  help: "Hilfe (F1)"
+  font_enlarge: "Schrift vergrößern (%{cmd}-Umschalt-A)"
+  font_reset: "Schriftgröße auf 100 % zurücksetzen (%{cmd}-0)"
+  font_reduce: "Schrift verkleinern (%{cmd}-a)"
+  zoom_in: "Vergrößern (%{cmd}-=)"
+  zoom_reset: "Zoom auf 100 % zurücksetzen (%{cmd}-Z)"
+  zoom_out: "Verkleinern (%{cmd}-−)"
+
+status:
+  reloaded: "↻ neu geladen"
+  reloaded_tip: "Datei auf dem Datenträger geändert — automatisch neu geladen"
+  large_file_tip: "Große Datei — die erste Darstellung ist langsam. Die Scroll-Reaktion verbessert sich, sobald das Dokument vollständig gelayoutet ist."
+
+search:
+  placeholder: "Im Dokument suchen…"
+  no_matches: "Keine Treffer"
+  match_counter: "%{current} / %{total}"
+  prev_tip: "Vorheriger Treffer (Umschalt-Eingabe)"
+  next_tip: "Nächster Treffer (Eingabe)"
+  close_tip: "Suche schließen (Esc)"
+
+toc:
+  title: "Inhalt"
+
+help:
+  window_title: "Hilfe"
+  text: |
+    # Markdown-Betrachter — Hilfe
+
+    ## Tastaturkürzel
+
+    ### Datei
+    | Taste | Aktion |
+    |---|---|
+    | Cmd/Strg-o | Eine Markdown-Datei öffnen |
+    | Cmd/Strg-r | Aktualisieren — aktuelle Datei vom Datenträger neu laden |
+    | Cmd/Strg-w  /  Cmd/Strg-q | Beenden |
+
+    Der Betrachter überwacht die aktuelle Datei auf Änderungen und lädt sie automatisch neu.
+    Verwenden Sie `--no-detach` oder `--foreground` in der Kommandozeile, um die Verbindung zum Terminal aufrechtzuerhalten (nur Unix).
+
+    ### Navigation
+    | Taste | Aktion |
+    |---|---|
+    | Schaltflächen ◀ / ▶ | Zurück / Vorwärts im Verlauf |
+    | Cmd/Strg-t | Inhaltsverzeichnis-Panel ein-/ausblenden |
+
+    ### Suche
+    | Taste | Aktion |
+    |---|---|
+    | Cmd/Strg-f | Suchleiste öffnen / schließen |
+    | Eingabe  oder  Schaltfläche ⬇ | Nächster Treffer |
+    | Umschalt-Eingabe  oder  Schaltfläche ⬆ | Vorheriger Treffer |
+    | Escape | Suchleiste schließen |
+
+    > Die Suche navigiert zum Abschnitt, der den jeweiligen Treffer enthält, und hebt den gefundenen Text hervor.
+    > Der aktive Treffer wird orange angezeigt; andere Treffer in Gelb.
+
+    ### Automatisches Neu-Laden
+    Der Betrachter überwacht die geöffnete Datei auf Änderungen und lädt sie automatisch neu.
+    Nach jedem automatischen Neu-Laden erscheint kurz eine „↻ Neu geladen"-Meldung in der Symbolleiste.
+
+    ### Zoom und Schrift
+    | Taste | Aktion |
+    |---|---|
+    | Cmd/Strg-= | Vergrößern |
+    | Cmd/Strg-− | Verkleinern |
+    | Cmd/Strg-z | Zoom auf 100 % zurücksetzen |
+    | Cmd/Strg-Umschalt-a | Schrift vergrößern |
+    | Cmd/Strg-a | Schrift verkleinern |
+    | Cmd/Strg-0 | Schrift auf 100 % zurücksetzen |
+
+    ### Scrollen (wenn kein Textfeld fokussiert ist)
+    | Taste | Aktion |
+    |---|---|
+    | Pfeiltaste hoch / runter | Eine Zeile scrollen |
+    | Bild hoch / Bild runter | Ein Viewport scrollen (Fn-Hoch / Fn-Runter auf Mac) |
+    | Pos1 / Cmd-Hoch | Zum Anfang des Dokuments springen (Fn-Links auf Mac) |
+    | Ende / Cmd-Runter | Zum Ende des Dokuments springen (Fn-Rechts auf Mac) |
+
+    ### Hilfe
+    | Taste | Aktion |
+    |---|---|
+    | F1 | Diesen Hilfebildschirm ein-/ausblenden |

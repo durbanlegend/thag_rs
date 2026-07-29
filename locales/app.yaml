@@ -7,9 +7,11 @@ _version: 2
 #   es  Spanish        pt  Portuguese     sv  Swedish
 #   it  Italian        pl  Polish         cs  Czech
 #   ru  Russian        zu  Zulu
+#   st  Sesotho        xh  Xhosa
 #
-# NOTE: Zulu (zu) translations are a best-effort first pass; review by a native
-# speaker is recommended before considering them production-ready.
+# NOTE: Zulu (zu), Sesotho (st) and Xhosa (xh) translations are a best-effort
+# first pass; review by native speakers is recommended before considering them
+# production-ready.
 
 toolbar.contrast_restore:
   en: "Restore default egui contrast"
@@ -23,6 +25,8 @@ toolbar.contrast_restore:
   cs: "Obnovit výchozí kontrast egui"
   ru: "Восстановить контраст egui по умолчанию"
   zu: "Buyisela ukulingana okujwayelekile kwe-egui"
+  st: "Busa tlhaho ea phapang ea egui"
+  xh: "Buyisela ukulingana okujwayelekileyo kwe-egui"
 
 toolbar.contrast_apply:
   en: "Apply high-contrast colours"
@@ -36,6 +40,8 @@ toolbar.contrast_apply:
   cs: "Použít barvy s vysokým kontrastem"
   ru: "Применить высококонтрастные цвета"
   zu: "Sebenzisa imibala enokulungana okukhulu"
+  st: "Sebedisa mebala e nang le phapang e phahameng"
+  xh: "Sebenzisa imibala enokulungana okuphezulu"
 
 toolbar.open_file:
   en: "Open a markdown file (%{cmd}-O)"
@@ -49,6 +55,8 @@ toolbar.open_file:
   cs: "Otevřít soubor Markdown (%{cmd}-O)"
   ru: "Открыть файл Markdown (%{cmd}-O)"
   zu: "Vula ifayili ye-Markdown (%{cmd}-O)"
+  st: "Bula faele ea Markdown (%{cmd}-O)"
+  xh: "Vula ifayile ye-Markdown (%{cmd}-O)"
 
 toolbar.reload:
   en: "Reload current file from disk (%{cmd}-R)"
@@ -62,6 +70,8 @@ toolbar.reload:
   cs: "Znovu načíst aktuální soubor z disku (%{cmd}-R)"
   ru: "Перезагрузить текущий файл с диска (%{cmd}-R)"
   zu: "Layisha kabusha ifayili yamanje kudiski (%{cmd}-R)"
+  st: "Tlatsa faele ea jwale ho tsoa desteng (%{cmd}-R)"
+  xh: "Layisha kwakhona ifayile yangoku ukusuka kudisk (%{cmd}-R)"
 
 toolbar.toc_toggle:
   en: "Toggle table of contents (%{cmd}-T)"
@@ -75,6 +85,8 @@ toolbar.toc_toggle:
   cs: "Zobrazit/skrýt obsah (%{cmd}-T)"
   ru: "Показать/скрыть оглавление (%{cmd}-T)"
   zu: "Bonisa/Fihla uhlu lwezindikimba (%{cmd}-T)"
+  st: "Bontša/Patela lenane la litlhophelo (%{cmd}-T)"
+  xh: "Bonisa/Fihla uluhlu lwezindikimba (%{cmd}-T)"
 
 toolbar.search_toggle:
   en: "Search (%{cmd}-F)"
@@ -88,6 +100,8 @@ toolbar.search_toggle:
   cs: "Hledat (%{cmd}-F)"
   ru: "Поиск (%{cmd}-F)"
   zu: "Sesha (%{cmd}-F)"
+  st: "Batla (%{cmd}-F)"
+  xh: "Khangela (%{cmd}-F)"
 
 toolbar.close:
   en: "Close (%{cmd}-W)"
@@ -101,6 +115,8 @@ toolbar.close:
   cs: "Zavřít (%{cmd}-W)"
   ru: "Закрыть (%{cmd}-W)"
   zu: "Vala (%{cmd}-W)"
+  st: "Koala (%{cmd}-W)"
+  xh: "Vala (%{cmd}-W)"
 
 toolbar.help:
   en: "Help (F1)"
@@ -114,6 +130,8 @@ toolbar.help:
   cs: "Nápověda (F1)"
   ru: "Помощь (F1)"
   zu: "Usizo (F1)"
+  st: "Thuso (F1)"
+  xh: "Uncedo (F1)"
 
 toolbar.font_enlarge:
   en: "Enlarge fonts (%{cmd}-Shift-A)"
@@ -127,6 +145,8 @@ toolbar.font_enlarge:
   cs: "Zvětšit písmo (%{cmd}-Shift-A)"
   ru: "Увеличить шрифт (%{cmd}-Shift-A)"
   zu: "Khulisa uhlobo lombhalo (%{cmd}-Shift-A)"
+  st: "Hola mongolo (%{cmd}-Shift-A)"
+  xh: "Yandisa uhlobo lombhalo (%{cmd}-Shift-A)"
 
 toolbar.font_reset:
   en: "Reset font size to 100% (%{cmd}-0)"
@@ -140,6 +160,8 @@ toolbar.font_reset:
   cs: "Obnovit velikost písma na 100 % (%{cmd}-0)"
   ru: "Сбросить размер шрифта до 100% (%{cmd}-0)"
   zu: "Buyisela usayizi wombhalo ku-100% (%{cmd}-0)"
+  st: "Busa boholo ba mongolo ho 100% (%{cmd}-0)"
+  xh: "Buyisela usayizi wombhalo ku-100% (%{cmd}-0)"
 
 toolbar.font_reduce:
   en: "Reduce fonts (%{cmd}-a)"
@@ -153,6 +175,8 @@ toolbar.font_reduce:
   cs: "Zmenšit písmo (%{cmd}-a)"
   ru: "Уменьшить шрифт (%{cmd}-a)"
   zu: "Nciphisa uhlobo lombhalo (%{cmd}-a)"
+  st: "Fokotsa mongolo (%{cmd}-a)"
+  xh: "Nciphisa uhlobo lombhalo (%{cmd}-a)"
 
 toolbar.zoom_in:
   en: "Zoom in (%{cmd}-=)"
@@ -166,6 +190,8 @@ toolbar.zoom_in:
   cs: "Přiblížit (%{cmd}-=)"
   ru: "Увеличить масштаб (%{cmd}-=)"
   zu: "Sondeza (%{cmd}-=)"
+  st: "Holisa (%{cmd}-=)"
+  xh: "Sondeza (%{cmd}-=)"
 
 toolbar.zoom_reset:
   en: "Reset zoom to 100% (%{cmd}-Z)"
@@ -179,6 +205,8 @@ toolbar.zoom_reset:
   cs: "Obnovit přiblížení na 100 % (%{cmd}-Z)"
   ru: "Сбросить масштаб до 100% (%{cmd}-Z)"
   zu: "Buyisela ukusondeza ku-100% (%{cmd}-Z)"
+  st: "Busa holimo ho 100% (%{cmd}-Z)"
+  xh: "Buyisela ukusondeza ku-100% (%{cmd}-Z)"
 
 toolbar.zoom_out:
   en: "Zoom out (%{cmd}-−)"
@@ -192,6 +220,53 @@ toolbar.zoom_out:
   cs: "Oddálit (%{cmd}-−)"
   ru: "Уменьшить масштаб (%{cmd}-−)"
   zu: "Nciphisa (%{cmd}-−)"
+  st: "Fokotsa (%{cmd}-−)"
+  xh: "Nciphisa (%{cmd}-−)"
+
+toolbar.theme_system:
+  en: "Follow system theme"
+  de: "Systemdesign folgen"
+  fr: "Suivre le thème système"
+  es: "Seguir el tema del sistema"
+  pt: "Seguir tema do sistema"
+  sv: "Följ systemets tema"
+  it: "Segui il tema di sistema"
+  pl: "Podążaj za motywem systemowym"
+  cs: "Sledovat systémový motiv"
+  ru: "Следовать системной теме"
+  zu: "Landela ithemu yesistimu"
+  st: "Latela mokgwa wa sisteme"
+  xh: "Landela ithiyam yesistimu"
+
+toolbar.theme_dark:
+  en: "Switch to dark mode"
+  de: "Zu dunklem Modus wechseln"
+  fr: "Passer en mode sombre"
+  es: "Cambiar a modo oscuro"
+  pt: "Mudar para modo escuro"
+  sv: "Byt till mörkt läge"
+  it: "Passa alla modalità scura"
+  pl: "Przełącz na tryb ciemny"
+  cs: "Přepnout na tmavý režim"
+  ru: "Переключиться на тёмную тему"
+  zu: "Shintsha ku-mode emnyama"
+  st: "Fetola ho mokgwa o lefifi"
+  xh: "Tshintsha kumowudi emnyama"
+
+toolbar.theme_light:
+  en: "Switch to light mode"
+  de: "Zu hellem Modus wechseln"
+  fr: "Passer en mode clair"
+  es: "Cambiar a modo claro"
+  pt: "Mudar para modo claro"
+  sv: "Byt till ljust läge"
+  it: "Passa alla modalità chiara"
+  pl: "Przełącz na tryb jasny"
+  cs: "Přepnout na světlý režim"
+  ru: "Переключиться на светлую тему"
+  zu: "Shintsha ku-mode ekhanyayo"
+  st: "Fetola ho mokgwa o phatsimang"
+  xh: "Tshintsha kumowudi ekhanyayo"
 
 status.reloaded:
   en: "↻ reloaded"
@@ -205,6 +280,8 @@ status.reloaded:
   cs: "↻ znovu načteno"
   ru: "↻ перезагружено"
   zu: "↻ ilayishiwe kabusha"
+  st: "↻ e tsotlehilwe bocha"
+  xh: "↻ ilayishiwe kwakhona"
 
 status.reloaded_tip:
   en: "File changed on disk — reloaded automatically"
@@ -218,6 +295,8 @@ status.reloaded_tip:
   cs: "Soubor byl na disku změněn — automaticky znovu načten"
   ru: "Файл изменён на диске — перезагружен автоматически"
   zu: "Ifayili ishintshiwe kudiski — ilayishiwe kabusha ngokuzenzakalelayo"
+  st: "Faele e fetohile desteng — e tsotlehilwe bocha ka ho iphepa"
+  xh: "Ifayile itshintshiwe kudisk — ilayishiwe kwakhona ngokuzenzakalelayo"
 
 status.large_file_tip:
   en: "Large file — initial render is slow. Scroll responsiveness improves once the document is fully laid out."
@@ -231,6 +310,8 @@ status.large_file_tip:
   cs: "Velký soubor — první vykreslení je pomalé. Odezva posouvání se zlepší po úplném rozložení dokumentu."
   ru: "Большой файл — первоначальный рендеринг выполняется медленно. Отклик прокрутки улучшается после полной загрузки документа."
   zu: "Ifayili enkulu — ukusebenza kokuqala kuyahamba kancane. Ukusabela kokuskrola kuyathuthuka uma idokhumenti ilayishwe ngokugcwele."
+  st: "Faele e kgolo — ho bontša ha mathomo ho pata. Ho araba ha ho potoloha ho ntlafala ha tokomane e tsotlehilwe ka botlalo."
+  xh: "Ifayile enkulu — ukulayisha kokuqala kuyachitha. Ukusabela kokuskrola kuyathuthuka xa idokhumenti ilayishiwe ngokupheleleyo."
 
 search.placeholder:
   en: "Find in document…"
@@ -244,6 +325,8 @@ search.placeholder:
   cs: "Hledat v dokumentu…"
   ru: "Поиск в документе…"
   zu: "Sesha edokhumeni…"
+  st: "Batla tokomaning…"
+  xh: "Khangela kwidokhumenti…"
 
 search.no_matches:
   en: "No matches"
@@ -257,6 +340,8 @@ search.no_matches:
   cs: "Žádné výsledky"
   ru: "Совпадений нет"
   zu: "Awekho amafanelo"
+  st: "Ha ho litšoantšo"
+  xh: "Akukho zifanelana"
 
 search.match_counter:
   en: "%{current} / %{total}"
@@ -270,6 +355,8 @@ search.match_counter:
   cs: "%{current} / %{total}"
   ru: "%{current} / %{total}"
   zu: "%{current} / %{total}"
+  st: "%{current} / %{total}"
+  xh: "%{current} / %{total}"
 
 search.prev_tip:
   en: "Previous match (Shift-Enter)"
@@ -283,6 +370,8 @@ search.prev_tip:
   cs: "Předchozí shoda (Shift-Enter)"
   ru: "Предыдущее совпадение (Shift-Enter)"
   zu: "Ukufanelana kwangaphambilini (Shift-Enter)"
+  st: "Tšoantšo e fetileng (Shift-Enter)"
+  xh: "Ukufanelana okwangaphambili (Shift-Enter)"
 
 search.next_tip:
   en: "Next match (Enter)"
@@ -296,6 +385,8 @@ search.next_tip:
   cs: "Další shoda (Enter)"
   ru: "Следующее совпадение (Enter)"
   zu: "Ukufanelana okulandelayo (Enter)"
+  st: "Tšoantšo e latelang (Enter)"
+  xh: "Ukufanelana okulandelayo (Enter)"
 
 search.close_tip:
   en: "Close search (Esc)"
@@ -309,6 +400,8 @@ search.close_tip:
   cs: "Zavřít hledání (Esc)"
   ru: "Закрыть поиск (Esc)"
   zu: "Vala ukusesha (Esc)"
+  st: "Koala ho batla (Esc)"
+  xh: "Vala ukukhangela (Esc)"
 
 toc.title:
   en: "Contents"
@@ -322,6 +415,8 @@ toc.title:
   cs: "Obsah"
   ru: "Содержание"
   zu: "Okuqukethwe"
+  st: "Litlhophelo"
+  xh: "Okuqukethiweyo"
 
 help.window_title:
   en: "Help"
@@ -335,6 +430,8 @@ help.window_title:
   cs: "Nápověda"
   ru: "Помощь"
   zu: "Usizo"
+  st: "Thuso"
+  xh: "Uncedo"
 
 help.text:
   en: |
@@ -975,3 +1072,119 @@ help.text:
     | Ikhiye | Isenzo |
     |---|---|
     | F1 | Bonisa/fihla lesi sikrini sosizo |
+  st: |
+    # Seboni sa Markdown — Thuso
+
+    ## Likhutlo tsa Setala
+
+    ### Faele
+    | Sehlooho | Ketso |
+    |---|---|
+    | Cmd/Ctrl-o | Bula faele ea Markdown |
+    | Cmd/Ctrl-r | Mpshafatsa — tlatsa faele ea jwale ho tsoa desteng |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Tsoa |
+
+    Seboni se lebeletse faele ea jwale bakeng sa liphetoho 'me se e tlatsa bocha ka ho iphepa.
+    Sebedisa `--no-detach` kapa `--foreground` mollaong oa taelo ho se boloka se kgokahanye le terminal (Unix feela).
+
+    ### Ho Khomarela
+    | Sehlooho | Ketso |
+    |---|---|
+    | Likonopo ◀ / ▶ | Morao / Pele molalong oa nalane |
+    | Cmd/Ctrl-t | Bontša/Patela sepata sa lenane la litlhophelo |
+
+    ### Ho Batla
+    | Sehlooho | Ketso |
+    |---|---|
+    | Cmd/Ctrl-f | Bula / koala bha ea ho batla |
+    | Enter  kapa  konopo ⬇ | Tšoantšo e latelang |
+    | Shift-Enter  kapa  konopo ⬆ | Tšoantšo e fetileng |
+    | Escape | Koala bha ea ho batla |
+
+    > Ho batla ho ea karolong e nang le tšoantšo ka 'ngoe 'me ho hlokomela mongolo o fumanehileng.
+    > Tšoantšo e sebetsang e bontšoa ka bochabeng; tse ling ka yellow.
+
+    ### Ho Tlatsa Bocha ka Ho Iphepa
+    Seboni se lebeletse faele e buletsoeng bakeng sa liphetoho desteng 'me se e tlatsa bocha ka ho iphepa.
+    Tsebišo e khuts'oane «↻ E tsotlehilwe bocha» e hlaha baeng ba lisebelisoa ka mor'a ho tlatsa bocha ka ho iphepa 'ngoe le 'ngoe.
+
+    ### Holimo le Mongolo
+    | Sehlooho | Ketso |
+    |---|---|
+    | Cmd/Ctrl-= | Holisa |
+    | Cmd/Ctrl-− | Fokotsa |
+    | Cmd/Ctrl-z | Busa holimo ho 100% |
+    | Cmd/Ctrl-Shift-a | Hola mongolo |
+    | Cmd/Ctrl-a | Fokotsa mongolo |
+    | Cmd/Ctrl-0 | Busa mongolo ho 100% |
+
+    ### Ho Potoloha (ha ho na tšepo ea mongolo e kgomaretsoeng)
+    | Sehlooho | Ketso |
+    |---|---|
+    | Motsu o holimo / tlase | Potolohisa mola o le mong |
+    | Page Up / Page Down | Potolohisa seboni se le seng (Fn-Holimo / Fn-Tlase Mac) |
+    | Home / Cmd-Holimo | Ea qalong ea tokomane (Fn-Nngele Mac) |
+    | End / Cmd-Tlase | Ea pheletsong ea tokomane (Fn-Nngele ea Nngele Mac) |
+
+    ### Thuso
+    | Sehlooho | Ketso |
+    |---|---|
+    | F1 | Bontša/Patela skrini ena ea thuso |
+  xh: |
+    # Umboni we-Markdown — Uncedo
+
+    ## Izikhululo Zekhibo
+
+    ### Ifayile
+    | Isitshixo | Isenzo |
+    |---|---|
+    | Cmd/Ctrl-o | Vula ifayile ye-Markdown |
+    | Cmd/Ctrl-r | Mphuhlisa — layisha kwakhona ifayile yangoku ukusuka kudisk |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Phuma |
+
+    Umboni ulinda ifayile yangoku ukufumana iinguqulo kwaye uyilavishe kwakhona ngokuzenzakalelayo.
+    Sebenzisa `--no-detach` okanye `--foreground` kumgca womyalelo ukuze uhlale uxhunyiwe kwiterminal (Unix kuphela).
+
+    ### Ukuzulazula
+    | Isitshixo | Isenzo |
+    |---|---|
+    | Iinkinobho ◀ / ▶ | Emva / Phambili emlanjeni wembali |
+    | Cmd/Ctrl-t | Bonisa/Fihla iphaneli yoluhlu lwezindikimba |
+
+    ### Ukukhangela
+    | Isitshixo | Isenzo |
+    |---|---|
+    | Cmd/Ctrl-f | Vula / vala ibha yokukhangela |
+    | Enter  okanye  inkinobho ⬇ | Ukufanelana okulandelayo |
+    | Shift-Enter  okanye  inkinobho ⬆ | Ukufanelana okwangaphambili |
+    | Escape | Vala ibha yokukhangela |
+
+    > Ukukhangela kuzulazula kuya kwicandelo equkethe ukufanelana ngakunye kwaye kugqamise umbhalo otholakeleyo.
+    > Ukufanelana okusebenzayo kuboniswa ngombala we-orenje; okunye ngombala omthubi.
+
+    ### Ukulayisha Kwakhona Ngokuzenzakalelayo
+    Umboni ulinda ifayile evuliweyo ukufumana iinguqulo kudisk kwaye uyilavishe kwakhona ngokuzenzakalelayo.
+    Isaziso esifutshane «↻ Ilayishiwe kwakhona» sivela ebalosebenzisi emva kokulayisha kwakhona ngakunye.
+
+    ### Ukusondeza Nokushintsha Uhlobo Lombhalo
+    | Isitshixo | Isenzo |
+    |---|---|
+    | Cmd/Ctrl-= | Sondeza |
+    | Cmd/Ctrl-− | Nciphisa |
+    | Cmd/Ctrl-z | Buyisela ukusondeza ku-100% |
+    | Cmd/Ctrl-Shift-a | Yandisa uhlobo lombhalo |
+    | Cmd/Ctrl-a | Nciphisa uhlobo lombhalo |
+    | Cmd/Ctrl-0 | Buyisela uhlobo lombhalo ku-100% |
+
+    ### Ukuskrola (xa kungekho nqanaba lombhalo eliqenjiswayo)
+    | Isitshixo | Isenzo |
+    |---|---|
+    | Utolo phezulu / ezantsi | Skrola umgca omnye |
+    | Page Up / Page Down | Skrola umboni omnye (Fn-Phezulu / Fn-Ezantsi ku-Mac) |
+    | Home / Cmd-Phezulu | Yiya ekuqaleni kwedokhumenti (Fn-Ekhohlo ku-Mac) |
+    | End / Cmd-Ezantsi | Yiya ekupheleni kwedokhumenti (Fn-Ekunene ku-Mac) |
+
+    ### Uncedo
+    | Isitshixo | Isenzo |
+    |---|---|
+    | F1 | Bonisa/Fihla lesi sikrini soncedo |

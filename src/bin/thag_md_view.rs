@@ -1330,7 +1330,11 @@ impl eframe::App for MarkdownApp {
             ui.horizontal(|ui| {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 2.0;
-                    if ui.button("⚙").on_hover_text("Follow system").clicked() {
+                    if ui
+                        .button("⚙")
+                        .on_hover_text(t!("toolbar.theme_system").to_string())
+                        .clicked()
+                    {
                         if let Some(system_theme) = ui.ctx().system_theme() {
                             ui.ctx().set_theme(system_theme);
                         } else {
@@ -1339,14 +1343,14 @@ impl eframe::App for MarkdownApp {
                     }
                     if ui
                         .button("🌙")
-                        .on_hover_text("Switch to dark mode")
+                        .on_hover_text(t!("toolbar.theme_dark").to_string())
                         .clicked()
                     {
                         ui.ctx().set_theme(egui::Theme::Dark);
                     }
                     if ui
                         .button("☀")
-                        .on_hover_text("Switch to light mode")
+                        .on_hover_text(t!("toolbar.theme_light").to_string())
                         .clicked()
                     {
                         ui.ctx().set_theme(egui::Theme::Light);

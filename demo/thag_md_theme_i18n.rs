@@ -52,6 +52,7 @@ use std::{
     },
     time::{Duration, Instant},
 };
+use thag_demo_proc_macros::copy_i18n_locales;
 use thag_styling::{auto_help, file_navigator, themed_inquire_config};
 
 #[cfg(target_os = "macos")]
@@ -62,7 +63,9 @@ const MOD: &str = "Ctrl";
 
 file_navigator! {}
 
-rust_i18n::i18n!("locales", backend = ThagI18nBackend::new());
+copy_i18n_locales! {}
+
+rust_i18n::i18n!("locales", fallback = "en");
 
 /// Applies contrast colours to both egui themes; font sizes are always left at
 /// egui defaults so toggling never causes a scroll-position jump.
@@ -1318,7 +1321,11 @@ impl eframe::App for MarkdownApp {
             ui.horizontal(|ui| {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 2.0;
-                    if ui.button("⚙").on_hover_text("Follow system").clicked() {
+                    if ui
+                        .button("⚙")
+                        .on_hover_text(t!("toolbar.theme_system").to_string())
+                        .clicked()
+                    {
                         if let Some(system_theme) = ui.ctx().system_theme() {
                             ui.ctx().set_theme(system_theme);
                         } else {
@@ -1327,14 +1334,14 @@ impl eframe::App for MarkdownApp {
                     }
                     if ui
                         .button("🌙")
-                        .on_hover_text("Switch to dark mode")
+                        .on_hover_text(t!("toolbar.theme_dark").to_string())
                         .clicked()
                     {
                         ui.ctx().set_theme(egui::Theme::Dark);
                     }
                     if ui
                         .button("☀")
-                        .on_hover_text("Switch to light mode")
+                        .on_hover_text(t!("toolbar.theme_light").to_string())
                         .clicked()
                     {
                         ui.ctx().set_theme(egui::Theme::Light);
@@ -2095,98 +2102,5 @@ impl ImageLoader for FastSvgLoader {
             }
             !bucket.is_empty()
         });
-    }
-}
-
-use rust_i18n::Backend;
-use std::borrow::Cow;
-
-pub struct ThagI18nBackend {
-    // locale -> key -> value
-    trs: HashMap<String, HashMap<String, String>>,
-}
-
-impl ThagI18nBackend {
-    fn new() -> Self {
-        let mut trs: HashMap<String, HashMap<String, String>> = HashMap::new();
-
-        // Check THAG_DEV_PATH first, then executable-adjacent, then give up gracefully.
-        let search_dirs: Vec<std::path::PathBuf> = [
-            std::env::var("THAG_DEV_PATH")
-                .ok()
-                .map(|p| std::path::PathBuf::from(p).join("locales")),
-            std::env::current_exe()
-                .ok()
-                .and_then(|e| e.parent().map(|p| p.join("locales"))),
-        ]
-        .into_iter()
-        .flatten()
-        .collect();
-
-        for dir in search_dirs {
-            if !dir.is_dir() {
-                continue;
-            }
-            // read_v2_yaml_dir populates `trs` from v2-format YAML files
-            if Self::load_dir(&dir, &mut trs).is_ok() {
-                break;
-            }
-        }
-        Self { trs }
-    }
-
-    fn load_dir(
-        dir: &std::path::Path,
-        trs: &mut HashMap<String, HashMap<String, String>>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        for entry in std::fs::read_dir(dir)? {
-            let path = entry?.path();
-            if path.extension().and_then(|s| s.to_str()) != Some("yaml") {
-                continue;
-            }
-            let text = std::fs::read_to_string(&path)?;
-            let doc: serde_yaml::Value = serde_yaml::from_str(&text)?;
-            // parse v2: key -> locale -> value
-            if let serde_yaml::Value::Mapping(map) = doc {
-                for (k, v) in map {
-                    if k.as_str() == Some("_version") {
-                        continue;
-                    }
-                    let key = k.as_str().unwrap_or("").to_string();
-                    if let serde_yaml::Value::Mapping(locales) = v {
-                        for (locale, val) in locales {
-                            if let (Some(loc), Some(text)) = (locale.as_str(), val.as_str()) {
-                                trs.entry(loc.to_string())
-                                    .or_default()
-                                    .insert(key.clone(), text.to_string());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-}
-
-impl Backend for ThagI18nBackend {
-    fn available_locales(&self) -> Vec<Cow<'_, str>> {
-        dbg!();
-        self.trs.keys().map(|k| Cow::Borrowed(k.as_str())).collect()
-    }
-    fn translate(&self, locale: &str, key: &str) -> Option<Cow<'_, str>> {
-        dbg!();
-        self.trs
-            .get(locale)?
-            .get(key)
-            .map(|v| Cow::Borrowed(v.as_str()))
-    }
-    fn messages_for_locale(&self, locale: &str) -> Option<Vec<(Cow<'_, str>, Cow<'_, str>)>> {
-        dbg!();
-        self.trs.get(locale).map(|m| {
-            m.iter()
-                .map(|(k, v)| (Cow::Borrowed(k.as_str()), Cow::Borrowed(v.as_str())))
-                .collect()
-        })
     }
 }

@@ -16,6 +16,7 @@
 
 mod ansi_styling_support;
 mod category_enum;
+mod copy_resource_dir;
 mod file_navigator;
 mod fn_name;
 mod internal_doc;
@@ -48,6 +49,7 @@ mod end;
 
 use crate::ansi_styling_support::ansi_styling_support_impl;
 use crate::category_enum::category_enum_impl;
+use crate::copy_resource_dir::copy_resource_dir_impl;
 use crate::file_navigator::file_navigator_impl;
 use crate::fn_name::fn_name_impl;
 use crate::internal_doc::internal_doc_impl;
@@ -361,17 +363,11 @@ pub fn ansi_styling_support(input: TokenStream) -> TokenStream {
     )
 }
 
-/// Preload visual themes into memory at compile time.
-///
-/// Syntax:
-///
-/// ```Rust
-///     preload_themes! {}
-/// ```
-///
+/// Stage a resource directory into the CARGO_MANIFEST_DIR of the invoking program.
+/// Useful for locales files required by `irust_i18n::i18n!` or any other assets.
 #[proc_macro]
-pub fn preload_themes(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(false, "preload_themes", &input, preload_themes_impl)
+pub fn copy_resource_dir(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(false, "copy_resource_dir", &input, copy_resource_dir_impl)
 }
 
 /// Define common errors for `thag` tools.
@@ -493,6 +489,19 @@ pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
     {
         item
     }
+}
+
+/// Preload visual themes into memory at compile time.
+///
+/// Syntax:
+///
+/// ```Rust
+///     preload_themes! {}
+/// ```
+///
+#[proc_macro]
+pub fn preload_themes(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(false, "preload_themes", &input, preload_themes_impl)
 }
 
 /// Attribute macro for use with `thag_profiler`. This macro is intended to annotate user

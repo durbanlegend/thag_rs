@@ -64,6 +64,7 @@ use std::{
     },
     time::{Duration, Instant},
 };
+use thag_proc_macros::copy_resource_dir;
 use thag_styling::{auto_help, file_navigator, themed_inquire_config};
 
 #[cfg(target_os = "macos")]
@@ -74,6 +75,7 @@ const MOD: &str = "Ctrl";
 
 file_navigator! {}
 
+copy_resource_dir!("THAG_DEV_PATH", "locales");
 rust_i18n::i18n!("locales", fallback = "en");
 
 /// Applies contrast colours to both egui themes; font sizes are always left at

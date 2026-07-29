@@ -212,9 +212,21 @@ pub const BUILT_IN_CRATES: [&str; 7] = [
 ];
 /// Subdirectory name for dynamic/temporary Rust files
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";
-/// Subdirectory name for shared build target (all scripts share dependencies)
+/// Subdirectory name for shared build target (all scripts share dependencies).
+/// This is set as `CARGO_TARGET_DIR` and is owned by Cargo. All scripts build
+/// here to share compiled dependencies, saving space and build time. Cargo
+/// manages its own incremental build fingerprints, `.d` dep files, and cached
+/// `.rlib`/`.rmeta` artifacts here.
 pub const SHARED_TARGET_SUBDIR: &str = "thag_rs_shared_target";
-/// Subdirectory name for executable cache (stores built script executables)
+/// Subdirectory name for executable cache (stores built script executables).
+/// This is a flat directory of just the final binaries, serving two roles:
+
+/// 1. Staleness anchor: `determine_build_requirements` and
+///     `modified_since_compiled` both use `target_path` to check whether the
+///     cached exe is older than the source. This needs to be a stable location
+///     that won't be touched by Cargo operations on other scripts.
+/// 2. Direct execution: `run()` executes `target_path` directly — not via
+///   `cargo run`. This bypasses Cargo overhead entirely for already-built scripts.
 pub const EXECUTABLE_CACHE_SUBDIR: &str = "thag_rs_bins";
 /// Length of decorative flower box borders for output formatting
 pub const FLOWER_BOX_LEN: usize = 70;

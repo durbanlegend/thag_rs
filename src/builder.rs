@@ -1368,8 +1368,8 @@ fn cache_executable(build_state: &BuildState) -> ThagResult<()> {
         }
         sveprtln!(
             Role::INFO,
-            V::VV,
-            "Cached executable: {}",
+            V::N,
+            "Executable deployed to: {}",
             dest_exe.display()
         );
     } else {

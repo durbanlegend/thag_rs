@@ -102,7 +102,7 @@ macro_rules! attribute {
     };
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Script for determining expression types");
     attribute!(2 + 2);
     attribute!(255);
@@ -119,4 +119,6 @@ fn main() {
     attribute!(Err::<&str, &str>("Bad thing happened"));
     attribute!(Ok::<Option<&str>, &str>(Some("Hello World!")));
     attribute!(IBig::from(0_usize));
+    attribute!(std::env::var("THAG_DEV_PATH")?);
+    Ok(())
 }

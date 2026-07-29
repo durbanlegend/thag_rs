@@ -39,6 +39,11 @@ features = ["tools"]
 # features = ["document-features"]
 all-features = true
 
+[package.metadata.i18n]
+available-locales = ["en", "de", "fr", "es", "pt", "sv", "it", "pl", "cs", "ru", "zu"]
+default-locale = "en"
+load-path = "locales"
+
 [workspace]
 members = [
   # "demo/proc_macros",

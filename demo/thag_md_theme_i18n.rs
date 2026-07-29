@@ -23,23 +23,11 @@ default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_com
 opt-level = 3     # Apply maximum performance optimizations
 debug = true
 */
-/// A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
-/// `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the
-/// current markdown file, so navigation between linked documents works correctly.
-/// Supports back/forward history, light/dark/system theme switching via `egui_theme_switch`, zoom,
-/// font scaling, opening a new file (Cmd/Ctrl-O), a left-side table of contents panel (§ / Cmd/Ctrl-T),
-/// text search with match counter and section navigation (Cmd/Ctrl-F), refresh from disk (Cmd/Ctrl-R),
-/// live file watching (auto-reloads when the file changes on disk), and a help screen (F1).
-/// Improved readability over the egui defaults: near-black text in light mode,
-/// near-white in dark mode, warm paper background, higher-contrast code block backgrounds, and
-/// GitHub-style syntax highlighting for code blocks.
-/// On Unix systems, launching from a terminal automatically detaches the process so the terminal
-/// is returned immediately (use --no-detach / --foreground to suppress this).
-///
-/// Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
-/// an image produces an invisible zero-size hyperlink. If you want a clickable link alongside an image,
-/// add an explicit text link in the markdown below it. You may also notice that it does not handle banners
-/// well.
+/// A version of src/bin/thag_md_viewer with internationalization provided by a runtime backend.
+/// This is otherwise impossible for scripts as `rust-i18n` requires the locales to be under
+/// CARGO_MANIFEST_DIR, which resides under the `thag_rs` project directory.
+/// This script requires the `thag_rs` project to be present and pointed to by the standard
+/// THAG_DEV_PATH environment variable.
 /// The MSRV of this program is 1.92.
 //# Purpose: GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature
 //  in addition to `tools` when built as a tool, on account of its significant additional dependencies.
@@ -74,7 +62,7 @@ const MOD: &str = "Ctrl";
 
 file_navigator! {}
 
-rust_i18n::i18n!("locales", fallback = "en");
+rust_i18n::i18n!("locales", backend = ThagI18nBackend::new());
 
 /// Applies contrast colours to both egui themes; font sizes are always left at
 /// egui defaults so toggling never causes a scroll-position jump.
@@ -2107,5 +2095,98 @@ impl ImageLoader for FastSvgLoader {
             }
             !bucket.is_empty()
         });
+    }
+}
+
+use rust_i18n::Backend;
+use std::borrow::Cow;
+
+pub struct ThagI18nBackend {
+    // locale -> key -> value
+    trs: HashMap<String, HashMap<String, String>>,
+}
+
+impl ThagI18nBackend {
+    fn new() -> Self {
+        let mut trs: HashMap<String, HashMap<String, String>> = HashMap::new();
+
+        // Check THAG_DEV_PATH first, then executable-adjacent, then give up gracefully.
+        let search_dirs: Vec<std::path::PathBuf> = [
+            std::env::var("THAG_DEV_PATH")
+                .ok()
+                .map(|p| std::path::PathBuf::from(p).join("locales")),
+            std::env::current_exe()
+                .ok()
+                .and_then(|e| e.parent().map(|p| p.join("locales"))),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+
+        for dir in search_dirs {
+            if !dir.is_dir() {
+                continue;
+            }
+            // read_v2_yaml_dir populates `trs` from v2-format YAML files
+            if Self::load_dir(&dir, &mut trs).is_ok() {
+                break;
+            }
+        }
+        Self { trs }
+    }
+
+    fn load_dir(
+        dir: &std::path::Path,
+        trs: &mut HashMap<String, HashMap<String, String>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        for entry in std::fs::read_dir(dir)? {
+            let path = entry?.path();
+            if path.extension().and_then(|s| s.to_str()) != Some("yaml") {
+                continue;
+            }
+            let text = std::fs::read_to_string(&path)?;
+            let doc: serde_yaml::Value = serde_yaml::from_str(&text)?;
+            // parse v2: key -> locale -> value
+            if let serde_yaml::Value::Mapping(map) = doc {
+                for (k, v) in map {
+                    if k.as_str() == Some("_version") {
+                        continue;
+                    }
+                    let key = k.as_str().unwrap_or("").to_string();
+                    if let serde_yaml::Value::Mapping(locales) = v {
+                        for (locale, val) in locales {
+                            if let (Some(loc), Some(text)) = (locale.as_str(), val.as_str()) {
+                                trs.entry(loc.to_string())
+                                    .or_default()
+                                    .insert(key.clone(), text.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+impl Backend for ThagI18nBackend {
+    fn available_locales(&self) -> Vec<Cow<'_, str>> {
+        dbg!();
+        self.trs.keys().map(|k| Cow::Borrowed(k.as_str())).collect()
+    }
+    fn translate(&self, locale: &str, key: &str) -> Option<Cow<'_, str>> {
+        dbg!();
+        self.trs
+            .get(locale)?
+            .get(key)
+            .map(|v| Cow::Borrowed(v.as_str()))
+    }
+    fn messages_for_locale(&self, locale: &str) -> Option<Vec<(Cow<'_, str>, Cow<'_, str>)>> {
+        dbg!();
+        self.trs.get(locale).map(|m| {
+            m.iter()
+                .map(|(k, v)| (Cow::Borrowed(k.as_str()), Cow::Borrowed(v.as_str())))
+                .collect()
+        })
     }
 }

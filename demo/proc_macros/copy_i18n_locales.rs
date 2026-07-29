@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use quote::quote;
 use std::{
-    env, fs,
+    env, fs, io,
     path::{Path, PathBuf},
 };
 
@@ -26,51 +26,41 @@ fn do_copy() -> Result<(), String> {
         return Ok(());
     }
 
-    let source = Path::new(&thag_dev).join("locales").join("app.yaml");
+    let source_dir = Path::new(&thag_dev).join("locales");
 
-    if !source.exists() {
+    if !source_dir.is_dir() {
         return Err(format!(
-            "Source locale file does not exist: {}",
-            source.display()
+            "Source locales directory does not exist: {}",
+            source_dir.display()
         ));
     }
 
     let dest_dir = Path::new(&manifest_dir).join("locales");
 
-    fs::create_dir_all(&dest_dir)
-        .map_err(|e| format!("Failed to create {}: {e}", dest_dir.display()))?;
-
-    let dest = dest_dir.join("app.yaml");
-
-    // Optional optimisation: don't rewrite an identical file.
-    let should_copy = match (fs::read(&source), fs::read(&dest)) {
-        (Ok(src), Ok(dst)) => src != dst,
-        _ => true,
-    };
-
-    if should_copy {
-        // Not if identical file
-        if source.canonicalize().ok() != dest.canonicalize().ok() {
-            #[cfg(debug_assertions)]
-            eprintln!(
-                "copy_i18n_locales: {} -> {}",
-                source.display(),
-                dest.display()
-            );
-            fs::copy(&source, &dest).map_err(|e| {
-                format!(
-                    "Failed to copy {} -> {}: {e}",
-                    source.display(),
-                    dest.display()
-                )
-            })?;
-        }
+    // Not if identical file
+    if source_dir.canonicalize().ok() == dest_dir.canonicalize().ok() {
+        #[cfg(debug_assertions)]
+        eprintln!("Source and destination directories are one and the same");
+        return Ok(());
     }
+
+    #[cfg(debug_assertions)]
+    eprintln!(
+        "copy_i18n_locales: {} -> {}",
+        source_dir.display(),
+        dest_dir.display()
+    );
+
+    copy_dir_recursive(&source_dir, &dest_dir).map_err(|e| {
+        format!(
+            "Failed to copy {} -> {}: {e}",
+            source_dir.display(),
+            dest_dir.display()
+        )
+    })?;
 
     Ok(())
 }
-
-use std::{fs, io, path::Path};
 
 fn copy_dir_recursive(src: &Path, dst: &Path) -> io::Result<()> {
     fs::create_dir_all(dst)?;

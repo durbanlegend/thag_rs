@@ -64,7 +64,6 @@ const MOD: &str = "Ctrl";
 file_navigator! {}
 
 copy_i18n_locales! {}
-
 rust_i18n::i18n!("locales", fallback = "en");
 
 /// Applies contrast colours to both egui themes; font sizes are always left at

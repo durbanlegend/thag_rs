@@ -204,16 +204,14 @@ fn parse_heading_line(line: &str) -> Option<(u8, &str)> {
         return None;
     }
     // Strip any trailing `{#id}` / `{.class}` attribute block.
-    let plain = if let Some(brace) = text.rfind('{') {
+    let plain = text.rfind('{').map_or(text, |brace| {
         let attr = text[brace..].trim_end();
         if attr.ends_with('}') {
             text[..brace].trim_end()
         } else {
             text
         }
-    } else {
-        text
-    };
+    });
     Some((hashes as u8, plain))
 }
 
@@ -270,21 +268,17 @@ fn extract_toc_and_inject_ids(raw: &str) -> (String, Vec<TocEntry>) {
 
         // Use our ATX parser to get the level and plain text.
         if let Some((level, plain_text)) = parse_heading_line(line) {
-            let (slug, injected) = if let Some(id) = extract_heading_id(line) {
-                // Preserve an existing explicit `{#id}`.
-                (id.to_string(), line.to_string())
-            } else {
-                let base = slugify(plain_text);
-                let n = slug_counts.entry(base.clone()).or_insert(0);
-                let slug = if *n == 0 {
-                    base.clone()
-                } else {
-                    format!("{base}-{n}")
-                };
-                *n += 1;
-                let with_id = format!("{} {{#{slug}}}", line.trim_end());
-                (slug, with_id)
-            };
+            let (slug, injected) = extract_heading_id(line).map_or_else(
+                || {
+                    let base = slugify(plain_text);
+                    let n = slug_counts.entry(base.clone()).or_insert(0);
+                    let slug = if *n == 0 { base } else { format!("{base}-{n}") };
+                    *n += 1;
+                    let with_id = format!("{} {{#{slug}}}", line.trim_end());
+                    (slug, with_id)
+                },
+                |id| (id.to_string(), line.to_string()),
+            );
             toc.push(TocEntry {
                 level,
                 text: plain_text.to_string(),
@@ -597,7 +591,7 @@ fn detach_if_tty() {
 }
 
 /// Detect the preferred UI locale from the operating system.
-/// Uses `sys-locale` which reads native OS APIs (CFPreferences on macOS,
+/// Uses `sys-locale` which reads native OS APIs (`CFPreferences` on macOS,
 /// `GetUserDefaultLocaleName` on Windows, POSIX env-vars on Linux).
 /// Falls back to `"en"` when no usable locale is detected.
 fn detect_locale() -> String {
@@ -1245,6 +1239,7 @@ impl eframe::App for MarkdownApp {
             scroll_page_down,
             scroll_doc_top,
             scroll_doc_bottom,
+            escape_key,
         ) = ui.ctx().input(|i| {
             use egui::Key;
             (
@@ -1271,6 +1266,7 @@ impl eframe::App for MarkdownApp {
                 // Home / End: physical key OR Cmd+Arrow (standard macOS navigation).
                 i.key_pressed(Key::Home) || (i.modifiers.command && i.key_pressed(Key::ArrowUp)),
                 i.key_pressed(Key::End) || (i.modifiers.command && i.key_pressed(Key::ArrowDown)),
+                i.key_pressed(Key::Escape),
             )
         });
 
@@ -1313,7 +1309,7 @@ impl eframe::App for MarkdownApp {
         if cmd_r {
             refresh_requested = true;
         }
-        if f1_key {
+        if f1_key || (escape_key && show_help) {
             new_show_help = !show_help;
         }
         // Search navigation (only meaningful when the bar is open).
@@ -1666,7 +1662,7 @@ impl eframe::App for MarkdownApp {
                                     // (letter by letter) rather than dropping a whole word.
                                     job.wrap.break_anywhere = true;
                                     let galley = ui.ctx().fonts_mut(|f| f.layout_job(job));
-                                    let y = row_rect.center().y - galley.size().y * 0.5;
+                                    let y = galley.size().y.mul_add(-0.5, row_rect.center().y);
                                     ui.painter().galley(
                                         egui::pos2(row_rect.min.x + indent, y),
                                         galley,

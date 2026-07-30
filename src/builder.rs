@@ -1041,7 +1041,7 @@ pub fn gen_build_run(
         generate(build_state, maybe_rs_source, proc_flags)?;
     } else {
         "Skipping unnecessary generation step.  Use --force (-f) to override."
-            .emphasis()
+            .info()
             .veprintln(V::N);
 
         // build_state.cargo_manifest = Some(default_manifest(build_state)?);
@@ -1056,7 +1056,7 @@ pub fn gen_build_run(
             } else {
                 "Skipping unnecessary cargo build step. Use --force (-f) to override."
             };
-        sveprtln!(Role::EMPH, V::N, "{build_qualifier}");
+        sveprtln!(Role::INFO, V::N, "{build_qualifier}");
     }
     if proc_flags.contains(ProcFlags::RUN) {
         run(proc_flags, &args.args, build_state)?;

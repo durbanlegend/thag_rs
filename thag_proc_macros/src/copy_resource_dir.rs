@@ -2,6 +2,7 @@ use proc_macro::TokenStream;
 use std::{env, fs, io, path::Path};
 use syn::{
     parse::{Parse, ParseStream},
+    punctuated::Punctuated,
     LitStr, Token,
 };
 
@@ -11,43 +12,22 @@ struct CopyArgs {
     dest_subdir: Option<LitStr>,
 }
 
-// impl Parse for CopyArgs {
-//     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-//         let args = Punctuated::<LitStr, Token![,]>::parse_terminated(input)?;
-
-//         if args.len() != 3 {
-//             return Err(
-//                 input.error("expected: copy_resource_dir!(\"ENV_VAR\", \"source\", \"dest\")")
-//             );
-//         }
-
-//         let mut args = args.into_iter();
-
-//         Ok(Self {
-//             env_var: args.next().unwrap(),
-//             source_subdir: args.next().unwrap(),
-//             dest_subdir: args.next().unwrap(),
-//         })
-//     }
-// }
-
 impl Parse for CopyArgs {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        let env_var = input.parse()?;
-        input.parse::<Token![,]>()?;
+        let args = Punctuated::<LitStr, Token![,]>::parse_terminated(input)?;
 
-        let source_subdir = input.parse()?;
-
-        let dest_subdir = if input.is_empty() {
-            None
-        } else {
-            input.parse::<Token![,]>()?;
-            Some(input.parse()?)
-        };
-
-        if !input.is_empty() {
-            return Err(input.error(r#"expected copy_resource_dir!("ENV", "source"[, "dest"])"#));
+        if !(2..=3).contains(&args.len()) {
+            return Err(
+                input.error("expected: copy_resource_dir!(\"ENV_VAR\", \"source\", \"dest\")")
+            );
         }
+
+        let mut args = args.into_iter();
+
+        let env_var = args.next().unwrap();
+        let source_subdir = args.next().unwrap();
+        let dest_subdir = Some(args.next().unwrap_or_else(|| source_subdir.clone()));
+
         Ok(Self {
             env_var,
             source_subdir,

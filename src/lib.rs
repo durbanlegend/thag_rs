@@ -220,13 +220,12 @@ pub const DYNAMIC_SUBDIR: &str = "rs_dyn";
 pub const SHARED_TARGET_SUBDIR: &str = "thag_rs_shared_target";
 /// Subdirectory name for executable cache (stores built script executables).
 /// This is a flat directory of just the final binaries, serving two roles:
-
 /// 1. Staleness anchor: `determine_build_requirements` and
-///     `modified_since_compiled` both use `target_path` to check whether the
-///     cached exe is older than the source. This needs to be a stable location
-///     that won't be touched by Cargo operations on other scripts.
+///    `modified_since_compiled` both use `target_path` to check whether the
+///    cached exe is older than the source. This needs to be a stable location
+///    that won't be touched by Cargo operations on other scripts.
 /// 2. Direct execution: `run()` executes `target_path` directly — not via
-///   `cargo run`. This bypasses Cargo overhead entirely for already-built scripts.
+///    `cargo run`. This bypasses Cargo overhead entirely for already-built scripts.
 pub const EXECUTABLE_CACHE_SUBDIR: &str = "thag_rs_bins";
 /// Length of decorative flower box borders for output formatting
 pub const FLOWER_BOX_LEN: usize = 70;

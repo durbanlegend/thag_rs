@@ -11,7 +11,7 @@ thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 //# Purpose: Interactively clean thag script build artifacts, with option to target only thag_url leftovers.
 //# Categories: maintenance, thag_front_ends, tools
 use chrono::{DateTime, Local};
-use inquire::{set_global_render_config, Confirm, Select};
+use inquire::{set_global_render_config, validator::Validation, Confirm, CustomType, Select};
 use std::{
     error::Error,
     fs,
@@ -85,7 +85,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         if result.is_err() {
             return Err(result.err().unwrap());
         }
-        println!()
+        println!();
     }
 }
 
@@ -106,15 +106,14 @@ fn show_artifacts(show_what: &str) -> Result<(), Box<dyn Error>> {
         "bins" => {
             if bins_dir.exists() {
                 veprtln!(V::N, "Showing executable cache: {}", bins_dir.display());
-                list_dir(&bins_dir)?;
+                list_dir_and_print_top(&bins_dir, 1, usize::MAX)?;
             } else {
                 veprtln!(V::N, "Executable cache does not exist");
             }
         }
         "target" => {
             if target_dir.exists() {
-                veprtln!(V::N, "Showing shared build cache: {}", target_dir.display());
-                list_dir(&target_dir)?;
+                list_target_dir(&target_dir)?;
             } else {
                 veprtln!(V::N, "Shared build cache does not exist");
             }
@@ -122,17 +121,16 @@ fn show_artifacts(show_what: &str) -> Result<(), Box<dyn Error>> {
         "all" => {
             if bins_dir.exists() {
                 veprtln!(V::N, "Listing executable cache: {}", bins_dir.display());
-                list_dir(&bins_dir)?;
+                list_dir_and_print_top(&bins_dir, 1, usize::MAX)?;
             } else {
                 veprtln!(V::N, "Executable cache does not exist");
             }
             println!();
             if target_dir.exists() {
-                veprtln!(V::N, "Listing shared build cache: {}", target_dir.display());
-                list_dir(&target_dir)?;
+                list_target_dir(&target_dir)?;
             } else {
                 veprtln!(V::N, "Shared build cache does not exist");
-            };
+            }
         }
         _ => {
             return Err(format!(
@@ -145,23 +143,58 @@ fn show_artifacts(show_what: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn list_target_dir(target_dir: &Path) -> Result<(), Box<dyn Error + 'static>> {
+    let top_n = CustomType::<usize>::new(
+        "How many directory entries do you want to display, ranked by size?",
+    )
+    .with_starting_input("20")
+    .with_formatter(&|i| format!("${i}"))
+    .with_error_message("Please type a valid number")
+    .with_help_message("Type a positive integer")
+    .with_validator(|val: &usize| {
+        if *val <= 1 {
+            Ok(Validation::Invalid(
+                "You must request at least one entry to continue".into(),
+            ))
+        } else {
+            Ok(Validation::Valid)
+        }
+    })
+    .prompt()?;
+
+    // let Ok(top_n) = top_n else {
+    //     return Err("No input provided".into());
+    // };
+
+    veprtln!(
+        V::N,
+        "Showing {top_n} largest entries in the shared build cache: {}",
+        target_dir.display()
+    );
+    list_dir_and_print_top(target_dir, usize::MAX, top_n)?;
+    Ok(())
+}
+
 // Define a simple struct to hold the file details
+#[derive(Clone)]
 struct FileInfo {
     formatted_time: String,
     file_size: u64,
     file_name: String,
 }
 
-fn list_dir(dir_path: &Path) -> Result<(), Box<dyn Error>> {
-    // Read the entries in the directory
+fn list_dir_and_print_top(
+    dir_path: &Path,
+    max_depth: usize,
+    print_top: usize,
+) -> Result<(), Box<dyn Error>> {
     let mut files = Vec::new();
-
-    // Read the entries in the directory and collect relevant metadata
-    for entry in fs::read_dir(dir_path)? {
+    for entry in walkdir::WalkDir::new(dir_path).max_depth(max_depth) {
         let entry = entry?;
         let path = entry.path();
 
         if path.is_file() {
+            // eprintln!("path={}", path.display());
             let metadata = entry.metadata()?;
             let file_size = metadata.len();
 
@@ -170,10 +203,12 @@ fn list_dir(dir_path: &Path) -> Result<(), Box<dyn Error>> {
             let formatted_time = datetime.format("%Y-%m-%d %H:%M:%S").to_string();
 
             let file_name = path
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .into_owned();
+                // .file_name()
+                // .unwrap_or_default()
+                // .to_string_lossy()
+                // .into_owned();
+                .display()
+                .to_string();
 
             files.push(FileInfo {
                 formatted_time,
@@ -183,8 +218,13 @@ fn list_dir(dir_path: &Path) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // Sort descending by file size (largest to smallest)
-    files.sort_by(|a, b| b.file_size.cmp(&a.file_size));
+    files.sort_by_key(|b| std::cmp::Reverse(b.file_size));
+
+    let files = files
+        .iter()
+        .take(print_top)
+        .cloned()
+        .collect::<Vec<FileInfo>>();
 
     // Print the sorted output
     for file in files {
@@ -222,7 +262,7 @@ fn clean_artifacts(clean_what: &str) -> Result<(), Box<dyn Error>> {
         .status()?;
 
     if status.success() {
-        "✓ All {artifacts_desc} cleaned.".success().println();
+        sprtln!(Role::Success, "✓ All {artifacts_desc} cleaned.");
     } else {
         sprtln!(Role::Error, "thag --clean exited with status: {status}");
     }

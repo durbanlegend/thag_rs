@@ -630,14 +630,6 @@ fn main() -> eframe::Result<()> {
         .filter(|a| a != "--no-detach" && a != "--foreground")
         .collect();
 
-    // Only detach when a file path is already provided on the command line.
-    // The inquire picker needs a live stdin/stdout, so we must NOT detach
-    // before it runs — doing so spawns an orphan with null stdio.
-    // #[cfg(unix)]
-    // if args.len() > 1 {
-    //     detach_if_tty();
-    // }
-
     let selected_file: PathBuf = if args.len() > 1 {
         let input_path = Path::new(&args[1]);
         if !input_path.exists() {
@@ -720,10 +712,34 @@ fn main() -> eframe::Result<()> {
         ..Default::default()
     };
 
+    // Load new default fonts
+    let mut fonts = egui::FontDefinitions::default();
+
+    let preferred_font = "Inter";
+
+    // Register the font data
+    fonts.font_data.insert(
+        preferred_font.to_owned(),
+        egui::FontData::from_static(include_bytes!(
+            // "../../assets/fonts/Fonts/ttf/BDOGrotesk-Medium.ttf"
+            // "../../assets/fonts/Inter-VariableFont_opsz,wght.ttf"
+            "../../assets/fonts/Satoshi-Medium.otf" // Satoshi is a trademark of the Indian Type Foundry.
+        ))
+        .into(),
+    );
+
+    // Put it in proportional list
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Proportional)
+        .unwrap()
+        .insert(0, preferred_font.to_owned());
+
     eframe::run_native(
         "Markdown Viewer",
         options,
         Box::new(move |cc| {
+            cc.egui_ctx.set_fonts(fonts);
             // Register our fast SVG loader BEFORE the first frame triggers
             // egui_commonmark's `prepare_show`, which calls `install_image_loaders`.
             // Since `install_image_loaders` skips any loader whose ID is already

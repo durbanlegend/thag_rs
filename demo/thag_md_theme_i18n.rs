@@ -23,9 +23,7 @@ default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_com
 opt-level = 3     # Apply maximum performance optimizations
 debug = true
 */
-/// A version of src/bin/thag_md_viewer with internationalization provided by a runtime backend.
-/// This is otherwise impossible for scripts as `rust-i18n` requires the locales to be under
-/// CARGO_MANIFEST_DIR, which resides under the `thag_rs` project directory.
+/// A version of src/bin/thag_md_viewer with internationalization.
 /// This script requires the `thag_rs` project to be present and pointed to by the standard
 /// THAG_DEV_PATH environment variable.
 /// The MSRV of this program is 1.92.
@@ -714,10 +712,34 @@ fn main() -> eframe::Result<()> {
         ..Default::default()
     };
 
+    // Load new default fonts
+    let mut fonts = egui::FontDefinitions::default();
+
+    let preferred_font = "Inter";
+
+    // Register the font data
+    fonts.font_data.insert(
+        preferred_font.to_owned(),
+        egui::FontData::from_static(include_bytes!(
+            // "../assets/fonts/Fonts/ttf/BDOGrotesk-Medium.ttf"
+            // "../assets/fonts/Inter-VariableFont_opsz,wght.ttf"
+            "../assets/fonts/Satoshi-Medium.otf" // Satoshi is a trademark of the Indian Type Foundry.
+        ))
+        .into(),
+    );
+
+    // Put it in proportional list
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Proportional)
+        .unwrap()
+        .insert(0, preferred_font.to_owned());
+
     eframe::run_native(
         "Markdown Viewer",
         options,
         Box::new(move |cc| {
+            cc.egui_ctx.set_fonts(fonts);
             // Register our fast SVG loader BEFORE the first frame triggers
             // egui_commonmark's `prepare_show`, which calls `install_image_loaders`.
             // Since `install_image_loaders` skips any loader whose ID is already

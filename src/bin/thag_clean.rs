@@ -316,11 +316,26 @@ fn show_web_scripts() -> Result<(), Box<dyn Error>> {
             for entry in entries.flatten() {
                 let name = entry.file_name();
                 if name.to_string_lossy().starts_with(WEB_SCRIPT_PREFIX) {
-                    println!("  {}", entry.path().display());
+                    // println!("  {}", entry.path().display());
+                    let path = entry.path();
+                    let metadata = match entry.metadata() {
+                        Ok(m) => m,
+                        Err(_) => continue,
+                    };
+                    let file_size = metadata.len();
+                    let modified_time = metadata.modified()?;
+                    let datetime: DateTime<Local> = modified_time.into();
+                    let formatted_time = datetime.format("%Y-%m-%d %H:%M:%S").to_string();
+                    let file_name = path.display().to_string();
+                    println!(
+                        "[{}] {:>10} bytes  {}",
+                        formatted_time, file_size, file_name
+                    );
                     found_any = true;
                 }
             }
         }
+        // list_dir_and_print_top(dir, false, usize::MAX)?
     }
 
     if !found_any {

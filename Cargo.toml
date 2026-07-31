@@ -74,6 +74,11 @@ path = "src/bin/thag_cargo.rs"
 required-features = ["tools"]
 
 [[bin]]
+name = "thag_clean"
+path = "src/bin/thag_clean.rs"
+required-features = ["tools"]
+
+[[bin]]
 name = "thag_clippy"
 path = "src/bin/thag_clippy.rs"
 required-features = ["tools"]

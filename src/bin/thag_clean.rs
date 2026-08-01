@@ -345,21 +345,22 @@ fn show_web_scripts() -> Result<(), Box<dyn Error>> {
                 }
             }
         }
-        // list_dir_and_print_top(dir, false, usize::MAX)?
-    }
 
-    if !found_any {
-        "No web_script* artefacts found.".normal().println();
-        return Ok(());
-    }
+        if !found_any {
+            "No web_script* artefacts found.".normal().println();
+            return Ok(());
+        }
 
-    files.sort_by_key(|f| Reverse(f.formatted_time));
+        files.sort_by_key(|f| Reverse(f.formatted_time.clone()));
 
-    for file in files.iter().take(print_top) {
-        println!(
-            "{} {:>10} bytes  {}",
-            file.formatted_time, file.file_size, file.file_name
-        );
+        for file in files.iter()
+        /* .take(print_top) */
+        {
+            println!(
+                "{} {:>10} bytes  {}",
+                file.formatted_time, file.file_size, file.file_name
+            );
+        }
     }
 
     Ok(())

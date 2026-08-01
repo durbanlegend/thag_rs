@@ -166,7 +166,11 @@ fn show_artifacts(show_what: &str) -> Result<(), Box<dyn Error>> {
                 veprtln!(V::N, "Executable cache: {}", bins_dir.display());
                 list_dir_and_print_top(&bins_dir, false, usize::MAX)?;
             } else {
-                veprtln!(V::N, "Executable cache does not exist");
+                veprtln!(
+                    V::N,
+                    "Executable cache {} does not exist",
+                    bins_dir.display()
+                );
             }
         }
         "target" => {
@@ -187,7 +191,11 @@ fn show_artifacts(show_what: &str) -> Result<(), Box<dyn Error>> {
                 veprtln!(V::N, "Executable cache: {}", bins_dir.display());
                 list_dir_and_print_top(&bins_dir, false, usize::MAX)?;
             } else {
-                veprtln!(V::N, "Executable cache does not exist");
+                veprtln!(
+                    V::N,
+                    "Executable cache {} does not exist",
+                    bins_dir.display()
+                );
             }
             let target_dirs = find_all_target_dirs();
             if target_dirs.is_empty() {
@@ -285,7 +293,7 @@ fn list_dir_and_print_top(
 
     for file in files.iter().take(print_top) {
         println!(
-            "[{}] {:>10} bytes  {}",
+            "{} {:>10} bytes  {}",
             file.formatted_time, file.file_size, file.file_name
         );
     }
@@ -312,6 +320,7 @@ fn show_web_scripts() -> Result<(), Box<dyn Error>> {
         if !dir.exists() {
             continue;
         }
+        let mut files = Vec::new();
         if let Ok(entries) = fs::read_dir(dir) {
             for entry in entries.flatten() {
                 let name = entry.file_name();
@@ -327,10 +336,11 @@ fn show_web_scripts() -> Result<(), Box<dyn Error>> {
                     let datetime: DateTime<Local> = modified_time.into();
                     let formatted_time = datetime.format("%Y-%m-%d %H:%M:%S").to_string();
                     let file_name = path.display().to_string();
-                    println!(
-                        "[{}] {:>10} bytes  {}",
-                        formatted_time, file_size, file_name
-                    );
+                    files.push(FileInfo {
+                        formatted_time,
+                        file_size,
+                        file_name,
+                    });
                     found_any = true;
                 }
             }
@@ -340,6 +350,16 @@ fn show_web_scripts() -> Result<(), Box<dyn Error>> {
 
     if !found_any {
         "No web_script* artefacts found.".normal().println();
+        return Ok(());
+    }
+
+    files.sort_by_key(|f| Reverse(f.formatted_time));
+
+    for file in files.iter().take(print_top) {
+        println!(
+            "{} {:>10} bytes  {}",
+            file.formatted_time, file.file_size, file.file_name
+        );
     }
 
     Ok(())

@@ -829,6 +829,7 @@ impl MarkdownApp {
         toc: Vec<TocEntry>,
         ctx: egui::Context,
     ) -> Self {
+        let content_len = &content.len();
         let mut app = Self {
             content,
             raw_content,
@@ -853,7 +854,7 @@ impl MarkdownApp {
             watcher_rx: None,
             last_auto_reload: None,
             first_frame: true,
-            use_viewport_cache: self.content.len() >= VIEWPORT_CACHE_THRESHOLD,
+            use_viewport_cache: content_len >= &VIEWPORT_CACHE_THRESHOLD,
         };
         app.start_watching();
         app.build_content_headings();

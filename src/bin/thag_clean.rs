@@ -316,11 +316,11 @@ fn show_web_scripts() -> Result<(), Box<dyn Error>> {
     ];
 
     let mut found_any = false;
+    let mut files = Vec::new();
     for dir in &parent_dirs {
         if !dir.exists() {
             continue;
         }
-        let mut files = Vec::new();
         if let Ok(entries) = fs::read_dir(dir) {
             for entry in entries.flatten() {
                 let name = entry.file_name();
@@ -345,22 +345,23 @@ fn show_web_scripts() -> Result<(), Box<dyn Error>> {
                 }
             }
         }
+    }
 
-        if !found_any {
-            "No web_script* artefacts found.".normal().println();
-            return Ok(());
-        }
+    if !found_any {
+        "No web_script* artefacts found.".normal().println();
+        return Ok(());
+    }
 
-        files.sort_by_key(|f| Reverse(f.formatted_time.clone()));
+    // eprintln!("Sorting web artifacts by modification time...");
+    files.sort_by_key(|f| Reverse(f.formatted_time.clone()));
 
-        for file in files.iter()
-        /* .take(print_top) */
-        {
-            println!(
-                "{} {:>10} bytes  {}",
-                file.formatted_time, file.file_size, file.file_name
-            );
-        }
+    for file in files.iter()
+    /* .take(print_top) */
+    {
+        println!(
+            "{} {:>10} bytes  {}",
+            file.formatted_time, file.file_size, file.file_name
+        );
     }
 
     Ok(())

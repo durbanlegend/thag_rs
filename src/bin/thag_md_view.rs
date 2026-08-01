@@ -818,6 +818,7 @@ struct MarkdownApp {
     /// Whether the viewport-cache performance mode is active.
     /// Auto-enabled for documents ≥ [`VIEWPORT_CACHE_THRESHOLD`] bytes.
     /// Hidden from the UI for smaller documents.
+    use_viewport_cache: bool,
 }
 
 impl MarkdownApp {
@@ -852,6 +853,7 @@ impl MarkdownApp {
             watcher_rx: None,
             last_auto_reload: None,
             first_frame: true,
+            use_viewport_cache: self.content.len() >= VIEWPORT_CACHE_THRESHOLD,
         };
         app.start_watching();
         app.build_content_headings();

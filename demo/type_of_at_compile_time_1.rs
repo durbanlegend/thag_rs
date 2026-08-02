@@ -81,7 +81,7 @@ macro_rules! type_of {
 // NB: Set up the types we want to check
 impl_type_info!(i32, i64, f32, f64, str, String, Vec<T>, Result<T,S>);
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Type of {} is {}", stringify!(1), type_of!(1));
     println!("Type of {} is {}", stringify!(&1), type_of!(&1));
     println!("Type of {} is {}", stringify!(&&1), type_of!(&&1));
@@ -106,4 +106,10 @@ fn main() {
         stringify!({ 2 + 3 }),
         type_of!({ 2 + 3 })
     );
+    println!(
+        "Type of {} is {}",
+        stringify!(std::env::var("THAG_DEV_PATH")?),
+        type_of!(std::env::var("THAG_DEV_PATH")?)
+    );
+    Ok(())
 }

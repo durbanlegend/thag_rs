@@ -1,5 +1,4 @@
-/// Typical basic (runtime) solution to expression type identification. See also `demo/determine_if_known_type_trait.rs`
-/// for what may be a better (compile-time) solution depending on your use case.
+/// Typical basic (runtime) solution to expression type identification.
 //# Purpose: Demo of runtime type identification.
 //# Categories: type_identification, technique
 use quote::quote;
@@ -9,7 +8,7 @@ fn type_of<T>(_x: &T) -> String {
     std::any::type_name::<T>().to_string()
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let s = "Hello";
     let i = 42;
 
@@ -61,4 +60,10 @@ fn main() {
         stringify!(&syn::parse2::<Expr>(quote!({ 3 }).into())),
         type_of(&syn::parse2::<Expr>(quote!({ 3 }).into()))
     );
+    println!(
+        "Type of {} is {}",
+        stringify!(&std::env::var("THAG_DEV_PATH")?),
+        type_of(&std::env::var("THAG_DEV_PATH")?)
+    );
+    Ok(())
 }

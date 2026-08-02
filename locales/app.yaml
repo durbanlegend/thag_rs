@@ -1,0 +1,1190 @@
+_version: 2
+# All translations for thag_md_view.
+# Keys use the dot-separated paths matching the t!() macro calls in the source.
+#
+# Locales:
+#   en  English        de  German         fr  French
+#   es  Spanish        pt  Portuguese     sv  Swedish
+#   it  Italian        pl  Polish         cs  Czech
+#   ru  Russian        zu  Zulu
+#   st  Sesotho        xh  Xhosa
+#
+# NOTE: Zulu (zu), Sesotho (st) and Xhosa (xh) translations are a best-effort
+# first pass; review by native speakers is recommended before considering them
+# production-ready.
+
+toolbar.contrast_restore:
+  en: "Restore default egui contrast"
+  de: "Standard-egui-Kontrast wiederherstellen"
+  fr: "Restaurer le contraste egui par défaut"
+  es: "Restaurar el contraste egui predeterminado"
+  pt: "Restaurar o contraste padrão do egui"
+  sv: "Återställ standard-egui-kontrast"
+  it: "Ripristina il contrasto egui predefinito"
+  pl: "Przywróć domyślny kontrast egui"
+  cs: "Obnovit výchozí kontrast egui"
+  ru: "Восстановить контраст egui по умолчанию"
+  zu: "Buyisela ukulingana okujwayelekile kwe-egui"
+  st: "Busa tlhaho ea phapang ea egui"
+  xh: "Buyisela ukulingana okujwayelekileyo kwe-egui"
+
+toolbar.contrast_apply:
+  en: "Apply high-contrast colours"
+  de: "Hochkontrast-Farben anwenden"
+  fr: "Appliquer les couleurs à contraste élevé"
+  es: "Aplicar colores de alto contraste"
+  pt: "Aplicar cores de alto contraste"
+  sv: "Använd högkontrastfärger"
+  it: "Applica colori ad alto contrasto"
+  pl: "Zastosuj kolory wysokiego kontrastu"
+  cs: "Použít barvy s vysokým kontrastem"
+  ru: "Применить высококонтрастные цвета"
+  zu: "Sebenzisa imibala enokulungana okukhulu"
+  st: "Sebedisa mebala e nang le phapang e phahameng"
+  xh: "Sebenzisa imibala enokulungana okuphezulu"
+
+toolbar.open_file:
+  en: "Open a markdown file (%{cmd}-O)"
+  de: "Eine Markdown-Datei öffnen (%{cmd}-O)"
+  fr: "Ouvrir un fichier Markdown (%{cmd}-O)"
+  es: "Abrir un archivo Markdown (%{cmd}-O)"
+  pt: "Abrir um arquivo Markdown (%{cmd}-O)"
+  sv: "Öppna en Markdown-fil (%{cmd}-O)"
+  it: "Apri un file Markdown (%{cmd}-O)"
+  pl: "Otwórz plik Markdown (%{cmd}-O)"
+  cs: "Otevřít soubor Markdown (%{cmd}-O)"
+  ru: "Открыть файл Markdown (%{cmd}-O)"
+  zu: "Vula ifayili ye-Markdown (%{cmd}-O)"
+  st: "Bula faele ea Markdown (%{cmd}-O)"
+  xh: "Vula ifayile ye-Markdown (%{cmd}-O)"
+
+toolbar.reload:
+  en: "Reload current file from disk (%{cmd}-R)"
+  de: "Aktuelle Datei vom Datenträger neu laden (%{cmd}-R)"
+  fr: "Recharger le fichier depuis le disque (%{cmd}-R)"
+  es: "Recargar el archivo actual desde el disco (%{cmd}-R)"
+  pt: "Recarregar o arquivo atual do disco (%{cmd}-R)"
+  sv: "Läs in aktuell fil från disk igen (%{cmd}-R)"
+  it: "Ricarica il file corrente dal disco (%{cmd}-R)"
+  pl: "Przeładuj bieżący plik z dysku (%{cmd}-R)"
+  cs: "Znovu načíst aktuální soubor z disku (%{cmd}-R)"
+  ru: "Перезагрузить текущий файл с диска (%{cmd}-R)"
+  zu: "Layisha kabusha ifayili yamanje kudiski (%{cmd}-R)"
+  st: "Tlatsa faele ea jwale ho tsoa desteng (%{cmd}-R)"
+  xh: "Layisha kwakhona ifayile yangoku ukusuka kudisk (%{cmd}-R)"
+
+toolbar.toc_toggle:
+  en: "Toggle table of contents (%{cmd}-T)"
+  de: "Inhaltsverzeichnis ein-/ausblenden (%{cmd}-T)"
+  fr: "Afficher/masquer la table des matières (%{cmd}-T)"
+  es: "Mostrar/ocultar tabla de contenidos (%{cmd}-T)"
+  pt: "Alternar o índice (%{cmd}-T)"
+  sv: "Visa/dölj innehållsförteckning (%{cmd}-T)"
+  it: "Mostra/nascondi sommario (%{cmd}-T)"
+  pl: "Pokaż/ukryj spis treści (%{cmd}-T)"
+  cs: "Zobrazit/skrýt obsah (%{cmd}-T)"
+  ru: "Показать/скрыть оглавление (%{cmd}-T)"
+  zu: "Bonisa/Fihla uhlu lwezindikimba (%{cmd}-T)"
+  st: "Bontša/Patela lenane la litlhophelo (%{cmd}-T)"
+  xh: "Bonisa/Fihla uluhlu lwezindikimba (%{cmd}-T)"
+
+toolbar.search_toggle:
+  en: "Search (%{cmd}-F)"
+  de: "Suchen (%{cmd}-F)"
+  fr: "Rechercher (%{cmd}-F)"
+  es: "Buscar (%{cmd}-F)"
+  pt: "Pesquisar (%{cmd}-F)"
+  sv: "Sök (%{cmd}-F)"
+  it: "Cerca (%{cmd}-F)"
+  pl: "Szukaj (%{cmd}-F)"
+  cs: "Hledat (%{cmd}-F)"
+  ru: "Поиск (%{cmd}-F)"
+  zu: "Sesha (%{cmd}-F)"
+  st: "Batla (%{cmd}-F)"
+  xh: "Khangela (%{cmd}-F)"
+
+toolbar.close:
+  en: "Close (%{cmd}-W)"
+  de: "Schließen (%{cmd}-W)"
+  fr: "Fermer (%{cmd}-W)"
+  es: "Cerrar (%{cmd}-W)"
+  pt: "Fechar (%{cmd}-W)"
+  sv: "Stäng (%{cmd}-W)"
+  it: "Chiudi (%{cmd}-W)"
+  pl: "Zamknij (%{cmd}-W)"
+  cs: "Zavřít (%{cmd}-W)"
+  ru: "Закрыть (%{cmd}-W)"
+  zu: "Vala (%{cmd}-W)"
+  st: "Koala (%{cmd}-W)"
+  xh: "Vala (%{cmd}-W)"
+
+toolbar.help:
+  en: "Help (F1)"
+  de: "Hilfe (F1)"
+  fr: "Aide (F1)"
+  es: "Ayuda (F1)"
+  pt: "Ajuda (F1)"
+  sv: "Hjälp (F1)"
+  it: "Aiuto (F1)"
+  pl: "Pomoc (F1)"
+  cs: "Nápověda (F1)"
+  ru: "Помощь (F1)"
+  zu: "Usizo (F1)"
+  st: "Thuso (F1)"
+  xh: "Uncedo (F1)"
+
+toolbar.font_enlarge:
+  en: "Enlarge fonts (%{cmd}-Shift-A)"
+  de: "Schrift vergrößern (%{cmd}-Umschalt-A)"
+  fr: "Agrandir les polices (%{cmd}-Maj-A)"
+  es: "Agrandar fuentes (%{cmd}-Mayús-A)"
+  pt: "Aumentar fontes (%{cmd}-Shift-A)"
+  sv: "Förstora teckensnitt (%{cmd}-Skift-A)"
+  it: "Aumenta il carattere (%{cmd}-Maiusc-A)"
+  pl: "Powiększ czcionkę (%{cmd}-Shift-A)"
+  cs: "Zvětšit písmo (%{cmd}-Shift-A)"
+  ru: "Увеличить шрифт (%{cmd}-Shift-A)"
+  zu: "Khulisa uhlobo lombhalo (%{cmd}-Shift-A)"
+  st: "Hola mongolo (%{cmd}-Shift-A)"
+  xh: "Yandisa uhlobo lombhalo (%{cmd}-Shift-A)"
+
+toolbar.font_reset:
+  en: "Reset font size to 100% (%{cmd}-0)"
+  de: "Schriftgröße auf 100 % zurücksetzen (%{cmd}-0)"
+  fr: "Réinitialiser la taille de police à 100 % (%{cmd}-0)"
+  es: "Restablecer tamaño de fuente al 100 % (%{cmd}-0)"
+  pt: "Redefinir tamanho da fonte para 100% (%{cmd}-0)"
+  sv: "Återställ teckenstorlek till 100 % (%{cmd}-0)"
+  it: "Reimposta la dimensione del carattere al 100% (%{cmd}-0)"
+  pl: "Resetuj rozmiar czcionki do 100% (%{cmd}-0)"
+  cs: "Obnovit velikost písma na 100 % (%{cmd}-0)"
+  ru: "Сбросить размер шрифта до 100% (%{cmd}-0)"
+  zu: "Buyisela usayizi wombhalo ku-100% (%{cmd}-0)"
+  st: "Busa boholo ba mongolo ho 100% (%{cmd}-0)"
+  xh: "Buyisela usayizi wombhalo ku-100% (%{cmd}-0)"
+
+toolbar.font_reduce:
+  en: "Reduce fonts (%{cmd}-a)"
+  de: "Schrift verkleinern (%{cmd}-a)"
+  fr: "Réduire les polices (%{cmd}-a)"
+  es: "Reducir fuentes (%{cmd}-a)"
+  pt: "Reduzir fontes (%{cmd}-a)"
+  sv: "Förminska teckensnitt (%{cmd}-a)"
+  it: "Riduci il carattere (%{cmd}-a)"
+  pl: "Zmniejsz czcionkę (%{cmd}-a)"
+  cs: "Zmenšit písmo (%{cmd}-a)"
+  ru: "Уменьшить шрифт (%{cmd}-a)"
+  zu: "Nciphisa uhlobo lombhalo (%{cmd}-a)"
+  st: "Fokotsa mongolo (%{cmd}-a)"
+  xh: "Nciphisa uhlobo lombhalo (%{cmd}-a)"
+
+toolbar.zoom_in:
+  en: "Zoom in (%{cmd}-=)"
+  de: "Vergrößern (%{cmd}-=)"
+  fr: "Zoom avant (%{cmd}-=)"
+  es: "Acercar (%{cmd}-=)"
+  pt: "Ampliar (%{cmd}-=)"
+  sv: "Zooma in (%{cmd}-=)"
+  it: "Ingrandisci (%{cmd}-=)"
+  pl: "Przybliż (%{cmd}-=)"
+  cs: "Přiblížit (%{cmd}-=)"
+  ru: "Увеличить масштаб (%{cmd}-=)"
+  zu: "Sondeza (%{cmd}-=)"
+  st: "Holisa (%{cmd}-=)"
+  xh: "Sondeza (%{cmd}-=)"
+
+toolbar.zoom_reset:
+  en: "Reset zoom to 100% (%{cmd}-Z)"
+  de: "Zoom auf 100 % zurücksetzen (%{cmd}-Z)"
+  fr: "Réinitialiser le zoom à 100 % (%{cmd}-Z)"
+  es: "Restablecer zoom al 100 % (%{cmd}-Z)"
+  pt: "Redefinir zoom para 100% (%{cmd}-Z)"
+  sv: "Återställ zoom till 100 % (%{cmd}-Z)"
+  it: "Reimposta lo zoom al 100% (%{cmd}-Z)"
+  pl: "Resetuj powiększenie do 100% (%{cmd}-Z)"
+  cs: "Obnovit přiblížení na 100 % (%{cmd}-Z)"
+  ru: "Сбросить масштаб до 100% (%{cmd}-Z)"
+  zu: "Buyisela ukusondeza ku-100% (%{cmd}-Z)"
+  st: "Busa holimo ho 100% (%{cmd}-Z)"
+  xh: "Buyisela ukusondeza ku-100% (%{cmd}-Z)"
+
+toolbar.zoom_out:
+  en: "Zoom out (%{cmd}-−)"
+  de: "Verkleinern (%{cmd}-−)"
+  fr: "Zoom arrière (%{cmd}-−)"
+  es: "Alejar (%{cmd}-−)"
+  pt: "Reduzir zoom (%{cmd}-−)"
+  sv: "Zooma ut (%{cmd}-−)"
+  it: "Riduci (%{cmd}-−)"
+  pl: "Oddal (%{cmd}-−)"
+  cs: "Oddálit (%{cmd}-−)"
+  ru: "Уменьшить масштаб (%{cmd}-−)"
+  zu: "Nciphisa (%{cmd}-−)"
+  st: "Fokotsa (%{cmd}-−)"
+  xh: "Nciphisa (%{cmd}-−)"
+
+toolbar.theme_system:
+  en: "Follow system theme"
+  de: "Systemdesign folgen"
+  fr: "Suivre le thème système"
+  es: "Seguir el tema del sistema"
+  pt: "Seguir tema do sistema"
+  sv: "Följ systemets tema"
+  it: "Segui il tema di sistema"
+  pl: "Podążaj za motywem systemowym"
+  cs: "Sledovat systémový motiv"
+  ru: "Следовать системной теме"
+  zu: "Landela ithemu yesistimu"
+  st: "Latela mokgwa wa sisteme"
+  xh: "Landela ithiyam yesistimu"
+
+toolbar.theme_dark:
+  en: "Switch to dark mode"
+  de: "Zu dunklem Modus wechseln"
+  fr: "Passer en mode sombre"
+  es: "Cambiar a modo oscuro"
+  pt: "Mudar para modo escuro"
+  sv: "Byt till mörkt läge"
+  it: "Passa alla modalità scura"
+  pl: "Przełącz na tryb ciemny"
+  cs: "Přepnout na tmavý režim"
+  ru: "Переключиться на тёмную тему"
+  zu: "Shintsha ku-mode emnyama"
+  st: "Fetola ho mokgwa o lefifi"
+  xh: "Tshintsha kumowudi emnyama"
+
+toolbar.theme_light:
+  en: "Switch to light mode"
+  de: "Zu hellem Modus wechseln"
+  fr: "Passer en mode clair"
+  es: "Cambiar a modo claro"
+  pt: "Mudar para modo claro"
+  sv: "Byt till ljust läge"
+  it: "Passa alla modalità chiara"
+  pl: "Przełącz na tryb jasny"
+  cs: "Přepnout na světlý režim"
+  ru: "Переключиться на светлую тему"
+  zu: "Shintsha ku-mode ekhanyayo"
+  st: "Fetola ho mokgwa o phatsimang"
+  xh: "Tshintsha kumowudi ekhanyayo"
+
+status.reloaded:
+  en: "↻ reloaded"
+  de: "↻ neu geladen"
+  fr: "↻ rechargé"
+  es: "↻ recargado"
+  pt: "↻ recarregado"
+  sv: "↻ inläst"
+  it: "↻ ricaricato"
+  pl: "↻ przeładowano"
+  cs: "↻ znovu načteno"
+  ru: "↻ перезагружено"
+  zu: "↻ ilayishiwe kabusha"
+  st: "↻ e tsotlehilwe bocha"
+  xh: "↻ ilayishiwe kwakhona"
+
+status.reloaded_tip:
+  en: "File changed on disk — reloaded automatically"
+  de: "Datei auf dem Datenträger geändert — automatisch neu geladen"
+  fr: "Fichier modifié sur le disque — rechargé automatiquement"
+  es: "El archivo cambió en el disco — recargado automáticamente"
+  pt: "Arquivo alterado no disco — recarregado automaticamente"
+  sv: "Filen ändrades på disk — lästes in automatiskt"
+  it: "File modificato su disco — ricaricato automaticamente"
+  pl: "Plik zmieniony na dysku — przeładowany automatycznie"
+  cs: "Soubor byl na disku změněn — automaticky znovu načten"
+  ru: "Файл изменён на диске — перезагружен автоматически"
+  zu: "Ifayili ishintshiwe kudiski — ilayishiwe kabusha ngokuzenzakalelayo"
+  st: "Faele e fetohile desteng — e tsotlehilwe bocha ka ho iphepa"
+  xh: "Ifayile itshintshiwe kudisk — ilayishiwe kwakhona ngokuzenzakalelayo"
+
+status.large_file_tip:
+  en: "Large file — initial render is slow. Scroll responsiveness improves once the document is fully laid out."
+  de: "Große Datei — die erste Darstellung ist langsam. Die Scroll-Reaktion verbessert sich, sobald das Dokument vollständig gelayoutet ist."
+  fr: "Fichier volumineux — le rendu initial est lent. La réactivité du défilement s'améliore une fois le document entièrement mis en page."
+  es: "Archivo grande — el renderizado inicial es lento. La capacidad de respuesta al desplazamiento mejora una vez que el documento está completamente maquetado."
+  pt: "Arquivo grande — a renderização inicial é lenta. A resposta de rolagem melhora após o documento ser completamente carregado."
+  sv: "Stor fil — den första renderingen är långsam. Rullningens svarstid förbättras när dokumentet är helt layoutat."
+  it: "File grande — la resa iniziale è lenta. La reattività allo scorrimento migliora una volta che il documento è completamente impaginato."
+  pl: "Duży plik — pierwsze renderowanie jest wolne. Responsywność przewijania poprawia się po całkowitym załadowaniu dokumentu."
+  cs: "Velký soubor — první vykreslení je pomalé. Odezva posouvání se zlepší po úplném rozložení dokumentu."
+  ru: "Большой файл — первоначальный рендеринг выполняется медленно. Отклик прокрутки улучшается после полной загрузки документа."
+  zu: "Ifayili enkulu — ukusebenza kokuqala kuyahamba kancane. Ukusabela kokuskrola kuyathuthuka uma idokhumenti ilayishwe ngokugcwele."
+  st: "Faele e kgolo — ho bontša ha mathomo ho pata. Ho araba ha ho potoloha ho ntlafala ha tokomane e tsotlehilwe ka botlalo."
+  xh: "Ifayile enkulu — ukulayisha kokuqala kuyachitha. Ukusabela kokuskrola kuyathuthuka xa idokhumenti ilayishiwe ngokupheleleyo."
+
+search.placeholder:
+  en: "Find in document…"
+  de: "Im Dokument suchen…"
+  fr: "Rechercher dans le document…"
+  es: "Buscar en el documento…"
+  pt: "Pesquisar no documento…"
+  sv: "Sök i dokument…"
+  it: "Cerca nel documento…"
+  pl: "Szukaj w dokumencie…"
+  cs: "Hledat v dokumentu…"
+  ru: "Поиск в документе…"
+  zu: "Sesha edokhumeni…"
+  st: "Batla tokomaning…"
+  xh: "Khangela kwidokhumenti…"
+
+search.no_matches:
+  en: "No matches"
+  de: "Keine Treffer"
+  fr: "Aucun résultat"
+  es: "Sin resultados"
+  pt: "Sem resultados"
+  sv: "Inga träffar"
+  it: "Nessun risultato"
+  pl: "Brak wyników"
+  cs: "Žádné výsledky"
+  ru: "Совпадений нет"
+  zu: "Awekho amafanelo"
+  st: "Ha ho litšoantšo"
+  xh: "Akukho zifanelana"
+
+search.match_counter:
+  en: "%{current} / %{total}"
+  de: "%{current} / %{total}"
+  fr: "%{current} / %{total}"
+  es: "%{current} / %{total}"
+  pt: "%{current} / %{total}"
+  sv: "%{current} / %{total}"
+  it: "%{current} / %{total}"
+  pl: "%{current} / %{total}"
+  cs: "%{current} / %{total}"
+  ru: "%{current} / %{total}"
+  zu: "%{current} / %{total}"
+  st: "%{current} / %{total}"
+  xh: "%{current} / %{total}"
+
+search.prev_tip:
+  en: "Previous match (Shift-Enter)"
+  de: "Vorheriger Treffer (Umschalt-Eingabe)"
+  fr: "Correspondance précédente (Maj-Entrée)"
+  es: "Coincidencia anterior (Mayús-Intro)"
+  pt: "Correspondência anterior (Shift-Enter)"
+  sv: "Föregående träff (Skift-Enter)"
+  it: "Risultato precedente (Maiusc-Invio)"
+  pl: "Poprzedni wynik (Shift-Enter)"
+  cs: "Předchozí shoda (Shift-Enter)"
+  ru: "Предыдущее совпадение (Shift-Enter)"
+  zu: "Ukufanelana kwangaphambilini (Shift-Enter)"
+  st: "Tšoantšo e fetileng (Shift-Enter)"
+  xh: "Ukufanelana okwangaphambili (Shift-Enter)"
+
+search.next_tip:
+  en: "Next match (Enter)"
+  de: "Nächster Treffer (Eingabe)"
+  fr: "Correspondance suivante (Entrée)"
+  es: "Coincidencia siguiente (Intro)"
+  pt: "Próxima correspondência (Enter)"
+  sv: "Nästa träff (Enter)"
+  it: "Risultato successivo (Invio)"
+  pl: "Następny wynik (Enter)"
+  cs: "Další shoda (Enter)"
+  ru: "Следующее совпадение (Enter)"
+  zu: "Ukufanelana okulandelayo (Enter)"
+  st: "Tšoantšo e latelang (Enter)"
+  xh: "Ukufanelana okulandelayo (Enter)"
+
+search.close_tip:
+  en: "Close search (Esc)"
+  de: "Suche schließen (Esc)"
+  fr: "Fermer la recherche (Échap)"
+  es: "Cerrar búsqueda (Esc)"
+  pt: "Fechar pesquisa (Esc)"
+  sv: "Stäng sökning (Esc)"
+  it: "Chiudi la ricerca (Esc)"
+  pl: "Zamknij wyszukiwanie (Esc)"
+  cs: "Zavřít hledání (Esc)"
+  ru: "Закрыть поиск (Esc)"
+  zu: "Vala ukusesha (Esc)"
+  st: "Koala ho batla (Esc)"
+  xh: "Vala ukukhangela (Esc)"
+
+toc.title:
+  en: "Contents"
+  de: "Inhalt"
+  fr: "Sommaire"
+  es: "Contenido"
+  pt: "Índice"
+  sv: "Innehåll"
+  it: "Sommario"
+  pl: "Spis treści"
+  cs: "Obsah"
+  ru: "Содержание"
+  zu: "Okuqukethwe"
+  st: "Litlhophelo"
+  xh: "Okuqukethiweyo"
+
+help.window_title:
+  en: "Help"
+  de: "Hilfe"
+  fr: "Aide"
+  es: "Ayuda"
+  pt: "Ajuda"
+  sv: "Hjälp"
+  it: "Aiuto"
+  pl: "Pomoc"
+  cs: "Nápověda"
+  ru: "Помощь"
+  zu: "Usizo"
+  st: "Thuso"
+  xh: "Uncedo"
+
+help.text:
+  en: |
+    # Markdown Viewer — Help
+
+    ## Keyboard Shortcuts
+
+    ### File
+    | Key | Action |
+    |---|---|
+    | Cmd/Ctrl-o | Open a markdown file |
+    | Cmd/Ctrl-r | Refresh — reload the current file from disk |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Quit |
+
+    The viewer watches the current file for changes and reloads automatically.
+    Use `--no-detach` or `--foreground` on the command line to keep it attached to the terminal (Unix only).
+
+    ### Navigation
+    | Key | Action |
+    |---|---|
+    | ◀ / ▶ buttons | Back / Forward in history |
+    | Cmd/Ctrl-t | Toggle the table of contents panel |
+
+    ### Search
+    | Key | Action |
+    |---|---|
+    | Cmd/Ctrl-f | Open / close the search bar |
+    | Enter  or  ⬇ button | Next match |
+    | Shift-Enter  or  ⬆ button | Previous match |
+    | Escape | Close the search bar |
+
+    > Search navigates to the section containing each match and highlights matched text inline.
+    > The active match is shown in orange; other matches in yellow.
+
+    ### Auto-reload
+    The viewer watches the open file for changes on disk and reloads it automatically.
+    A brief "↻ Reloaded" notice appears in the toolbar after each auto-reload.
+
+    ### Zoom & Font
+    | Key | Action |
+    |---|---|
+    | Cmd/Ctrl-= | Zoom in |
+    | Cmd/Ctrl-− | Zoom out |
+    | Cmd/Ctrl-z | Reset zoom to 100% |
+    | Cmd/Ctrl-Shift-a | Enlarge font |
+    | Cmd/Ctrl-a | Reduce font |
+    | Cmd/Ctrl-0 | Reset font to 100% |
+
+    ### Scrolling (when no text field is focused)
+    | Key | Action |
+    |---|---|
+    | Up / Down arrow | Scroll one line |
+    | Page Up / Page Down | Scroll one viewport (Fn-Up / Fn-Down on Mac) |
+    | Home / Cmd-Up | Jump to top of document (Fn-Left on Mac) |
+    | End / Cmd-Down | Jump to bottom of document (Fn-Right on Mac) |
+
+    ### Help
+    | Key | Action |
+    |---|---|
+    | F1 | Toggle this help screen |
+  de: |
+    # Markdown-Betrachter — Hilfe
+
+    ## Tastaturkürzel
+
+    ### Datei
+    | Taste | Aktion |
+    |---|---|
+    | Cmd/Strg-o | Eine Markdown-Datei öffnen |
+    | Cmd/Strg-r | Aktualisieren — aktuelle Datei vom Datenträger neu laden |
+    | Cmd/Strg-w  /  Cmd/Strg-q | Beenden |
+
+    Der Betrachter überwacht die aktuelle Datei auf Änderungen und lädt sie automatisch neu.
+    Verwenden Sie `--no-detach` oder `--foreground` in der Kommandozeile, um die Verbindung zum Terminal aufrechtzuerhalten (nur Unix).
+
+    ### Navigation
+    | Taste | Aktion |
+    |---|---|
+    | Schaltflächen ◀ / ▶ | Zurück / Vorwärts im Verlauf |
+    | Cmd/Strg-t | Inhaltsverzeichnis-Panel ein-/ausblenden |
+
+    ### Suche
+    | Taste | Aktion |
+    |---|---|
+    | Cmd/Strg-f | Suchleiste öffnen / schließen |
+    | Eingabe  oder  Schaltfläche ⬇ | Nächster Treffer |
+    | Umschalt-Eingabe  oder  Schaltfläche ⬆ | Vorheriger Treffer |
+    | Escape | Suchleiste schließen |
+
+    > Die Suche navigiert zum Abschnitt, der den jeweiligen Treffer enthält, und hebt den gefundenen Text hervor.
+    > Der aktive Treffer wird orange angezeigt; andere Treffer in Gelb.
+
+    ### Automatisches Neu-Laden
+    Der Betrachter überwacht die geöffnete Datei auf Änderungen und lädt sie automatisch neu.
+    Nach jedem automatischen Neu-Laden erscheint kurz eine „↻ Neu geladen"-Meldung in der Symbolleiste.
+
+    ### Zoom und Schrift
+    | Taste | Aktion |
+    |---|---|
+    | Cmd/Strg-= | Vergrößern |
+    | Cmd/Strg-− | Verkleinern |
+    | Cmd/Strg-z | Zoom auf 100 % zurücksetzen |
+    | Cmd/Strg-Umschalt-a | Schrift vergrößern |
+    | Cmd/Strg-a | Schrift verkleinern |
+    | Cmd/Strg-0 | Schrift auf 100 % zurücksetzen |
+
+    ### Scrollen (wenn kein Textfeld fokussiert ist)
+    | Taste | Aktion |
+    |---|---|
+    | Pfeiltaste hoch / runter | Eine Zeile scrollen |
+    | Bild hoch / Bild runter | Ein Viewport scrollen (Fn-Hoch / Fn-Runter auf Mac) |
+    | Pos1 / Cmd-Hoch | Zum Anfang des Dokuments springen (Fn-Links auf Mac) |
+    | Ende / Cmd-Runter | Zum Ende des Dokuments springen (Fn-Rechts auf Mac) |
+
+    ### Hilfe
+    | Taste | Aktion |
+    |---|---|
+    | F1 | Diesen Hilfebildschirm ein-/ausblenden |
+  fr: |
+    # Visionneuse Markdown — Aide
+
+    ## Raccourcis Clavier
+
+    ### Fichier
+    | Touche | Action |
+    |---|---|
+    | Cmd/Ctrl-o | Ouvrir un fichier Markdown |
+    | Cmd/Ctrl-r | Actualiser — recharger le fichier depuis le disque |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Quitter |
+
+    La visionneuse surveille le fichier courant et le recharge automatiquement en cas de modification.
+    Utilisez `--no-detach` ou `--foreground` en ligne de commande pour rester attaché au terminal (Unix uniquement).
+
+    ### Navigation
+    | Touche | Action |
+    |---|---|
+    | Boutons ◀ / ▶ | Précédent / Suivant dans l'historique |
+    | Cmd/Ctrl-t | Afficher/masquer le panneau de la table des matières |
+
+    ### Recherche
+    | Touche | Action |
+    |---|---|
+    | Cmd/Ctrl-f | Ouvrir / fermer la barre de recherche |
+    | Entrée  ou  bouton ⬇ | Correspondance suivante |
+    | Maj-Entrée  ou  bouton ⬆ | Correspondance précédente |
+    | Échap | Fermer la barre de recherche |
+
+    > La recherche navigue vers la section contenant chaque résultat et surligne le texte correspondant.
+    > Le résultat actif est affiché en orange ; les autres en jaune.
+
+    ### Rechargement automatique
+    La visionneuse surveille le fichier ouvert pour détecter les modifications sur le disque et le recharge automatiquement.
+    Une brève notification « ↻ Rechargé » apparaît dans la barre d'outils après chaque rechargement automatique.
+
+    ### Zoom et Police
+    | Touche | Action |
+    |---|---|
+    | Cmd/Ctrl-= | Zoom avant |
+    | Cmd/Ctrl-− | Zoom arrière |
+    | Cmd/Ctrl-z | Réinitialiser le zoom à 100 % |
+    | Cmd/Ctrl-Maj-a | Agrandir la police |
+    | Cmd/Ctrl-a | Réduire la police |
+    | Cmd/Ctrl-0 | Réinitialiser la police à 100 % |
+
+    ### Défilement (quand aucun champ de texte n'est actif)
+    | Touche | Action |
+    |---|---|
+    | Flèche haut / bas | Défiler d'une ligne |
+    | Page préc. / Page suiv. | Défiler d'un écran (Fn-Haut / Fn-Bas sur Mac) |
+    | Début / Cmd-Haut | Aller au début du document (Fn-Gauche sur Mac) |
+    | Fin / Cmd-Bas | Aller à la fin du document (Fn-Droite sur Mac) |
+
+    ### Aide
+    | Touche | Action |
+    |---|---|
+    | F1 | Afficher/masquer cet écran d'aide |
+  es: |
+    # Visor de Markdown — Ayuda
+
+    ## Atajos de Teclado
+
+    ### Archivo
+    | Tecla | Acción |
+    |---|---|
+    | Cmd/Ctrl-o | Abrir un archivo Markdown |
+    | Cmd/Ctrl-r | Actualizar — recargar el archivo actual desde el disco |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Salir |
+
+    El visor monitorea el archivo actual en busca de cambios y lo recarga automáticamente.
+    Use `--no-detach` o `--foreground` en la línea de comandos para mantenerlo conectado al terminal (solo Unix).
+
+    ### Navegación
+    | Tecla | Acción |
+    |---|---|
+    | Botones ◀ / ▶ | Atrás / Adelante en el historial |
+    | Cmd/Ctrl-t | Mostrar/ocultar el panel de tabla de contenidos |
+
+    ### Búsqueda
+    | Tecla | Acción |
+    |---|---|
+    | Cmd/Ctrl-f | Abrir / cerrar la barra de búsqueda |
+    | Intro  o  botón ⬇ | Coincidencia siguiente |
+    | Mayús-Intro  o  botón ⬆ | Coincidencia anterior |
+    | Escape | Cerrar la barra de búsqueda |
+
+    > La búsqueda navega a la sección que contiene cada coincidencia y resalta el texto encontrado.
+    > La coincidencia activa se muestra en naranja; las demás en amarillo.
+
+    ### Recarga automática
+    El visor monitorea el archivo abierto en busca de cambios en el disco y lo recarga automáticamente.
+    Tras cada recarga automática aparece brevemente el aviso «↻ Recargado» en la barra de herramientas.
+
+    ### Zoom y Fuente
+    | Tecla | Acción |
+    |---|---|
+    | Cmd/Ctrl-= | Acercar |
+    | Cmd/Ctrl-− | Alejar |
+    | Cmd/Ctrl-z | Restablecer zoom al 100 % |
+    | Cmd/Ctrl-Mayús-a | Agrandar fuente |
+    | Cmd/Ctrl-a | Reducir fuente |
+    | Cmd/Ctrl-0 | Restablecer fuente al 100 % |
+
+    ### Desplazamiento (cuando ningún campo de texto está enfocado)
+    | Tecla | Acción |
+    |---|---|
+    | Flecha arriba / abajo | Desplazar una línea |
+    | Re Pág / Av Pág | Desplazar un viewport (Fn-Arriba / Fn-Abajo en Mac) |
+    | Inicio / Cmd-Arriba | Ir al principio del documento (Fn-Izquierda en Mac) |
+    | Fin / Cmd-Abajo | Ir al final del documento (Fn-Derecha en Mac) |
+
+    ### Ayuda
+    | Tecla | Acción |
+    |---|---|
+    | F1 | Mostrar/ocultar esta pantalla de ayuda |
+  pt: |
+    # Visualizador de Markdown — Ajuda
+
+    ## Atalhos de Teclado
+
+    ### Arquivo
+    | Tecla | Ação |
+    |---|---|
+    | Cmd/Ctrl-o | Abrir um arquivo Markdown |
+    | Cmd/Ctrl-r | Atualizar — recarregar o arquivo atual do disco |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Sair |
+
+    O visualizador monitora o arquivo atual em busca de alterações e o recarrega automaticamente.
+    Use `--no-detach` ou `--foreground` na linha de comando para mantê-lo conectado ao terminal (somente Unix).
+
+    ### Navegação
+    | Tecla | Ação |
+    |---|---|
+    | Botões ◀ / ▶ | Voltar / Avançar no histórico |
+    | Cmd/Ctrl-t | Alternar o painel do índice |
+
+    ### Pesquisa
+    | Tecla | Ação |
+    |---|---|
+    | Cmd/Ctrl-f | Abrir / fechar a barra de pesquisa |
+    | Enter  ou  botão ⬇ | Próxima correspondência |
+    | Shift-Enter  ou  botão ⬆ | Correspondência anterior |
+    | Escape | Fechar a barra de pesquisa |
+
+    > A pesquisa navega até a seção que contém cada correspondência e destaca o texto encontrado.
+    > A correspondência ativa é exibida em laranja; as demais em amarelo.
+
+    ### Recarga automática
+    O visualizador monitora o arquivo aberto em busca de alterações no disco e o recarrega automaticamente.
+    Um breve aviso «↻ Recarregado» aparece na barra de ferramentas após cada recarga automática.
+
+    ### Zoom e Fonte
+    | Tecla | Ação |
+    |---|---|
+    | Cmd/Ctrl-= | Ampliar |
+    | Cmd/Ctrl-− | Reduzir zoom |
+    | Cmd/Ctrl-z | Redefinir zoom para 100% |
+    | Cmd/Ctrl-Shift-a | Aumentar fonte |
+    | Cmd/Ctrl-a | Reduzir fonte |
+    | Cmd/Ctrl-0 | Redefinir fonte para 100% |
+
+    ### Rolagem (quando nenhum campo de texto está em foco)
+    | Tecla | Ação |
+    |---|---|
+    | Seta para cima / baixo | Rolar uma linha |
+    | Page Up / Page Down | Rolar um viewport (Fn-Cima / Fn-Baixo no Mac) |
+    | Home / Cmd-Cima | Ir ao início do documento (Fn-Esquerda no Mac) |
+    | End / Cmd-Baixo | Ir ao final do documento (Fn-Direita no Mac) |
+
+    ### Ajuda
+    | Tecla | Ação |
+    |---|---|
+    | F1 | Alternar esta tela de ajuda |
+  sv: |
+    # Markdown-visare — Hjälp
+
+    ## Tangentbordsgenvägar
+
+    ### Fil
+    | Tangent | Åtgärd |
+    |---|---|
+    | Cmd/Ctrl-o | Öppna en Markdown-fil |
+    | Cmd/Ctrl-r | Uppdatera — läs in aktuell fil från disk igen |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Avsluta |
+
+    Visaren bevakar den aktuella filen för ändringar och läser in den automatiskt.
+    Använd `--no-detach` eller `--foreground` på kommandoraden för att hålla den kopplad till terminalen (endast Unix).
+
+    ### Navigering
+    | Tangent | Åtgärd |
+    |---|---|
+    | Knappar ◀ / ▶ | Bakåt / Framåt i historiken |
+    | Cmd/Ctrl-t | Visa/dölj innehållsförteckningspanelen |
+
+    ### Sökning
+    | Tangent | Åtgärd |
+    |---|---|
+    | Cmd/Ctrl-f | Öppna / stäng sökfältet |
+    | Enter  eller  knapp ⬇ | Nästa träff |
+    | Skift-Enter  eller  knapp ⬆ | Föregående träff |
+    | Escape | Stäng sökfältet |
+
+    > Sökningen navigerar till avsnittet som innehåller varje träff och markerar den hittade texten.
+    > Den aktiva träffen visas i orange; övriga träffar i gult.
+
+    ### Automatisk inläsning
+    Visaren bevakar den öppna filen för diskändringar och läser in den automatiskt.
+    Ett kort meddelande «↻ Inläst» visas i verktygsfältet efter varje automatisk inläsning.
+
+    ### Zoom och Teckensnitt
+    | Tangent | Åtgärd |
+    |---|---|
+    | Cmd/Ctrl-= | Zooma in |
+    | Cmd/Ctrl-− | Zooma ut |
+    | Cmd/Ctrl-z | Återställ zoom till 100 % |
+    | Cmd/Ctrl-Skift-a | Förstora teckensnitt |
+    | Cmd/Ctrl-a | Förminska teckensnitt |
+    | Cmd/Ctrl-0 | Återställ teckensnitt till 100 % |
+
+    ### Rullning (när inget textfält är fokuserat)
+    | Tangent | Åtgärd |
+    |---|---|
+    | Upp- / nedpil | Rulla en rad |
+    | Page Up / Page Down | Rulla en visningsruta (Fn-Upp / Fn-Ned på Mac) |
+    | Home / Cmd-Upp | Hoppa till dokumentets början (Fn-Vänster på Mac) |
+    | End / Cmd-Ned | Hoppa till dokumentets slut (Fn-Höger på Mac) |
+
+    ### Hjälp
+    | Tangent | Åtgärd |
+    |---|---|
+    | F1 | Visa/dölj den här hjälpskärmen |
+  it: |
+    # Visualizzatore Markdown — Aiuto
+
+    ## Scorciatoie da Tastiera
+
+    ### File
+    | Tasto | Azione |
+    |---|---|
+    | Cmd/Ctrl-o | Apri un file Markdown |
+    | Cmd/Ctrl-r | Aggiorna — ricarica il file corrente dal disco |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Esci |
+
+    Il visualizzatore monitora il file corrente per le modifiche e lo ricarica automaticamente.
+    Usa `--no-detach` o `--foreground` dalla riga di comando per mantenerlo collegato al terminale (solo Unix).
+
+    ### Navigazione
+    | Tasto | Azione |
+    |---|---|
+    | Pulsanti ◀ / ▶ | Indietro / Avanti nella cronologia |
+    | Cmd/Ctrl-t | Mostra/nascondi il pannello del sommario |
+
+    ### Ricerca
+    | Tasto | Azione |
+    |---|---|
+    | Cmd/Ctrl-f | Apri / chiudi la barra di ricerca |
+    | Invio  o  pulsante ⬇ | Risultato successivo |
+    | Maiusc-Invio  o  pulsante ⬆ | Risultato precedente |
+    | Esc | Chiudi la barra di ricerca |
+
+    > La ricerca naviga alla sezione che contiene ogni risultato ed evidenzia il testo trovato.
+    > Il risultato attivo è mostrato in arancione; gli altri in giallo.
+
+    ### Ricarica automatica
+    Il visualizzatore monitora il file aperto per le modifiche su disco e lo ricarica automaticamente.
+    Un breve avviso «↻ Ricaricato» appare nella barra degli strumenti dopo ogni ricarica automatica.
+
+    ### Zoom e Carattere
+    | Tasto | Azione |
+    |---|---|
+    | Cmd/Ctrl-= | Ingrandisci |
+    | Cmd/Ctrl-− | Riduci |
+    | Cmd/Ctrl-z | Reimposta lo zoom al 100% |
+    | Cmd/Ctrl-Maiusc-a | Aumenta il carattere |
+    | Cmd/Ctrl-a | Riduci il carattere |
+    | Cmd/Ctrl-0 | Reimposta il carattere al 100% |
+
+    ### Scorrimento (quando nessun campo di testo è attivo)
+    | Tasto | Azione |
+    |---|---|
+    | Freccia su / giù | Scorri di una riga |
+    | Pag. su / Pag. giù | Scorri di un riquadro (Fn-Su / Fn-Giù su Mac) |
+    | Inizio / Cmd-Su | Vai all'inizio del documento (Fn-Sinistra su Mac) |
+    | Fine / Cmd-Giù | Vai alla fine del documento (Fn-Destra su Mac) |
+
+    ### Aiuto
+    | Tasto | Azione |
+    |---|---|
+    | F1 | Mostra/nascondi questa schermata di aiuto |
+  pl: |
+    # Przeglądarka Markdown — Pomoc
+
+    ## Skróty Klawiaturowe
+
+    ### Plik
+    | Klawisz | Akcja |
+    |---|---|
+    | Cmd/Ctrl-o | Otwórz plik Markdown |
+    | Cmd/Ctrl-r | Odśwież — przeładuj bieżący plik z dysku |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Wyjdź |
+
+    Przeglądarka monitoruje bieżący plik pod kątem zmian i przeładowuje go automatycznie.
+    Użyj `--no-detach` lub `--foreground` w wierszu poleceń, aby utrzymać połączenie z terminalem (tylko Unix).
+
+    ### Nawigacja
+    | Klawisz | Akcja |
+    |---|---|
+    | Przyciski ◀ / ▶ | Wstecz / Dalej w historii |
+    | Cmd/Ctrl-t | Pokaż/ukryj panel spisu treści |
+
+    ### Wyszukiwanie
+    | Klawisz | Akcja |
+    |---|---|
+    | Cmd/Ctrl-f | Otwórz / zamknij pasek wyszukiwania |
+    | Enter  lub  przycisk ⬇ | Następny wynik |
+    | Shift-Enter  lub  przycisk ⬆ | Poprzedni wynik |
+    | Escape | Zamknij pasek wyszukiwania |
+
+    > Wyszukiwanie nawiguje do sekcji zawierającej każdy wynik i podświetla znaleziony tekst.
+    > Aktywny wynik jest wyświetlany na pomarańczowo; inne na żółto.
+
+    ### Automatyczne przeładowanie
+    Przeglądarka monitoruje otwarty plik pod kątem zmian na dysku i przeładowuje go automatycznie.
+    Po każdym automatycznym przeładowaniu w pasku narzędzi pojawia się krótki komunikat «↻ Przeładowano».
+
+    ### Zoom i Czcionka
+    | Klawisz | Akcja |
+    |---|---|
+    | Cmd/Ctrl-= | Przybliż |
+    | Cmd/Ctrl-− | Oddal |
+    | Cmd/Ctrl-z | Resetuj powiększenie do 100% |
+    | Cmd/Ctrl-Shift-a | Powiększ czcionkę |
+    | Cmd/Ctrl-a | Zmniejsz czcionkę |
+    | Cmd/Ctrl-0 | Resetuj czcionkę do 100% |
+
+    ### Przewijanie (gdy żadne pole tekstowe nie jest aktywne)
+    | Klawisz | Akcja |
+    |---|---|
+    | Strzałka w górę / dół | Przewiń o jedną linię |
+    | Page Up / Page Down | Przewiń o jeden widok (Fn-Góra / Fn-Dół na Mac) |
+    | Home / Cmd-Góra | Przejdź na początek dokumentu (Fn-Lewo na Mac) |
+    | End / Cmd-Dół | Przejdź na koniec dokumentu (Fn-Prawo na Mac) |
+
+    ### Pomoc
+    | Klawisz | Akcja |
+    |---|---|
+    | F1 | Pokaż/ukryj ten ekran pomocy |
+  cs: |
+    # Prohlížeč Markdown — Nápověda
+
+    ## Klávesové Zkratky
+
+    ### Soubor
+    | Klávesa | Akce |
+    |---|---|
+    | Cmd/Ctrl-o | Otevřít soubor Markdown |
+    | Cmd/Ctrl-r | Aktualizovat — znovu načíst aktuální soubor z disku |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Ukončit |
+
+    Prohlížeč sleduje aktuální soubor, zda nedošlo ke změnám, a automaticky jej znovu načítá.
+    Na příkazovém řádku použijte `--no-detach` nebo `--foreground`, aby zůstal připojen k terminálu (pouze Unix).
+
+    ### Navigace
+    | Klávesa | Akce |
+    |---|---|
+    | Tlačítka ◀ / ▶ | Zpět / Vpřed v historii |
+    | Cmd/Ctrl-t | Zobrazit/skrýt panel obsahu |
+
+    ### Hledání
+    | Klávesa | Akce |
+    |---|---|
+    | Cmd/Ctrl-f | Otevřít / zavřít vyhledávací lištu |
+    | Enter  nebo  tlačítko ⬇ | Další shoda |
+    | Shift-Enter  nebo  tlačítko ⬆ | Předchozí shoda |
+    | Escape | Zavřít vyhledávací lištu |
+
+    > Hledání přejde na oddíl obsahující každou shodu a zvýrazní nalezený text.
+    > Aktivní shoda je zobrazena oranžově; ostatní žlutě.
+
+    ### Automatické znovu načítání
+    Prohlížeč sleduje otevřený soubor, zda nedošlo ke změnám na disku, a automaticky jej znovu načítá.
+    Po každém automatickém znovu načtení se na panelu nástrojů krátce zobrazí oznámení «↻ Znovu načteno».
+
+    ### Zoom a Písmo
+    | Klávesa | Akce |
+    |---|---|
+    | Cmd/Ctrl-= | Přiblížit |
+    | Cmd/Ctrl-− | Oddálit |
+    | Cmd/Ctrl-z | Obnovit přiblížení na 100 % |
+    | Cmd/Ctrl-Shift-a | Zvětšit písmo |
+    | Cmd/Ctrl-a | Zmenšit písmo |
+    | Cmd/Ctrl-0 | Obnovit písmo na 100 % |
+
+    ### Posouvání (když není zaostřeno žádné textové pole)
+    | Klávesa | Akce |
+    |---|---|
+    | Šipka nahoru / dolů | Posunout o jeden řádek |
+    | Page Up / Page Down | Posunout o jedno zobrazení (Fn-Nahoru / Fn-Dolů na Mac) |
+    | Home / Cmd-Nahoru | Přejít na začátek dokumentu (Fn-Vlevo na Mac) |
+    | End / Cmd-Dolů | Přejít na konec dokumentu (Fn-Vpravo na Mac) |
+
+    ### Nápověda
+    | Klávesa | Akce |
+    |---|---|
+    | F1 | Zobrazit/skrýt tuto obrazovku nápovědy |
+  ru: |
+    # Просмотрщик Markdown — Помощь
+
+    ## Сочетания Клавиш
+
+    ### Файл
+    | Клавиша | Действие |
+    |---|---|
+    | Cmd/Ctrl-o | Открыть файл Markdown |
+    | Cmd/Ctrl-r | Обновить — перезагрузить текущий файл с диска |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Выйти |
+
+    Просмотрщик отслеживает изменения в текущем файле и перезагружает его автоматически.
+    Используйте `--no-detach` или `--foreground` в командной строке, чтобы оставить его подключённым к терминалу (только Unix).
+
+    ### Навигация
+    | Клавиша | Действие |
+    |---|---|
+    | Кнопки ◀ / ▶ | Назад / Вперёд в истории |
+    | Cmd/Ctrl-t | Показать/скрыть панель оглавления |
+
+    ### Поиск
+    | Клавиша | Действие |
+    |---|---|
+    | Cmd/Ctrl-f | Открыть / закрыть строку поиска |
+    | Enter  или  кнопка ⬇ | Следующее совпадение |
+    | Shift-Enter  или  кнопка ⬆ | Предыдущее совпадение |
+    | Escape | Закрыть строку поиска |
+
+    > Поиск переходит к разделу, содержащему каждое совпадение, и выделяет найденный текст.
+    > Активное совпадение отображается оранжевым; остальные — жёлтым.
+
+    ### Автоматическая перезагрузка
+    Просмотрщик отслеживает изменения открытого файла на диске и перезагружает его автоматически.
+    После каждой автоматической перезагрузки на панели инструментов кратко появляется уведомление «↻ Перезагружено».
+
+    ### Масштаб и Шрифт
+    | Клавиша | Действие |
+    |---|---|
+    | Cmd/Ctrl-= | Увеличить масштаб |
+    | Cmd/Ctrl-− | Уменьшить масштаб |
+    | Cmd/Ctrl-z | Сбросить масштаб до 100% |
+    | Cmd/Ctrl-Shift-a | Увеличить шрифт |
+    | Cmd/Ctrl-a | Уменьшить шрифт |
+    | Cmd/Ctrl-0 | Сбросить шрифт до 100% |
+
+    ### Прокрутка (когда ни одно текстовое поле не в фокусе)
+    | Клавиша | Действие |
+    |---|---|
+    | Стрелка вверх / вниз | Прокрутить на одну строку |
+    | Page Up / Page Down | Прокрутить на один экран (Fn-Вверх / Fn-Вниз на Mac) |
+    | Home / Cmd-Вверх | Перейти в начало документа (Fn-Влево на Mac) |
+    | End / Cmd-Вниз | Перейти в конец документа (Fn-Вправо на Mac) |
+
+    ### Помощь
+    | Клавиша | Действие |
+    |---|---|
+    | F1 | Показать/скрыть этот экран помощи |
+  zu: |
+    # Umbukeli wase-Markdown — Usizo
+
+    ## Izinqamuleli Zeklawubhodi
+
+    ### Ifayili
+    | Ikhiye | Isenzo |
+    |---|---|
+    | Cmd/Ctrl-o | Vula ifayili ye-Markdown |
+    | Cmd/Ctrl-r | Vuselela — layisha kabusha ifayili yamanje kudiski |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Phuma |
+
+    Umbukeli ugada ifayili yamanje ukuze athole izinguquko futhi ayilavishe kabusha ngokuzenzakalelayo.
+    Sebenzisa `--no-detach` noma `--foreground` emugqeni wemiyalo ukuze uhlale uxhunyiwe ethalini (Unix kuphela).
+
+    ### Ukuzulazula
+    | Ikhiye | Isenzo |
+    |---|---|
+    | Izinkinobho ◀ / ▶ | Emuva / Phambili emlando |
+    | Cmd/Ctrl-t | Bonisa/fihla iphaneli yohlu lwezindikimba |
+
+    ### Ukusesha
+    | Ikhiye | Isenzo |
+    |---|---|
+    | Cmd/Ctrl-f | Vula / vala ibha yokusesha |
+    | Enter  noma  inkinobho ⬇ | Ukufanelana okulandelayo |
+    | Shift-Enter  noma  inkinobho ⬆ | Ukufanelana kwangaphambilini |
+    | Escape | Vala ibha yokusesha |
+
+    > Ukusesha kuzulazula kuya engxenyeni equkethe ukufanelana ngakunye futhi kugqamise umbhalo otholakele.
+    > Ukufanelana okusebenzayo kuboniswa ngombala we-orenje; okunye ngombala omthubi.
+
+    ### Ukuphinda Kulayishwa Ngokuzenzakalelayo
+    Umbukeli ugada ifayili evuliwe ukuze athole izinguquko kudiski futhi ayilavishe kabusha ngokuzenzakalelayo.
+    Isaziso esifushane «↻ Ilayishiwe kabusha» sivela ebalosebenzisi ngemuva kokuyilavishe kabusha ngakunye.
+
+    ### Ukusondeza Nokushintsha Uhlobo Lombhalo
+    | Ikhiye | Isenzo |
+    |---|---|
+    | Cmd/Ctrl-= | Sondeza |
+    | Cmd/Ctrl-− | Nciphisa |
+    | Cmd/Ctrl-z | Buyisela ukusondeza ku-100% |
+    | Cmd/Ctrl-Shift-a | Khulisa uhlobo lombhalo |
+    | Cmd/Ctrl-a | Nciphisa uhlobo lombhalo |
+    | Cmd/Ctrl-0 | Buyisela uhlobo lombhalo ku-100% |
+
+    ### Ukuskrola (uma kungekho inkundla yombhalo egxilisiwe)
+    | Ikhiye | Isenzo |
+    |---|---|
+    | Umcibisholo phezulu / phansi | Skrola umugqa owodwa |
+    | Page Up / Page Down | Skrola umbukeli owodwa (Fn-Phezulu / Fn-Phansi ku-Mac) |
+    | Home / Cmd-Phezulu | Yiya ekuqaleni kwedokhumenti (Fn-Kwesokunxele ku-Mac) |
+    | End / Cmd-Phansi | Yiya ekupheleni kwedokhumenti (Fn-Kwesokudla ku-Mac) |
+
+    ### Usizo
+    | Ikhiye | Isenzo |
+    |---|---|
+    | F1 | Bonisa/fihla lesi sikrini sosizo |
+  st: |
+    # Seboni sa Markdown — Thuso
+
+    ## Likhutlo tsa Setala
+
+    ### Faele
+    | Sehlooho | Ketso |
+    |---|---|
+    | Cmd/Ctrl-o | Bula faele ea Markdown |
+    | Cmd/Ctrl-r | Mpshafatsa — tlatsa faele ea jwale ho tsoa desteng |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Tsoa |
+
+    Seboni se lebeletse faele ea jwale bakeng sa liphetoho 'me se e tlatsa bocha ka ho iphepa.
+    Sebedisa `--no-detach` kapa `--foreground` mollaong oa taelo ho se boloka se kgokahanye le terminal (Unix feela).
+
+    ### Ho Khomarela
+    | Sehlooho | Ketso |
+    |---|---|
+    | Likonopo ◀ / ▶ | Morao / Pele molalong oa nalane |
+    | Cmd/Ctrl-t | Bontša/Patela sepata sa lenane la litlhophelo |
+
+    ### Ho Batla
+    | Sehlooho | Ketso |
+    |---|---|
+    | Cmd/Ctrl-f | Bula / koala bha ea ho batla |
+    | Enter  kapa  konopo ⬇ | Tšoantšo e latelang |
+    | Shift-Enter  kapa  konopo ⬆ | Tšoantšo e fetileng |
+    | Escape | Koala bha ea ho batla |
+
+    > Ho batla ho ea karolong e nang le tšoantšo ka 'ngoe 'me ho hlokomela mongolo o fumanehileng.
+    > Tšoantšo e sebetsang e bontšoa ka bochabeng; tse ling ka yellow.
+
+    ### Ho Tlatsa Bocha ka Ho Iphepa
+    Seboni se lebeletse faele e buletsoeng bakeng sa liphetoho desteng 'me se e tlatsa bocha ka ho iphepa.
+    Tsebišo e khuts'oane «↻ E tsotlehilwe bocha» e hlaha baeng ba lisebelisoa ka mor'a ho tlatsa bocha ka ho iphepa 'ngoe le 'ngoe.
+
+    ### Holimo le Mongolo
+    | Sehlooho | Ketso |
+    |---|---|
+    | Cmd/Ctrl-= | Holisa |
+    | Cmd/Ctrl-− | Fokotsa |
+    | Cmd/Ctrl-z | Busa holimo ho 100% |
+    | Cmd/Ctrl-Shift-a | Hola mongolo |
+    | Cmd/Ctrl-a | Fokotsa mongolo |
+    | Cmd/Ctrl-0 | Busa mongolo ho 100% |
+
+    ### Ho Potoloha (ha ho na tšepo ea mongolo e kgomaretsoeng)
+    | Sehlooho | Ketso |
+    |---|---|
+    | Motsu o holimo / tlase | Potolohisa mola o le mong |
+    | Page Up / Page Down | Potolohisa seboni se le seng (Fn-Holimo / Fn-Tlase Mac) |
+    | Home / Cmd-Holimo | Ea qalong ea tokomane (Fn-Nngele Mac) |
+    | End / Cmd-Tlase | Ea pheletsong ea tokomane (Fn-Nngele ea Nngele Mac) |
+
+    ### Thuso
+    | Sehlooho | Ketso |
+    |---|---|
+    | F1 | Bontša/Patela skrini ena ea thuso |
+  xh: |
+    # Umboni we-Markdown — Uncedo
+
+    ## Izikhululo Zekhibo
+
+    ### Ifayile
+    | Isitshixo | Isenzo |
+    |---|---|
+    | Cmd/Ctrl-o | Vula ifayile ye-Markdown |
+    | Cmd/Ctrl-r | Mphuhlisa — layisha kwakhona ifayile yangoku ukusuka kudisk |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Phuma |
+
+    Umboni ulinda ifayile yangoku ukufumana iinguqulo kwaye uyilavishe kwakhona ngokuzenzakalelayo.
+    Sebenzisa `--no-detach` okanye `--foreground` kumgca womyalelo ukuze uhlale uxhunyiwe kwiterminal (Unix kuphela).
+
+    ### Ukuzulazula
+    | Isitshixo | Isenzo |
+    |---|---|
+    | Iinkinobho ◀ / ▶ | Emva / Phambili emlanjeni wembali |
+    | Cmd/Ctrl-t | Bonisa/Fihla iphaneli yoluhlu lwezindikimba |
+
+    ### Ukukhangela
+    | Isitshixo | Isenzo |
+    |---|---|
+    | Cmd/Ctrl-f | Vula / vala ibha yokukhangela |
+    | Enter  okanye  inkinobho ⬇ | Ukufanelana okulandelayo |
+    | Shift-Enter  okanye  inkinobho ⬆ | Ukufanelana okwangaphambili |
+    | Escape | Vala ibha yokukhangela |
+
+    > Ukukhangela kuzulazula kuya kwicandelo equkethe ukufanelana ngakunye kwaye kugqamise umbhalo otholakeleyo.
+    > Ukufanelana okusebenzayo kuboniswa ngombala we-orenje; okunye ngombala omthubi.
+
+    ### Ukulayisha Kwakhona Ngokuzenzakalelayo
+    Umboni ulinda ifayile evuliweyo ukufumana iinguqulo kudisk kwaye uyilavishe kwakhona ngokuzenzakalelayo.
+    Isaziso esifutshane «↻ Ilayishiwe kwakhona» sivela ebalosebenzisi emva kokulayisha kwakhona ngakunye.
+
+    ### Ukusondeza Nokushintsha Uhlobo Lombhalo
+    | Isitshixo | Isenzo |
+    |---|---|
+    | Cmd/Ctrl-= | Sondeza |
+    | Cmd/Ctrl-− | Nciphisa |
+    | Cmd/Ctrl-z | Buyisela ukusondeza ku-100% |
+    | Cmd/Ctrl-Shift-a | Yandisa uhlobo lombhalo |
+    | Cmd/Ctrl-a | Nciphisa uhlobo lombhalo |
+    | Cmd/Ctrl-0 | Buyisela uhlobo lombhalo ku-100% |
+
+    ### Ukuskrola (xa kungekho nqanaba lombhalo eliqenjiswayo)
+    | Isitshixo | Isenzo |
+    |---|---|
+    | Utolo phezulu / ezantsi | Skrola umgca omnye |
+    | Page Up / Page Down | Skrola umboni omnye (Fn-Phezulu / Fn-Ezantsi ku-Mac) |
+    | Home / Cmd-Phezulu | Yiya ekuqaleni kwedokhumenti (Fn-Ekhohlo ku-Mac) |
+    | End / Cmd-Ezantsi | Yiya ekupheleni kwedokhumenti (Fn-Ekunene ku-Mac) |
+
+    ### Uncedo
+    | Isitshixo | Isenzo |
+    |---|---|
+    | F1 | Bonisa/Fihla lesi sikrini soncedo |

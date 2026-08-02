@@ -49,7 +49,9 @@ debug = true
 //# Option: --no-detach, --foreground: Stay attached to the launching terminal (Unix only)
 use eframe::egui;
 use egui::load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint};
+use egui::Visuals;
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
+use egui_theme_lerp::ThemeAnimator;
 use notify::{RecursiveMode, Watcher};
 use pulldown_cmark::{Event, Options, Parser, Tag};
 use rfd::FileDialog;
@@ -64,7 +66,6 @@ use std::{
     },
     time::{Duration, Instant},
 };
-use thag_proc_macros::copy_resource_dir;
 use thag_styling::{auto_help, file_navigator, themed_inquire_config};
 
 #[cfg(target_os = "macos")]
@@ -73,15 +74,10 @@ const MOD: &str = "Cmd";
 #[cfg(not(target_os = "macos"))]
 const MOD: &str = "Ctrl";
 
-/// Documents at or above this byte count get the viewport-cache toggle shown in
-/// the toolbar and have caching auto-enabled.  Below this size the simple
-/// full-document render path is always used (accurate + fast enough).
-const VIEWPORT_CACHE_THRESHOLD: usize = 200_000; // 200 KB
-
 file_navigator! {}
 
-copy_resource_dir!("THAG_DEV_PATH", "locales");
-rust_i18n::i18n!("locales", fallback = "en");
+rust_i18n::i18n!("/Users/donf/projects/thag_rs/locales", fallback = "en");
+// rust_i18n::i18n!("locales", fallback = "en"); // Relative path won't work for scripting location on $TMPDIR
 
 /// Applies contrast colours to both egui themes; font sizes are always left at
 /// egui defaults so toggling never causes a scroll-position jump.
@@ -209,14 +205,16 @@ fn parse_heading_line(line: &str) -> Option<(u8, &str)> {
         return None;
     }
     // Strip any trailing `{#id}` / `{.class}` attribute block.
-    let plain = text.rfind('{').map_or(text, |brace| {
+    let plain = if let Some(brace) = text.rfind('{') {
         let attr = text[brace..].trim_end();
         if attr.ends_with('}') {
             text[..brace].trim_end()
         } else {
             text
         }
-    });
+    } else {
+        text
+    };
     Some((hashes as u8, plain))
 }
 
@@ -273,17 +271,21 @@ fn extract_toc_and_inject_ids(raw: &str) -> (String, Vec<TocEntry>) {
 
         // Use our ATX parser to get the level and plain text.
         if let Some((level, plain_text)) = parse_heading_line(line) {
-            let (slug, injected) = extract_heading_id(line).map_or_else(
-                || {
-                    let base = slugify(plain_text);
-                    let n = slug_counts.entry(base.clone()).or_insert(0);
-                    let slug = if *n == 0 { base } else { format!("{base}-{n}") };
-                    *n += 1;
-                    let with_id = format!("{} {{#{slug}}}", line.trim_end());
-                    (slug, with_id)
-                },
-                |id| (id.to_string(), line.to_string()),
-            );
+            let (slug, injected) = if let Some(id) = extract_heading_id(line) {
+                // Preserve an existing explicit `{#id}`.
+                (id.to_string(), line.to_string())
+            } else {
+                let base = slugify(plain_text);
+                let n = slug_counts.entry(base.clone()).or_insert(0);
+                let slug = if *n == 0 {
+                    base.clone()
+                } else {
+                    format!("{base}-{n}")
+                };
+                *n += 1;
+                let with_id = format!("{} {{#{slug}}}", line.trim_end());
+                (slug, with_id)
+            };
             toc.push(TocEntry {
                 level,
                 text: plain_text.to_string(),
@@ -596,12 +598,12 @@ fn detach_if_tty() {
 }
 
 /// Detect the preferred UI locale from the operating system.
-/// Uses `sys-locale` which reads native OS APIs (`CFPreferences` on macOS,
+/// Uses `sys-locale` which reads native OS APIs (CFPreferences on macOS,
 /// `GetUserDefaultLocaleName` on Windows, POSIX env-vars on Linux).
 /// Falls back to `"en"` when no usable locale is detected.
 fn detect_locale() -> String {
     env::var("LOCALE").unwrap_or_else(|_| {
-        // eprintln!("No LOCALE env var");
+        eprintln!("No LOCALE env var");
         env::var("LANG").unwrap_or_else(|_| {
             eprintln!("No LANG env var");
             sys_locale::get_locale()
@@ -634,6 +636,14 @@ fn main() -> eframe::Result<()> {
     let args: Vec<String> = env::args()
         .filter(|a| a != "--no-detach" && a != "--foreground")
         .collect();
+
+    // Only detach when a file path is already provided on the command line.
+    // The inquire picker needs a live stdin/stdout, so we must NOT detach
+    // before it runs — doing so spawns an orphan with null stdio.
+    // #[cfg(unix)]
+    // if args.len() > 1 {
+    //     detach_if_tty();
+    // }
 
     let selected_file: PathBuf = if args.len() > 1 {
         let input_path = Path::new(&args[1]);
@@ -717,34 +727,10 @@ fn main() -> eframe::Result<()> {
         ..Default::default()
     };
 
-    // Load new default fonts
-    let mut fonts = egui::FontDefinitions::default();
-
-    let preferred_font = "Inter";
-
-    // Register the font data
-    fonts.font_data.insert(
-        preferred_font.to_owned(),
-        egui::FontData::from_static(include_bytes!(
-            // "../../assets/fonts/Fonts/ttf/BDOGrotesk-Medium.ttf"
-            // "../../assets/fonts/Inter-VariableFont_opsz,wght.ttf"
-            "../../assets/fonts/Satoshi-Medium.otf" // Satoshi is a trademark of the Indian Type Foundry.
-        ))
-        .into(),
-    );
-
-    // Put it in proportional list
-    fonts
-        .families
-        .get_mut(&egui::FontFamily::Proportional)
-        .unwrap()
-        .insert(0, preferred_font.to_owned());
-
     eframe::run_native(
         "Markdown Viewer",
         options,
         Box::new(move |cc| {
-            cc.egui_ctx.set_fonts(fonts);
             // Register our fast SVG loader BEFORE the first frame triggers
             // egui_commonmark's `prepare_show`, which calls `install_image_loaders`.
             // Since `install_image_loaders` skips any loader whose ID is already
@@ -821,13 +807,10 @@ struct MarkdownApp {
     watcher_rx: Option<Receiver<()>>,
     /// When set, a brief "reloaded" notice is shown in the toolbar until this instant.
     last_auto_reload: Option<Instant>,
-    // /// `true` until the end of the very first frame; used to request key-window focus
-    // /// on startup so that keyboard shortcuts work without requiring a prior mouse click.
+    /// `true` until the end of the very first frame; used to request key-window focus
+    /// on startup so that keyboard shortcuts work without requiring a prior mouse click.
     // first_frame: bool,
-    /// Whether the viewport-cache performance mode is active.
-    /// Auto-enabled for documents ≥ [`VIEWPORT_CACHE_THRESHOLD`] bytes.
-    /// Hidden from the UI for smaller documents.
-    use_viewport_cache: bool,
+    theme_animator: ThemeAnimator,
 }
 
 impl MarkdownApp {
@@ -838,7 +821,6 @@ impl MarkdownApp {
         toc: Vec<TocEntry>,
         ctx: egui::Context,
     ) -> Self {
-        let content_len = &content.len();
         let mut app = Self {
             content,
             raw_content,
@@ -863,7 +845,7 @@ impl MarkdownApp {
             watcher_rx: None,
             last_auto_reload: None,
             // first_frame: true,
-            use_viewport_cache: content_len >= &VIEWPORT_CACHE_THRESHOLD,
+            theme_animator: ThemeAnimator::new(Visuals::light(), Visuals::dark()),
         };
         app.start_watching();
         app.build_content_headings();
@@ -988,7 +970,6 @@ impl MarkdownApp {
                     self.current_file_path = path;
                     self.toc = toc;
                     self.cache = CommonMarkCache::default();
-                    self.use_viewport_cache = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
                     self.search_matches.clear();
                     self.search_active = 0;
                     self.start_watching();
@@ -1016,7 +997,6 @@ impl MarkdownApp {
                 self.toc = toc;
                 // Clear the cache so egui_commonmark doesn't carry over stale state.
                 self.cache = CommonMarkCache::default();
-                self.use_viewport_cache = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
                 // Invalidate and rebuild search for the new content.
                 self.search_matches.clear();
                 self.search_active = 0;
@@ -1231,8 +1211,6 @@ impl eframe::App for MarkdownApp {
         let show_reload_notice = self
             .last_auto_reload
             .is_some_and(|t| t.elapsed() < Duration::from_secs(2));
-        let doc_is_large = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
-        let use_viewport_cache = self.use_viewport_cache & doc_is_large;
 
         // ── Mutable locals updated by keyboard / buttons, applied at end of frame ─────────
         let mut nav_action = NavAction::None;
@@ -1243,7 +1221,6 @@ impl eframe::App for MarkdownApp {
         let mut new_show_toc = show_toc;
         let mut new_search_open = search_open;
         let mut new_show_help = show_help;
-        let mut new_use_viewport_cache = use_viewport_cache;
         let mut search_nav: i32 = 0; // +1 = next match, -1 = prev match
         let font_scale_label = format!("Aa {:.0}%", self.font_scale * 100.0);
 
@@ -1271,7 +1248,6 @@ impl eframe::App for MarkdownApp {
             scroll_page_down,
             scroll_doc_top,
             scroll_doc_bottom,
-            escape_key,
         ) = ui.ctx().input(|i| {
             use egui::Key;
             (
@@ -1298,7 +1274,6 @@ impl eframe::App for MarkdownApp {
                 // Home / End: physical key OR Cmd+Arrow (standard macOS navigation).
                 i.key_pressed(Key::Home) || (i.modifiers.command && i.key_pressed(Key::ArrowUp)),
                 i.key_pressed(Key::End) || (i.modifiers.command && i.key_pressed(Key::ArrowDown)),
-                i.key_pressed(Key::Escape),
             )
         });
 
@@ -1341,7 +1316,7 @@ impl eframe::App for MarkdownApp {
         if cmd_r {
             refresh_requested = true;
         }
-        if f1_key || (escape_key && show_help) {
+        if f1_key {
             new_show_help = !show_help;
         }
         // Search navigation (only meaningful when the bar is open).
@@ -1358,34 +1333,28 @@ impl eframe::App for MarkdownApp {
         // ── Top panel: toolbar ────────────────────────────────────────────────────────────
         egui::Panel::top("toolbar").show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 2.0;
-                    if ui
-                        .button("⚙")
-                        .on_hover_text(t!("toolbar.theme_system").to_string())
-                        .clicked()
-                    {
-                        if let Some(system_theme) = ui.ctx().system_theme() {
-                            ui.ctx().set_theme(system_theme);
-                        } else {
-                            eprintln!("Could not access system theme");
-                        }
+                egui_theme_switch::global_theme_switch(ui);
+                if self.theme_animator.anim_id.is_none() {
+                    self.theme_animator.create_id(ui);
+                } else {
+                    self.theme_animator.animate(ui);
+                }
+
+                let theme_emoji = if !self.theme_animator.animation_done {
+                    if self.theme_animator.theme_1_to_2 {
+                        "☀"
+                    } else {
+                        "🌙"
                     }
-                    if ui
-                        .button("🌙")
-                        .on_hover_text(t!("toolbar.theme_dark").to_string())
-                        .clicked()
-                    {
-                        ui.ctx().set_theme(egui::Theme::Dark);
-                    }
-                    if ui
-                        .button("☀")
-                        .on_hover_text(t!("toolbar.theme_light").to_string())
-                        .clicked()
-                    {
-                        ui.ctx().set_theme(egui::Theme::Light);
-                    }
-                });
+                } else if self.theme_animator.theme_1_to_2 {
+                    "🌙"
+                } else {
+                    "☀"
+                };
+
+                if ui.button(format!("Switch Theme {theme_emoji}")).clicked() {
+                    self.theme_animator.start();
+                }
 
                 if ui
                     .selectable_label(
@@ -1464,34 +1433,6 @@ impl eframe::App for MarkdownApp {
                     .on_hover_text(t!("status.reloaded_tip").to_string());
                     // Keep asking for repaints until the notice expires.
                     ui.ctx().request_repaint_after(Duration::from_millis(250));
-                }
-
-                // Viewport-cache toggle — only shown for large documents.
-                if doc_is_large {
-                    ui.separator();
-                    if ui
-                        .selectable_label(
-                            use_viewport_cache,
-                            if use_viewport_cache {
-                                "⚡ cache"
-                            } else {
-                                "🐢 plain" // 🐌
-                            },
-                        )
-                        .on_hover_text(if use_viewport_cache {
-                            "Viewport cache ON — faster for large docs, may have scroll \
-                             artefacts. Click to switch to accurate full-render mode."
-                        } else {
-                            "Viewport cache OFF — accurate scrolling for all doc sizes. \
-                             Click to enable for large-doc speed."
-                        })
-                        .clicked()
-                    {
-                        new_use_viewport_cache = !use_viewport_cache;
-                        // Clear stale split-point cache so toggling ON triggers a fresh
-                        // full render, and toggling OFF starts clean.
-                        self.cache = CommonMarkCache::default();
-                    }
                 }
 
                 // Persistent file-size badge for large documents.
@@ -1722,7 +1663,7 @@ impl eframe::App for MarkdownApp {
                                     // (letter by letter) rather than dropping a whole word.
                                     job.wrap.break_anywhere = true;
                                     let galley = ui.ctx().fonts_mut(|f| f.layout_job(job));
-                                    let y = galley.size().y.mul_add(-0.5, row_rect.center().y);
+                                    let y = row_rect.center().y - galley.size().y * 0.5;
                                     ui.painter().galley(
                                         egui::pos2(row_rect.min.x + indent, y),
                                         galley,
@@ -1755,11 +1696,10 @@ impl eframe::App for MarkdownApp {
                 });
         } // end TOC panel
 
-        // ── Central panel: the markdown document ──────────────────────────────────────────────
+        // ── Central panel: the markdown document ──────────────────────────────────────────
         egui::CentralPanel::default().show(ui, |ui| {
-            // ── Style the scroll bar that show_scrollable will create internally ─
-            // These settings propagate into the inner ScrollArea because
-            // show_scrollable inherits ui.style() from this outer ui.
+            // Floating scrollbar that reserves its own layout space so the
+            // code-block copy icon is never obscured by the bar on hover.
             {
                 let scroll = &mut ui.style_mut().spacing.scroll;
                 scroll.floating = true;
@@ -1769,102 +1709,109 @@ impl eframe::App for MarkdownApp {
                 scroll.interact_handle_opacity = 0.55;
                 scroll.active_handle_opacity = 0.80;
             }
+            // Give each file path its own scroll-state key so that:
+            //   • navigating to a new file always starts at the top, and
+            //   • back/forward navigation restores the previous scroll position.
+            egui::ScrollArea::vertical()
+                .id_salt(&current_path_label)
+                .show(ui, |ui| {
+                    // ── Keyboard scrolling parameters (captured before content renders) ───
+                    // We compute line_h / page_h here but call scroll_with_delta AFTER
+                    // the content renders — see the note below at the call site.
+                    let line_h = ui.text_style_height(&egui::TextStyle::Body);
+                    let page_h = ui.available_height();
 
-            // ── Keyboard scrolling ───────────────────────────────────────────
-            // Deltas are threaded through CommonMarkCache so show_scrollable
-            // can apply them inside its own internal ScrollArea.
-            if !wants_text {
-                let line_h = ui.text_style_height(&egui::TextStyle::Body);
-                let page_h = ui.available_height();
-                if scroll_line_up {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, line_h));
-                } else if scroll_line_down {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, -line_h));
-                } else if scroll_page_up {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, page_h));
-                } else if scroll_page_down {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, -page_h));
-                } else if scroll_doc_top {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, f32::MAX / 2.0));
-                } else if scroll_doc_bottom {
-                    self.cache
-                        .set_scroll_delta(egui::vec2(0.0, -f32::MAX / 2.0));
-                }
-            }
+                    // Scale content text styles locally so the toolbar is unaffected.
+                    if (font_scale - 1.0).abs() > 0.005 {
+                        use egui::{FontFamily, FontId, TextStyle};
+                        let s = ui.style_mut();
+                        let base_body =
+                            s.text_styles.get(&TextStyle::Body).map_or(14.0, |f| f.size);
+                        let base_mono = s
+                            .text_styles
+                            .get(&TextStyle::Monospace)
+                            .map_or(12.0, |f| f.size);
+                        let base_heading = s
+                            .text_styles
+                            .get(&TextStyle::Heading)
+                            .map_or(21.0, |f| f.size);
+                        let base_small = s
+                            .text_styles
+                            .get(&TextStyle::Small)
+                            .map_or(10.0, |f| f.size);
+                        s.text_styles.insert(
+                            TextStyle::Body,
+                            FontId::new(base_body * font_scale, FontFamily::Proportional),
+                        );
+                        s.text_styles.insert(
+                            TextStyle::Monospace,
+                            FontId::new(base_mono * font_scale, FontFamily::Monospace),
+                        );
+                        s.text_styles.insert(
+                            TextStyle::Heading,
+                            FontId::new(base_heading * font_scale, FontFamily::Proportional),
+                        );
+                        s.text_styles.insert(
+                            TextStyle::Small,
+                            FontId::new(base_small * font_scale, FontFamily::Proportional),
+                        );
+                    }
+                    // Push the current search state into the cache so the
+                    // renderer can paint inline highlights this frame.
+                    // Gate on `new_search_open` so highlights clear immediately
+                    // when the bar is closed — the query is preserved for
+                    // when the bar is reopened.
+                    {
+                        let qlen = self.search_query.len();
+                        let active_search = new_search_open && qlen > 0;
+                        let ranges: Vec<std::ops::Range<usize>> = if active_search {
+                            self.search_matches.iter().map(|&s| s..s + qlen).collect()
+                        } else {
+                            Vec::new()
+                        };
+                        let active = if active_search {
+                            self.search_matches
+                                .get(self.search_active)
+                                .map(|&s| s..s + qlen)
+                        } else {
+                            None
+                        };
+                        self.cache.set_search_ranges(ranges);
+                        self.cache.set_active_search_range(active);
+                    }
+                    CommonMarkViewer::new()
+                        .syntax_theme_dark("base16-ocean.dark")
+                        .syntax_theme_light("InspiredGitHub")
+                        .enable_scroll_to_heading(true)
+                        .show(ui, &mut self.cache, &self.content);
 
-            // ── Font scale ──────────────────────────────────────────────────────────
-            // Applying to the outer ui propagates into show_scrollable's
-            // inner ScrollArea since it inherits style from us.
-            if (font_scale - 1.0).abs() > 0.005 {
-                use egui::{FontFamily, FontId, TextStyle};
-                let s = ui.style_mut();
-                let base_body = s.text_styles.get(&TextStyle::Body).map_or(14.0, |f| f.size);
-                let base_mono = s
-                    .text_styles
-                    .get(&TextStyle::Monospace)
-                    .map_or(12.0, |f| f.size);
-                let base_heading = s
-                    .text_styles
-                    .get(&TextStyle::Heading)
-                    .map_or(21.0, |f| f.size);
-                let base_small = s
-                    .text_styles
-                    .get(&TextStyle::Small)
-                    .map_or(10.0, |f| f.size);
-                s.text_styles.insert(
-                    TextStyle::Body,
-                    FontId::new(base_body * font_scale, FontFamily::Proportional),
-                );
-                s.text_styles.insert(
-                    TextStyle::Monospace,
-                    FontId::new(base_mono * font_scale, FontFamily::Monospace),
-                );
-                s.text_styles.insert(
-                    TextStyle::Heading,
-                    FontId::new(base_heading * font_scale, FontFamily::Proportional),
-                );
-                s.text_styles.insert(
-                    TextStyle::Small,
-                    FontId::new(base_small * font_scale, FontFamily::Proportional),
-                );
-            }
-
-            // ── Search highlighting ───────────────────────────────────────────────
-            // Push the current search state into the cache so the
-            // renderer can paint inline highlights this frame.
-            // Gate on `new_search_open` so highlights clear immediately
-            // when the bar is closed — the query is preserved for
-            // when the bar is reopened.
-            {
-                let qlen = self.search_query.len();
-                let active_search = new_search_open && qlen > 0;
-                let ranges: Vec<std::ops::Range<usize>> = if active_search {
-                    self.search_matches.iter().map(|&s| s..s + qlen).collect()
-                } else {
-                    Vec::new()
-                };
-                let active = if active_search {
-                    self.search_matches
-                        .get(self.search_active)
-                        .map(|&s| s..s + qlen)
-                } else {
-                    None
-                };
-                self.cache.set_search_ranges(ranges);
-                self.cache.set_active_search_range(active);
-            }
-
-            // ── Render with viewport culling ─────────────────────────────────────────
-            // show_scrollable does a full render on first open to populate
-            // split-point and heading-position caches, then culls to the
-            // visible viewport on all subsequent frames.  The source_id is
-            // keyed to the file path so navigating to a new file resets state.
-            CommonMarkViewer::new()
-                .syntax_theme_dark("base16-ocean.dark")
-                .syntax_theme_light("InspiredGitHub")
-                .enable_scroll_to_heading(true)
-                .viewport_cache(new_use_viewport_cache)
-                .show_scrollable(&current_path_label, ui, &mut self.cache, &self.content);
+                    // ── Keyboard scrolling ─────────────────────────────────────────
+                    // IMPORTANT: scroll_with_delta must come AFTER the content renders.
+                    // egui stores the delta in a single global pass_state field and
+                    // every ScrollArea::show() drains it with std::mem::take when it
+                    // closes.  If we call scroll_with_delta first, any nested
+                    // ScrollArea::horizontal() inside egui_commonmark (table rows)
+                    // drains the delta before our outer vertical area can consume it,
+                    // silently discarding the vertical component.  By posting the delta
+                    // after all inner areas have already closed, the outer vertical
+                    // ScrollArea is guaranteed to be the next one to take it.
+                    // Convention: positive y → scroll toward top; negative → toward bottom.
+                    if !wants_text {
+                        if scroll_line_up {
+                            ui.scroll_with_delta(egui::vec2(0.0, line_h));
+                        } else if scroll_line_down {
+                            ui.scroll_with_delta(egui::vec2(0.0, -line_h));
+                        } else if scroll_page_up {
+                            ui.scroll_with_delta(egui::vec2(0.0, page_h));
+                        } else if scroll_page_down {
+                            ui.scroll_with_delta(egui::vec2(0.0, -page_h));
+                        } else if scroll_doc_top {
+                            ui.scroll_with_delta(egui::vec2(0.0, f32::MAX / 2.0));
+                        } else if scroll_doc_bottom {
+                            ui.scroll_with_delta(egui::vec2(0.0, -f32::MAX / 2.0));
+                        }
+                    }
+                });
         });
 
         // ── Intercept link clicks from egui_commonmark ────────────────────────────────────
@@ -1958,12 +1905,7 @@ impl eframe::App for MarkdownApp {
         self.show_toc = new_show_toc;
         self.search_open = new_search_open;
         self.show_help = new_show_help;
-        // Never enable caching for docs below the threshold, regardless of how the state
-        // got set (e.g. load_file runs mid-frame and correctly sets self.use_viewport_cache
-        // = false, but the snapshotted new_use_viewport_cache is still the old large-file
-        // value and would overwrite it without this guard).
-        self.use_viewport_cache =
-            new_use_viewport_cache && (self.content.len() >= VIEWPORT_CACHE_THRESHOLD);
+
         if new_enhanced_contrast != enhanced_contrast {
             self.enhanced_contrast = new_enhanced_contrast;
             apply_style(ui.ctx(), new_enhanced_contrast);

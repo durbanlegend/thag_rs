@@ -205,7 +205,15 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
         let path = entry.as_path();
         // println!("Parsing {:#?}", path.display());
 
-        if path.extension().and_then(|s| s.to_str()) == Some("rs") {
+        // exclude thag.rs - intended for src/bin
+        if path.display().as_str() == "thag.rs" {
+            continue;
+        }
+
+        let Some(extension) = path.extension().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        if extension == "rs" {
             if let Some(metadata) = parse_metadata(scripts_dir, path) {
                 all_metadata.push(metadata);
             }

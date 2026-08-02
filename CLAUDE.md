@@ -42,7 +42,7 @@ The thag-auto is used by thag to decide whether to use crates.io, git or a local
 These scripts need full doc comments (/// or //:, not //!), a `//# Purpose:` one-liner and a `//# Categories: xxx, xxx, xxx, ...` one-liner where the categories are the lower-case versions listed in lines 82ff of thag_proc_macros/src/category_enum.rs, unquoted. See existing scripts for the format. Recommend new categories by all means, but do not make up your own. Please follow these instructions exactly or ask clarification.
 I repeat, do not use `//!` for doc comments in demo scripts, as they have cause unwanted behaviour in the past (I can't recall specifics) due to their semantics.
 
-Scripts that are evolved into particularly useful generic tools may be promoted to thag_rs/src/bin for inclusion as binaries in the main project. This should be done only in consultation with me. Their .toml blocks should normally be left in place, but they will need entries in Cargo.toml - see existing tools.
+Scripts that are evolved into particularly useful generic tools may be promoted to thag_rs/src/bin for inclusion as binaries in the main project. This should be done only in consultation with me. Their .toml blocks should normally be left in place, but they will need entries in Cargo.toml - see existing tools. They should be named with the prefix `thag_`.
 
 - **The bank/ subdirectory** is an unofficial scratchpad and scrapyard for code that doesn't merit being in demo/ but may be of some future use, even if just as a historical reference. Some of the examples are still valid and working, but by and large code in bank/ does not need to be kept up to date.
 

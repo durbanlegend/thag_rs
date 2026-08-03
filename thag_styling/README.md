@@ -235,13 +235,13 @@ let success_gauge = Gauge::default()
 
 `thag_url` requires `thag_rs` to be installed with `--features tools`.
 
-#### Running the showcase on a terminal with `dracula-base16` theme
+#### Running the showcase on a terminal with `dracula_base16` theme
 
-![ratatui theming showcase dracula-base16](../docs/thag_styling/assets/ratatui_theming_showcase_dracula_base16.png)
+![ratatui theming showcase dracula_base16](../docs/thag_styling/assets/ratatui_theming_showcase_dracula_base16.png)
 
 #### Running the showcase on a terminal with `atelier-seaside-light_base16` theme
 
-![ratatui theming showcase dracula-base16](../docs/thag_styling/assets/ratatui_theming_showcase_atelier_seaside_light_base16.png)
+![ratatui theming showcase atelier_seaside_light_base16](../docs/thag_styling/assets/ratatui_theming_showcase_atelier_seaside_light_base16.png)
 
 
 ### Multiple API Styles

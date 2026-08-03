@@ -83,6 +83,12 @@ file_navigator! {}
 copy_resource_dir!("THAG_DEV_PATH", "locales");
 rust_i18n::i18n!("locales", fallback = "en");
 
+copy_resource_dir!(
+    "THAG_DEV_PATH",
+    "assets/sublime_themes",
+    "assets/sublime_themes"
+);
+
 /// Applies contrast colours to both egui themes; font sizes are always left at
 /// egui defaults so toggling never causes a scroll-position jump.
 ///
@@ -96,6 +102,10 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
     const BRIGHTEN: f32 = 1.3;
     const DARKEN: f32 = 1.0 / BRIGHTEN;
     // ── Dark mode ─────────────────────────────────────────────────────────────────────────
+    ctx.global_style_mut(|style| {
+        // Show the url of a hyperlink on hover
+        style.url_in_tooltip = true;
+    });
     ctx.set_visuals_of(egui::Theme::Dark, {
         let mut v = egui::Visuals::dark();
         if enhanced {
@@ -727,8 +737,7 @@ fn main() -> eframe::Result<()> {
         preferred_font.to_owned(),
         egui::FontData::from_static(include_bytes!(
             // "../../assets/fonts/Fonts/ttf/BDOGrotesk-Medium.ttf"
-            // "../../assets/fonts/Inter-VariableFont_opsz,wght.ttf"
-            "../../assets/fonts/Satoshi-Medium.otf" // Satoshi is a trademark of the Indian Type Foundry.
+            "../../assets/fonts/Inter-VariableFont_opsz,wght.ttf" // "../../assets/fonts/Satoshi-Medium.otf" // Satoshi is a trademark of the Indian Type Foundry.
         ))
         .into(),
     );
@@ -865,6 +874,8 @@ impl MarkdownApp {
             // first_frame: true,
             use_viewport_cache: content_len >= &VIEWPORT_CACHE_THRESHOLD,
         };
+        // eprintln!("CWD={}", std::env::current_dir().unwrap().display());
+        add_code_block_themes(&mut app.cache);
         app.start_watching();
         app.build_content_headings();
         app
@@ -988,6 +999,7 @@ impl MarkdownApp {
                     self.current_file_path = path;
                     self.toc = toc;
                     self.cache = CommonMarkCache::default();
+                    add_code_block_themes(&mut self.cache);
                     self.use_viewport_cache = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
                     self.search_matches.clear();
                     self.search_active = 0;
@@ -1016,6 +1028,7 @@ impl MarkdownApp {
                 self.toc = toc;
                 // Clear the cache so egui_commonmark doesn't carry over stale state.
                 self.cache = CommonMarkCache::default();
+                add_code_block_themes(&mut self.cache);
                 self.use_viewport_cache = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
                 // Invalidate and rebuild search for the new content.
                 self.search_matches.clear();
@@ -1184,6 +1197,20 @@ impl MarkdownApp {
     }
 }
 
+fn add_code_block_themes(cache: &mut CommonMarkCache) {
+    for theme in &["Gruvbox_Dark", "Gruvbox_Light"] {
+        cache
+            .add_syntax_theme_from_bytes(
+                *theme,
+                include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/assets/sublime_themes/Gruvbox_Light.tmTheme"
+                )),
+            )
+            .unwrap();
+    }
+}
+
 impl eframe::App for MarkdownApp {
     #[allow(clippy::cast_precision_loss, clippy::too_many_lines)]
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
@@ -1301,6 +1328,10 @@ impl eframe::App for MarkdownApp {
                 i.key_pressed(Key::Escape),
             )
         });
+
+        if scroll_doc_bottom {
+            dbg!(scroll_doc_bottom);
+        }
 
         // Act on shortcuts (zoom/font only when text field does not have focus).
         let wants_text = ui.ctx().egui_wants_keyboard_input();
@@ -1491,6 +1522,7 @@ impl eframe::App for MarkdownApp {
                         // Clear stale split-point cache so toggling ON triggers a fresh
                         // full render, and toggling OFF starts clean.
                         self.cache = CommonMarkCache::default();
+                        add_code_block_themes(&mut self.cache);
                     }
                 }
 
@@ -1789,6 +1821,7 @@ impl eframe::App for MarkdownApp {
                 } else if scroll_doc_bottom {
                     self.cache
                         .set_scroll_delta(egui::vec2(0.0, -f32::MAX / 2.0));
+                    eprintln!("self.cache.set_scroll_delta(egui::vec2(0.0, -f32::MAX / 2.0))");
                 }
             }
 
@@ -1854,14 +1887,14 @@ impl eframe::App for MarkdownApp {
                 self.cache.set_active_search_range(active);
             }
 
-            // ── Render with viewport culling ─────────────────────────────────────────
+            // ── Render with or without viewport culling ─────────────────────────────────────────
             // show_scrollable does a full render on first open to populate
             // split-point and heading-position caches, then culls to the
             // visible viewport on all subsequent frames.  The source_id is
             // keyed to the file path so navigating to a new file resets state.
             CommonMarkViewer::new()
-                .syntax_theme_dark("base16-ocean.dark")
-                .syntax_theme_light("InspiredGitHub")
+                .syntax_theme_dark("Gruvbox_Dark")
+                .syntax_theme_light("Gruvbox_Light")
                 .enable_scroll_to_heading(true)
                 .viewport_cache(new_use_viewport_cache)
                 .show_scrollable(&current_path_label, ui, &mut self.cache, &self.content);

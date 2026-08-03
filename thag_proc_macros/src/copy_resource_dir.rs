@@ -121,6 +121,9 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> io::Result<()> {
             };
 
             if should_copy {
+                #[cfg(debug_assertions)]
+                eprintln!("copying: {} -> {}", src_path.display(), dst_path.display());
+
                 fs::copy(&src_path, &dst_path)?;
             }
         }

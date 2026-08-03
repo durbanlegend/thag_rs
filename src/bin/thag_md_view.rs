@@ -48,7 +48,10 @@ debug = true
 //# Option: PATH: Markdown file to open; launches an interactive file-picker if omitted
 //# Option: --no-detach, --foreground: Stay attached to the launching terminal (Unix only)
 use eframe::egui;
-use egui::load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint};
+use egui::{
+    load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint},
+    Color32,
+};
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
 use notify::{RecursiveMode, Watcher};
 use pulldown_cmark::{Event, Options, Parser, Tag};
@@ -109,9 +112,9 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
     ctx.set_visuals_of(egui::Theme::Dark, {
         let mut v = egui::Visuals::dark();
         if enhanced {
-            v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(240);
-            v.code_bg_color = egui::Color32::from_gray(100);
-            v.hyperlink_color = egui::Color32::from_rgb(100, 185, 255);
+            v.widgets.noninteractive.fg_stroke.color = Color32::from_gray(240);
+            v.code_bg_color = Color32::from_gray(100);
+            v.hyperlink_color = Color32::from_rgb(100, 185, 255);
         }
         v.image_loading_spinners = false; // always off in a document reader
         v
@@ -121,11 +124,11 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
     ctx.set_visuals_of(egui::Theme::Light, {
         let mut v = egui::Visuals::light();
         if enhanced {
-            v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(5);
-            v.panel_fill = egui::Color32::from_rgb(255, 255, 255);
-            v.window_fill = egui::Color32::from_rgb(255, 255, 255);
-            v.code_bg_color = egui::Color32::from_rgb(225, 225, 230);
-            v.hyperlink_color = egui::Color32::from_rgb(0, 100, 210);
+            v.widgets.noninteractive.fg_stroke.color = Color32::from_gray(5);
+            v.panel_fill = Color32::from_rgb(255, 255, 255);
+            v.window_fill = Color32::from_rgb(255, 255, 255);
+            v.code_bg_color = Color32::from_rgb(225, 225, 230);
+            v.hyperlink_color = Color32::from_rgb(0, 100, 210);
             // v.widgets.noninteractive.fg_stroke.color =
             //     adjust_color(v.widgets.noninteractive.fg_stroke.color, DARKEN);
             // v.panel_fill = adjust_color(v.panel_fill, BRIGHTEN);
@@ -135,10 +138,10 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
             // v.faint_bg_color = adjust_color(v.faint_bg_color, BRIGHTEN);
             // v.hyperlink_color = adjust_color(v.hyperlink_color, DARKEN);
             // // } else {
-            // //     v.code_bg_color = egui::Color32::LIGHT_GRAY;
-            // //     v.extreme_bg_color = egui::Color32::from_gray(120);
+            // //     v.code_bg_color = Color32::LIGHT_GRAY;
+            // //     v.extreme_bg_color = Color32::from_gray(120);
         } else {
-            v.code_bg_color = egui::Color32::from_rgb(225, 225, 230);
+            v.code_bg_color = Color32::from_rgb(225, 225, 230);
         }
         v.image_loading_spinners = false; // always off in a document reader
         v
@@ -160,7 +163,6 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
 }
 
 use egui::ecolor::Hsva;
-use egui::Color32;
 
 /// Adjusts a Color32 by a given factor (e.g., 1.2 for +20% brightness).
 #[allow(dead_code)]
@@ -168,7 +170,9 @@ fn adjust_color(color: Color32, factor: f32) -> Color32 {
     let mut hsva = Hsva::from(color);
     // Scale the Value (brightness) component, keeping it clamped between 0.0 and 1.0
     hsva.v = (hsva.v * factor).clamp(0.0, 1.0);
-    Color32::from(hsva)
+    let color = Color32::from(hsva);
+    // eprintln!("color: {:?}", color);
+    color
 }
 
 // ─── TOC / heading extraction ──────────────────────────────────────────────────
@@ -1221,6 +1225,9 @@ impl eframe::App for MarkdownApp {
         //     self.first_frame = false;
         // }
 
+        const RED_ALERT: usize = 10_000_000;
+        const AMBER_ALERT: usize = 2_000_000;
+
         // ── Poll file watcher ─────────────────────────────────────────────────────────────
         // Drain all pending "file changed" signals from the bridge thread.
         // We set a flag rather than reloading immediately so the reload happens
@@ -1328,10 +1335,6 @@ impl eframe::App for MarkdownApp {
                 i.key_pressed(Key::Escape),
             )
         });
-
-        if scroll_doc_bottom {
-            dbg!(scroll_doc_bottom);
-        }
 
         // Act on shortcuts (zoom/font only when text field does not have focus).
         let wants_text = ui.ctx().egui_wants_keyboard_input();
@@ -1504,7 +1507,7 @@ impl eframe::App for MarkdownApp {
                         .selectable_label(
                             use_viewport_cache,
                             if use_viewport_cache {
-                                "⚡ cache"
+                                "⚡ cached"
                             } else {
                                 "🐢 plain" // 🐌
                             },
@@ -1521,7 +1524,8 @@ impl eframe::App for MarkdownApp {
                         new_use_viewport_cache = !use_viewport_cache;
                         // Clear stale split-point cache so toggling ON triggers a fresh
                         // full render, and toggling OFF starts clean.
-                        self.cache = CommonMarkCache::default();
+                        // self.cache = CommonMarkCache::default();
+                        self.cache.clear_scrollable();
                         add_code_block_themes(&mut self.cache);
                     }
                 }
@@ -1531,16 +1535,17 @@ impl eframe::App for MarkdownApp {
                 // legibility in both light and dark themes.
                 {
                     let sz = self.raw_content.len();
-                    if sz > 2_000_000 {
+                    if sz > AMBER_ALERT {
                         let size_str = if sz >= 1_000_000_000 {
                             format!("{:.1} GB", sz as f64 / 1e9)
                         } else {
                             format!("{:.1} MB", sz as f64 / 1e6)
                         };
-                        let fill = if sz > 10_000_000 {
                             egui::Color32::from_rgb(185, 50, 50) // red: very large
+                        let fill = if sz > RED_ALERT {
+                            Color32::from_rgb(255, 73, 73) // red: very large
                         } else {
-                            egui::Color32::from_rgb(170, 100, 0) // amber: large
+                            Color32::from_rgb(255, 200, 100) // amber: large
                         };
                         ui.separator();
                         egui::Frame::new()
@@ -1550,7 +1555,11 @@ impl eframe::App for MarkdownApp {
                             .show(ui, |ui| {
                                 ui.label(
                                     egui::RichText::new(format!("\u{26a0} {size_str}"))
-                                        .color(egui::Color32::WHITE)
+                                        .color(if sz > RED_ALERT {
+                                            Color32::WHITE
+                                        } else {
+                                            Color32::BLACK
+                                        })
                                         .strong(), // .small(),
                                 )
                                 .on_hover_text(t!("status.large_file_tip").to_string());
@@ -1821,7 +1830,6 @@ impl eframe::App for MarkdownApp {
                 } else if scroll_doc_bottom {
                     self.cache
                         .set_scroll_delta(egui::vec2(0.0, -f32::MAX / 2.0));
-                    eprintln!("self.cache.set_scroll_delta(egui::vec2(0.0, -f32::MAX / 2.0))");
                 }
             }
 
@@ -2186,7 +2194,7 @@ impl ImageLoader for FastSvgLoader {
             .values()
             .flat_map(|bucket| bucket.values())
             .map(|entry| match &entry.result {
-                Ok(image) => image.pixels.len() * std::mem::size_of::<egui::Color32>(),
+                Ok(image) => image.pixels.len() * std::mem::size_of::<Color32>(),
                 Err(err) => err.len(),
             })
             .sum()

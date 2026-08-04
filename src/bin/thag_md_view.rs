@@ -1336,7 +1336,7 @@ impl eframe::App for MarkdownApp {
             )
         });
 
-        // Act on shortcuts (zoom/font only when text field does not have focus).
+        // Act on shortcuts (zoom/font) only when text field does not have focus.
         let wants_text = ui.ctx().egui_wants_keyboard_input();
 
         if close {
@@ -1541,7 +1541,6 @@ impl eframe::App for MarkdownApp {
                         } else {
                             format!("{:.1} MB", sz as f64 / 1e6)
                         };
-                            egui::Color32::from_rgb(185, 50, 50) // red: very large
                         let fill = if sz > RED_ALERT {
                             Color32::from_rgb(255, 73, 73) // red: very large
                         } else {
@@ -1974,6 +1973,16 @@ impl eframe::App for MarkdownApp {
             }
         };
 
+        // If load_file() ran this frame (navigation, manual reload, or watcher-triggered
+        // auto-reload), it already set `self.use_viewport_cache` to the correct value for
+        // the newly loaded document.  Propagate that back into `new_use_viewport_cache` so
+        // the frame-end commit below does not overwrite it with the stale pre-load snapshot
+        // (which would be `false` whenever the *previous* file was small or had caching
+        // disabled, causing large incoming files to open without viewport caching).
+        if navigated || watcher_triggered {
+            new_use_viewport_cache = self.use_viewport_cache;
+        }
+
         // Reclaim key-window focus after the native file dialog releases it;
         // without this the next keyboard shortcut typically needs two presses.
         // if open_file_requested {
@@ -1999,10 +2008,12 @@ impl eframe::App for MarkdownApp {
         self.show_toc = new_show_toc;
         self.search_open = new_search_open;
         self.show_help = new_show_help;
-        // Never enable caching for docs below the threshold, regardless of how the state
-        // got set (e.g. load_file runs mid-frame and correctly sets self.use_viewport_cache
-        // = false, but the snapshotted new_use_viewport_cache is still the old large-file
-        // value and would overwrite it without this guard).
+        // Final safety guard: never enable caching for docs below the threshold.
+        // When load_file() ran this frame, new_use_viewport_cache was already synced to
+        // self.use_viewport_cache (see above), so both the large→small case (would
+        // wrongly re-enable cache) and the small/disabled→large case (would wrongly
+        // leave cache off) are handled before we reach this point.  The `&& threshold`
+        // check here is a belt-and-braces fallback for any path we may have missed.
         self.use_viewport_cache =
             new_use_viewport_cache && (self.content.len() >= VIEWPORT_CACHE_THRESHOLD);
         if new_enhanced_contrast != enhanced_contrast {

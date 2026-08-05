@@ -206,7 +206,7 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
         // println!("Parsing {:#?}", path.display());
 
         // exclude thag.rs - intended for src/bin
-        if path.display().as_str() == "thag.rs" {
+        if &path.to_string_lossy() == "thag.rs" {
             continue;
         }
 

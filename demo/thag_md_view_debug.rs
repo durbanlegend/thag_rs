@@ -1,10 +1,12 @@
 /*[toml]
 [dependencies]
-eframe = { version = "0.35", features = ["wgpu"] }
-# egui_commonmark = { git = "https://github.com/durbanlegend/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
-egui_commonmark = { path = "/Users/donf/projects/egui_commonmark/egui_commonmark" }
+eframe = { path = "/Users/donf/projects/egui/crates/eframe", features = ["wgpu"] }
+egui = { path = "/Users/donf/projects/egui/crates/egui" }
+egui_commonmark = { path = "/Users/donf/projects/egui_commonmark/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
 
-egui_extras = { version = "0.35", features = ["svg"] }
+egui_extras = { path = "/Users/donf/projects/egui/crates/egui_extras", features = ["svg"] }
+env_logger = "0.11"
+
 thag_proc_macros = { version = "1, thag-auto" }
 thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 resvg = { version = "0.45", features = ["text"] }
@@ -91,6 +93,8 @@ copy_resource_dir!(
     "assets/sublime_themes",
     "assets/sublime_themes"
 );
+
+copy_resource_dir!("THAG_DEV_PATH", "assets/fonts",);
 
 /// Applies contrast colours to both egui themes; font sizes are always left at
 /// egui defaults so toggling never causes a scroll-position jump.
@@ -639,6 +643,9 @@ fn main() -> eframe::Result<()> {
         return Ok(());
     }
 
+    env_logger::init();
+    log::warn!("Initialised");
+
     // Set the UI locale from the operating system before any translatable string is used.
     let locale = detect_locale();
     rust_i18n::set_locale(&locale);
@@ -741,7 +748,7 @@ fn main() -> eframe::Result<()> {
         preferred_font.to_owned(),
         egui::FontData::from_static(include_bytes!(
             // "../../assets/fonts/Fonts/ttf/BDOGrotesk-Medium.ttf"
-            "../../assets/fonts/Inter-VariableFont_opsz,wght.ttf" // "../../assets/fonts/Satoshi-Medium.otf" // Satoshi is a trademark of the Indian Type Foundry.
+            "../assets/fonts/Inter-VariableFont_opsz,wght.ttf" // "../../assets/fonts/Satoshi-Medium.otf" // Satoshi is a trademark of the Indian Type Foundry.
         ))
         .into(),
     );
@@ -1216,7 +1223,7 @@ fn add_code_block_themes(cache: &mut CommonMarkCache) {
 }
 
 impl eframe::App for MarkdownApp {
-    #[allow(clippy::cast_precision_loss, clippy::too_many_lines)]
+    #[allow(clippy::cast_precision_loss, clippy::too_many_lines, unused_variables)]
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         // ── On the very first frame, claim key-window focus so shortcuts work immediately
         // without requiring the user to click first (macOS key-window / winit issue).
@@ -1813,24 +1820,24 @@ impl eframe::App for MarkdownApp {
             // ── Keyboard scrolling ───────────────────────────────────────────
             // Deltas are threaded through CommonMarkCache so show_scrollable
             // can apply them inside its own internal ScrollArea.
-            if !wants_text {
-                let line_h = ui.text_style_height(&egui::TextStyle::Body);
-                let page_h = ui.available_height();
-                if scroll_line_up {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, line_h));
-                } else if scroll_line_down {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, -line_h));
-                } else if scroll_page_up {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, page_h));
-                } else if scroll_page_down {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, -page_h));
-                } else if scroll_doc_top {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, f32::MAX / 2.0));
-                } else if scroll_doc_bottom {
-                    self.cache
-                        .set_scroll_delta(egui::vec2(0.0, -f32::MAX / 2.0));
-                }
-            }
+            // if !wants_text {
+            //     let line_h = ui.text_style_height(&egui::TextStyle::Body);
+            //     let page_h = ui.available_height();
+            //     if scroll_line_up {
+            //         self.cache.set_scroll_delta(egui::vec2(0.0, line_h));
+            //     } else if scroll_line_down {
+            //         self.cache.set_scroll_delta(egui::vec2(0.0, -line_h));
+            //     } else if scroll_page_up {
+            //         self.cache.set_scroll_delta(egui::vec2(0.0, page_h));
+            //     } else if scroll_page_down {
+            //         self.cache.set_scroll_delta(egui::vec2(0.0, -page_h));
+            //     } else if scroll_doc_top {
+            //         self.cache.set_scroll_delta(egui::vec2(0.0, f32::MAX / 2.0));
+            //     } else if scroll_doc_bottom {
+            //         self.cache
+            //             .set_scroll_delta(egui::vec2(0.0, -f32::MAX / 2.0));
+            //     }
+            // }
 
             // ── Font scale ──────────────────────────────────────────────────────────
             // Applying to the outer ui propagates into show_scrollable's
@@ -1890,8 +1897,8 @@ impl eframe::App for MarkdownApp {
                 } else {
                     None
                 };
-                self.cache.set_search_ranges(ranges);
-                self.cache.set_active_search_range(active);
+                // self.cache.set_search_ranges(ranges);
+                // self.cache.set_active_search_range(active);
             }
 
             // ── Render with or without viewport culling ─────────────────────────────────────────
@@ -1903,7 +1910,7 @@ impl eframe::App for MarkdownApp {
                 .syntax_theme_dark("Gruvbox_Dark")
                 .syntax_theme_light("Gruvbox_Light")
                 .enable_scroll_to_heading(true)
-                .viewport_cache(new_use_viewport_cache)
+                // .viewport_cache(new_use_viewport_cache)
                 .show_scrollable(&current_path_label, ui, &mut self.cache, &self.content);
         });
 

@@ -1,10 +1,11 @@
 /*[toml]
 [dependencies]
-eframe = { path = "/Users/donf/projects/egui/crates/eframe", features = ["wgpu"] }
-egui = { path = "/Users/donf/projects/egui/crates/egui" }
+eframe = { version = "0.35", features = ["wgpu"] }
+# eframe = { path = "/Users/donf/projects/egui/crates/eframe", features = ["wgpu"] }  # local 0.36.1 - incompatible with egui_commonmark 0.35
 egui_commonmark = { path = "/Users/donf/projects/egui_commonmark/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
 
-egui_extras = { path = "/Users/donf/projects/egui/crates/egui_extras", features = ["svg"] }
+egui_extras = { version = "0.35", features = ["svg"] }
+# egui_extras = { path = "/Users/donf/projects/egui/crates/egui_extras", features = ["svg"] }  # local 0.36.1 - incompatible with egui_commonmark 0.35
 env_logger = "0.11"
 
 thag_proc_macros = { version = "1, thag-auto" }
@@ -16,9 +17,6 @@ pulldown-cmark = { version = "0.13" }
 rfd = { version = "0.15" }
 rust-i18n = "4"
 sys-locale = "0.3"
-
-[patch.crates-io]
-egui = { path = "/Users/donf/projects/egui/crates/egui" }
 
 [features]
 default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_commonmark/svg","egui_commonmark/fetch"]
@@ -1823,24 +1821,24 @@ impl eframe::App for MarkdownApp {
             // ── Keyboard scrolling ───────────────────────────────────────────
             // Deltas are threaded through CommonMarkCache so show_scrollable
             // can apply them inside its own internal ScrollArea.
-            // if !wants_text {
-            //     let line_h = ui.text_style_height(&egui::TextStyle::Body);
-            //     let page_h = ui.available_height();
-            //     if scroll_line_up {
-            //         self.cache.set_scroll_delta(egui::vec2(0.0, line_h));
-            //     } else if scroll_line_down {
-            //         self.cache.set_scroll_delta(egui::vec2(0.0, -line_h));
-            //     } else if scroll_page_up {
-            //         self.cache.set_scroll_delta(egui::vec2(0.0, page_h));
-            //     } else if scroll_page_down {
-            //         self.cache.set_scroll_delta(egui::vec2(0.0, -page_h));
-            //     } else if scroll_doc_top {
-            //         self.cache.set_scroll_delta(egui::vec2(0.0, f32::MAX / 2.0));
-            //     } else if scroll_doc_bottom {
-            //         self.cache
-            //             .set_scroll_delta(egui::vec2(0.0, -f32::MAX / 2.0));
-            //     }
-            // }
+            if !wants_text {
+                let line_h = ui.text_style_height(&egui::TextStyle::Body);
+                let page_h = ui.available_height();
+                if scroll_line_up {
+                    self.cache.set_scroll_delta(egui::vec2(0.0, line_h));
+                } else if scroll_line_down {
+                    self.cache.set_scroll_delta(egui::vec2(0.0, -line_h));
+                } else if scroll_page_up {
+                    self.cache.set_scroll_delta(egui::vec2(0.0, page_h));
+                } else if scroll_page_down {
+                    self.cache.set_scroll_delta(egui::vec2(0.0, -page_h));
+                } else if scroll_doc_top {
+                    self.cache.set_scroll_delta(egui::vec2(0.0, f32::MAX / 2.0));
+                } else if scroll_doc_bottom {
+                    self.cache
+                        .set_scroll_delta(egui::vec2(0.0, -f32::MAX / 2.0));
+                }
+            }
 
             // ── Font scale ──────────────────────────────────────────────────────────
             // Applying to the outer ui propagates into show_scrollable's

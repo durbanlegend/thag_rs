@@ -17,6 +17,9 @@ rfd = { version = "0.15" }
 rust-i18n = "4"
 sys-locale = "0.3"
 
+[patch.crates-io]
+egui = { path = "/Users/donf/projects/egui/crates/egui" }
+
 [features]
 default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_commonmark/svg","egui_commonmark/fetch"]
 

@@ -1,11 +1,11 @@
 /*[toml]
 [dependencies]
-eframe = { version = "0.35", features = ["wgpu"] }
-# eframe = { path = "/Users/donf/projects/egui/crates/eframe", features = ["wgpu"] }  # local 0.36.1 - incompatible with egui_commonmark 0.35
+eframe = { version = "0.36", features = ["wgpu"] }
+# eframe = { path = "/Users/donf/projects/egui/crates/eframe", features = ["wgpu"] }
 egui_commonmark = { path = "/Users/donf/projects/egui_commonmark/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
 
-egui_extras = { version = "0.35", features = ["svg"] }
-# egui_extras = { path = "/Users/donf/projects/egui/crates/egui_extras", features = ["svg"] }  # local 0.36.1 - incompatible with egui_commonmark 0.35
+egui_extras = { version = "0.36", features = ["svg"] }
+# egui_extras = { path = "/Users/donf/projects/egui/crates/egui_extras", features = ["svg"] }
 env_logger = "0.11"
 
 thag_proc_macros = { version = "1, thag-auto" }
@@ -155,7 +155,7 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
     // Ubuntu Mono renders visually larger than Ubuntu at equal point sizes (wider
     // per-character advance, larger x-height).  Nudge it down to 12.0 px so that
     // inline code and fenced code blocks feel balanced against 14 px body text.
-    // In egui 0.35 font styles are stored per-theme, so set both.
+    // In egui 0.36 font styles are stored per-theme, so set both.
     for theme in [egui::Theme::Dark, egui::Theme::Light] {
         ctx.style_mut_of(theme, |style| {
             use egui::{FontFamily, FontId, TextStyle};

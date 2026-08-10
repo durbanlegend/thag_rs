@@ -2,7 +2,7 @@
 [dependencies]
 egui_commonmark = { git = "https://github.com/durbanlegend/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
 
-egui_extras = { version = "0.35", features = ["svg"] }
+egui_extras = { version = "0.36", features = ["svg"] }
 thag_proc_macros = { version = "1, thag-auto" }
 thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 resvg = { version = "0.45", features = ["text"] }

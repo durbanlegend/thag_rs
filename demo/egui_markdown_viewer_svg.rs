@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 egui_commonmark_extended = "0.25"
-egui_extras = { version = "0.35", features = ["svg_text"] } # Slow
+egui_extras = { version = "0.36", features = ["svg_text"] } # Slow
 thag_proc_macros = { version = "1, thag-auto" }
 thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 

@@ -391,25 +391,6 @@ fn absolutize_image_paths(content: &str, base_dir: &Path) -> String {
     out
 }
 
-/// Converts an absolute `Path` to a `file://` URI that is valid on all platforms.
-/// Windows paths (`C:\…`) become `file:///C:/…`; Unix paths become `file:///…`.
-/// Append byte-offset positions of all case-insensitive occurrences of `query`
-/// within a single pulldown-cmark text event into `out`.
-/// `span_start` is the event's `src_span.start` (byte offset into the full source).
-fn collect_matches(text: &str, span_start: usize, query: &str, qlen: usize, out: &mut Vec<usize>) {
-    let lower = text.to_lowercase();
-    let mut pos = 0;
-    while pos < lower.len() {
-        match lower[pos..].find(query) {
-            Some(rel) => {
-                out.push(span_start + pos + rel);
-                pos += rel + qlen;
-            }
-            None => break,
-        }
-    }
-}
-
 fn path_to_file_uri(path: &Path) -> String {
     let s = path.to_string_lossy().into_owned();
     #[cfg(windows)]
@@ -806,17 +787,11 @@ struct MarkdownApp {
     toc: Vec<TocEntry>,
     /// Whether the TOC side panel is visible.
     show_toc: bool,
-    /// Current search query string.
-    search_query: String,
     /// Whether the search bar is visible.
     search_open: bool,
     /// When `true`, the search text field will grab keyboard focus on the next frame.
     search_focus: bool,
-    /// Byte positions in `raw_content` of all query matches.
-    search_matches: Vec<usize>,
-    /// Index of the active match within `search_matches`.
-    search_active: usize,
-    /// Whether the F1 help window is visible.
+    // /// Whether the F1 help window is visible.
     show_help: bool,
     /// Separate cache for the help window's `CommonMarkViewer`.
     help_cache: CommonMarkCache,
@@ -863,11 +838,8 @@ impl MarkdownApp {
             enhanced_contrast: true,
             toc,
             show_toc: true,
-            search_query: String::new(),
             search_open: false,
             search_focus: false,
-            search_matches: Vec::new(),
-            search_active: 0,
             show_help: false,
             help_cache: CommonMarkCache::default(),
             egui_ctx: ctx,
@@ -1005,8 +977,6 @@ impl MarkdownApp {
                     self.cache = CommonMarkCache::default();
                     add_code_block_themes(&mut self.cache);
                     self.use_viewport_cache = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
-                    self.search_matches.clear();
-                    self.search_active = 0;
                     self.start_watching();
                     self.build_content_headings();
                     return true;
@@ -1034,12 +1004,6 @@ impl MarkdownApp {
                 self.cache = CommonMarkCache::default();
                 add_code_block_themes(&mut self.cache);
                 self.use_viewport_cache = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
-                // Invalidate and rebuild search for the new content.
-                self.search_matches.clear();
-                self.search_active = 0;
-                if !self.search_query.is_empty() {
-                    self.rebuild_search();
-                }
                 // Re-arm the watcher for the (possibly different) new file.
                 self.start_watching();
                 // Build content-relative heading positions for accurate scroll navigation.
@@ -1143,62 +1107,6 @@ impl MarkdownApp {
             }
         }
     }
-
-    /// Rebuild `search_matches` by parsing `self.content` with pulldown-cmark
-    /// and searching inside every text-bearing event.
-    ///
-    /// Guarantees the previous whole-string search couldn't provide:
-    /// 1. Positions exactly align with the renderer's `src_span` values —
-    ///    inline highlighting is accurate.
-    /// 2. Link/image destinations are excluded — no extra hits from absolutized
-    ///    `file:///…` URLs that never appear as visible text.
-    ///
-    /// Fenced code-block matches are counted (so the N/M counter matches what a
-    /// plain-text search would give) but produce no highlight because the code
-    /// block renderer bypasses `render_body_text`.
-    fn rebuild_search(&mut self) {
-        self.search_matches.clear();
-        self.search_active = 0;
-        if self.search_query.is_empty() {
-            return;
-        }
-        let query = self.search_query.to_lowercase();
-        let qlen = query.len().max(1);
-        let opts = Options::ENABLE_TABLES
-            | Options::ENABLE_TASKLISTS
-            | Options::ENABLE_STRIKETHROUGH
-            | Options::ENABLE_FOOTNOTES
-            | Options::ENABLE_HEADING_ATTRIBUTES;
-        for (event, span) in Parser::new_ext(&self.content, opts).into_offset_iter() {
-            match event {
-                // Text events cover all prose text, heading text, list items,
-                // table cells, and fenced code block content.
-                // Inline code (‘backtick’ spans) — rendered via event_text, highlighted.
-                Event::Text(ref text) | Event::Code(ref text) => {
-                    collect_matches(text, span.start, &query, qlen, &mut self.search_matches);
-                }
-                _ => {}
-            }
-        }
-    }
-
-    /// Scroll the document to the heading section that contains the active search match.
-    /// Uses `content_heading_positions` (content-relative bytes) rather than
-    /// `toc.byte_start` (raw-content-relative) to avoid offset errors from
-    /// injected heading IDs and absolutized image paths.
-    fn scroll_to_active_match(&mut self) {
-        let Some(&byte_pos) = self.search_matches.get(self.search_active) else {
-            return;
-        };
-        if let Some((_, slug)) = self
-            .content_heading_positions
-            .iter()
-            .rev()
-            .find(|(pos, _)| *pos <= byte_pos)
-        {
-            *self.cache.scroll_to_id_target_mut() = Some(slug.clone());
-        }
-    }
 }
 
 fn add_code_block_themes(cache: &mut CommonMarkCache) {
@@ -1259,8 +1167,6 @@ impl eframe::App for MarkdownApp {
         let show_toc = self.show_toc;
         let search_open = self.search_open;
         let show_help = self.show_help;
-        let match_count = self.search_matches.len();
-        let search_active = self.search_active;
         // Is the auto-reload notice still within its 2-second display window?
         let show_reload_notice = self
             .last_auto_reload
@@ -1278,7 +1184,6 @@ impl eframe::App for MarkdownApp {
         let mut new_search_open = search_open;
         let mut new_show_help = show_help;
         let mut new_use_viewport_cache = use_viewport_cache;
-        let mut search_nav: i32 = 0; // +1 = next match, -1 = prev match
         let font_scale_label = format!("Aa {:.0}%", self.font_scale * 100.0);
 
         // ── Global keyboard shortcuts ─────────────────────────────────────────────────────
@@ -1296,15 +1201,7 @@ impl eframe::App for MarkdownApp {
             cmd_f,
             cmd_r,
             f1_key,
-            search_enter,
-            search_shift_enter,
             search_escape,
-            scroll_line_up,
-            scroll_line_down,
-            scroll_page_up,
-            scroll_page_down,
-            scroll_doc_top,
-            scroll_doc_bottom,
             escape_key,
         ) = ui.ctx().input(|i| {
             use egui::Key;
@@ -1321,17 +1218,7 @@ impl eframe::App for MarkdownApp {
                 i.modifiers.command && i.key_pressed(Key::F),
                 i.modifiers.command && i.key_pressed(Key::R),
                 i.key_pressed(Key::F1),
-                i.key_pressed(Key::Enter),
-                i.modifiers.shift && i.key_pressed(Key::Enter),
                 i.key_pressed(Key::Escape),
-                // Scroll keys — only plain (non-Cmd) arrow keys for line scroll.
-                !i.modifiers.command && i.key_pressed(Key::ArrowUp),
-                !i.modifiers.command && i.key_pressed(Key::ArrowDown),
-                i.key_pressed(Key::PageUp),
-                i.key_pressed(Key::PageDown),
-                // Home / End: physical key OR Cmd+Arrow (standard macOS navigation).
-                i.key_pressed(Key::Home) || (i.modifiers.command && i.key_pressed(Key::ArrowUp)),
-                i.key_pressed(Key::End) || (i.modifiers.command && i.key_pressed(Key::ArrowDown)),
                 i.key_pressed(Key::Escape),
             )
         });
@@ -1379,14 +1266,8 @@ impl eframe::App for MarkdownApp {
             new_show_help = !show_help;
         }
         // Search navigation (only meaningful when the bar is open).
-        if new_search_open {
-            if search_escape {
-                new_search_open = false;
-            } else if search_enter && !search_shift_enter {
-                search_nav = 1;
-            } else if search_shift_enter {
-                search_nav = -1;
-            }
+        if new_search_open && search_escape {
+            new_search_open = false;
         }
 
         // ── Top panel: toolbar ────────────────────────────────────────────────────────────
@@ -1643,7 +1524,7 @@ impl eframe::App for MarkdownApp {
                 ui.horizontal(|ui| {
                     ui.label("🔍");
                     let response = ui.add(
-                        egui::TextEdit::singleline(&mut self.search_query)
+                        egui::TextEdit::singleline(&mut self.cache.search_query)
                             .hint_text(t!("search.placeholder").to_string())
                             .desired_width(280.0),
                     );
@@ -1653,23 +1534,28 @@ impl eframe::App for MarkdownApp {
                         self.search_focus = false;
                     }
                     if response.changed() {
-                        self.rebuild_search();
-                        // search_active already reset inside rebuild_search
+                        self.cache
+                            .update_search_matches(&current_path_label, &self.content);
+                    }
+                    // Checked unconditionally (not gated on the text edit still
+                    // having focus): a single-line TextEdit surrenders focus the
+                    // moment Enter is pressed, so `response.has_focus()` would
+                    // already be false here. We re-request focus below so that
+                    // repeated Enter presses keep working without having to
+                    // click back into the box each time.
+                    let enter_pressed = ui.input(|i| i.key_pressed(egui::Key::Enter));
+                    if enter_pressed {
+                        response.request_focus();
                     }
 
-                    // Match counter.
-                    if match_count == 0 && !self.search_query.is_empty() {
-                        ui.weak(t!("search.no_matches").to_string());
-                    } else if match_count > 0 {
-                        ui.weak(
-                            t!(
-                                "search.match_counter",
-                                current = search_active + 1,
-                                total = match_count
-                            )
-                            .to_string(),
-                        );
-                    }
+                    let match_count = self.cache.search_ranges().len();
+                    match self.cache.active_match() {
+                        Some(i) if match_count > 0 => ui.weak(
+                            t!("search.match_counter", current = i + 1, total = match_count)
+                                .to_string(),
+                        ),
+                        _ => ui.weak(t!("search.no_matches").to_string()),
+                    };
 
                     // Prev / next buttons.
                     let has_matches = match_count > 0;
@@ -1677,15 +1563,17 @@ impl eframe::App for MarkdownApp {
                         .add_enabled(has_matches, egui::Button::new("⬆"))
                         .on_hover_text(t!("search.prev_tip").to_string())
                         .clicked()
+                        || (enter_pressed && ui.input(|i| i.modifiers.shift))
                     {
-                        search_nav = -1;
+                        self.cache.go_to_match(-1);
                     }
                     if ui
                         .add_enabled(has_matches, egui::Button::new("⬇"))
                         .on_hover_text(t!("search.next_tip").to_string())
                         .clicked()
+                        || (enter_pressed && !ui.input(|i| i.modifiers.shift))
                     {
-                        search_nav = 1;
+                        self.cache.go_to_match(1);
                     }
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -1811,26 +1699,7 @@ impl eframe::App for MarkdownApp {
             }
 
             // ── Keyboard scrolling ───────────────────────────────────────────
-            // Deltas are threaded through CommonMarkCache so show_scrollable
-            // can apply them inside its own internal ScrollArea.
-            if !wants_text {
-                let line_h = ui.text_style_height(&egui::TextStyle::Body);
-                let page_h = ui.available_height();
-                if scroll_line_up {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, line_h));
-                } else if scroll_line_down {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, -line_h));
-                } else if scroll_page_up {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, page_h));
-                } else if scroll_page_down {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, -page_h));
-                } else if scroll_doc_top {
-                    self.cache.set_scroll_delta(egui::vec2(0.0, f32::MAX / 2.0));
-                } else if scroll_doc_bottom {
-                    self.cache
-                        .set_scroll_delta(egui::vec2(0.0, -f32::MAX / 2.0));
-                }
-            }
+            let user_scrolled = self.cache.handle_keyboard_scrolling(ui);
 
             // ── Font scale ──────────────────────────────────────────────────────────
             // Applying to the outer ui propagates into show_scrollable's
@@ -1869,30 +1738,17 @@ impl eframe::App for MarkdownApp {
                 );
             }
 
-            // ── Search highlighting ───────────────────────────────────────────────
-            // Push the current search state into the cache so the
-            // renderer can paint inline highlights this frame.
-            // Gate on `new_search_open` so highlights clear immediately
-            // when the bar is closed — the query is preserved for
-            // when the bar is reopened.
-            {
-                let qlen = self.search_query.len();
-                let active_search = new_search_open && qlen > 0;
-                let ranges: Vec<std::ops::Range<usize>> = if active_search {
-                    self.search_matches.iter().map(|&s| s..s + qlen).collect()
-                } else {
-                    Vec::new()
-                };
-                let active = if active_search {
-                    self.search_matches
-                        .get(self.search_active)
-                        .map(|&s| s..s + qlen)
-                } else {
-                    None
-                };
-                self.cache.set_search_ranges(ranges);
-                self.cache.set_active_search_range(active);
-            }
+            let (match_bg, active_bg) = if ui.visuals().dark_mode {
+                (
+                    egui::Color32::from_rgb(30, 115, 105),
+                    egui::Color32::from_rgb(95, 75, 165),
+                )
+            } else {
+                (
+                    egui::Color32::from_rgb(140, 220, 210),
+                    egui::Color32::from_rgb(185, 165, 240),
+                )
+            };
 
             // ── Render with or without viewport culling ─────────────────────────────────────────
             // show_scrollable does a full render on first open to populate
@@ -1902,9 +1758,17 @@ impl eframe::App for MarkdownApp {
             CommonMarkViewer::new()
                 .syntax_theme_dark("Gruvbox_Dark")
                 .syntax_theme_light("Gruvbox_Light")
+                .search_match_color(match_bg)
+                .search_active_match_color(active_bg)
                 .enable_scroll_to_heading(true)
                 .viewport_cache(new_use_viewport_cache)
                 .show_scrollable(&current_path_label, ui, &mut self.cache, &self.content);
+
+            self.cache.sync_scrollable_active_match(
+                &current_path_label,
+                self.use_viewport_cache,
+                user_scrolled,
+            );
         });
 
         // ── Intercept link clicks from egui_commonmark ────────────────────────────────────
@@ -1988,20 +1852,6 @@ impl eframe::App for MarkdownApp {
         // if open_file_requested {
         //     ui.ctx().send_viewport_cmd(egui::ViewportCommand::Focus);
         // }
-
-        // ── Search navigation (applied after all panels are drawn) ────────────────────────
-        if search_nav != 0 && match_count > 0 {
-            if search_nav > 0 {
-                self.search_active = (self.search_active + 1) % match_count;
-            } else {
-                self.search_active = if self.search_active == 0 {
-                    match_count - 1
-                } else {
-                    self.search_active - 1
-                };
-            }
-            self.scroll_to_active_match();
-        }
 
         // ── Commit state changes ──────────────────────────────────────────────────────────
         self.font_scale = new_font_scale;

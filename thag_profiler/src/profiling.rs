@@ -1,7 +1,6 @@
 #![allow(unused_variables)]
 use crate::{debug_log, internal_doc, safe_alloc, ProfileError, ProfileResult};
 use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
-use indexmap::IndexMap;
 use parking_lot::{Mutex, RwLock};
 use std::{
     collections::{BTreeSet, HashMap},
@@ -3363,17 +3362,17 @@ struct TrieNode<'a> {
 }
 
 impl<'a> TrieNode<'a> {
+    // fn new(seq: usize) -> Self {
     fn new() -> Self {
         Self {
             children: HashMap::new(),
             calls: 0,
             payload: 0,
             subtree_overhead: 0,
+            seq: 0,
         }
     }
-}
 
-impl<'a> TrieNode<'a> {
     fn collect_clean_times(
         &self,
         current_stack: &mut Vec<&'a str>,
@@ -3393,11 +3392,22 @@ impl<'a> TrieNode<'a> {
             results.push((current_stack.join(";"), net_payload));
         }
 
-        // Recursively visit child nodes
-        for (&frame, child_node) in &self.children {
+        // Sort child references by their creation sequence
+        let mut sorted_children: Vec<(&&str, &TrieNode<'a>)> = self.children.iter().collect();
+        sorted_children.sort_unstable_by_key(|(_, node)| node.seq);
+
+        for (&frame, child_node) in sorted_children {
+            // May be interfering with subsequent conversion to exclusive.
+            // current_stack.push(if child_node.calls == 0 {
+            //     // Parent of `profile!` section
+            //     frame
+            // } else {
+            //     Box::leak(format!("{frame}({})", child_node.calls).into_boxed_str())
+            // });
             current_stack.push(frame);
+            // current_stack.push(Box::leak(child_node.calls.to_string().into_boxed_str()));
             child_node.collect_clean_times(current_stack, results);
-            current_stack.pop(); // Backtrack
+            current_stack.pop();
         }
     }
 }
@@ -3409,6 +3419,7 @@ fn subtract_child_overhead(entries: &[ProfrawEntry]) -> Vec<(String, u64)> {
     debug_log!("Subtracting child overhead from parent payload");
 
     // 1. Build a Trie in O(N * length) time
+    let mut seq_counter = 0;
     let mut root = TrieNode::new();
 
     for entry in entries {
@@ -3416,8 +3427,16 @@ fn subtract_child_overhead(entries: &[ProfrawEntry]) -> Vec<(String, u64)> {
         let mut current = &mut root;
 
         for part in path {
-            current = current.children.entry(part).or_insert_with(TrieNode::new);
+            current = current
+                .children
+                .entry(part)
+                .or_insert_with(|| TrieNode::new());
             current.subtree_overhead += entry.overhead_micros;
+        }
+        // Sequence only the first instance of leaf nodes.
+        if current.seq == 0 {
+            seq_counter += 1;
+            current.seq = seq_counter;
         }
         current.calls += 1;
         current.payload += entry.payload_micros;
@@ -3441,74 +3460,6 @@ fn subtract_child_overhead(entries: &[ProfrawEntry]) -> Vec<(String, u64)> {
     debug_log!("Generated {} clean inclusive times", results.len());
     results
 }
-
-// /// Subtracts child overhead from parent payload to get clean inclusive times
-// #[cfg(feature = "time_profiling")]
-// #[timing]
-// fn subtract_child_overhead(entries: &[ProfrawEntry]) -> Vec<(String, u64)> {
-//     debug_log!("Subtracting child overhead from parent payload");
-
-//     // 1. Build a Trie in O(N * length) time
-//     let mut root = TrieNode::new();
-
-//     for entry in entries {
-//         let path: Vec<&str> = entry.stack.split(';').collect();
-//         let mut current = &mut root;
-
-//         for part in path {
-//             current = current.children.entry(part).or_insert_with(TrieNode::new);
-//             current.subtree_overhead += entry.overhead_micros;
-//         }
-//         current.calls += 1;
-//         current.payload += entry.payload_micros;
-//         // Subtree overhead doesn't apply to leaf-level entries, by definition
-//         current.subtree_overhead -= entry.overhead_micros;
-//     }
-
-//     eprintln!("trie={root:#?}");
-
-//     // 2. Process entries: O(1) prefix overhead query per stack step
-//     let mut stack_totals: HashMap<&str, u64> = HashMap::new();
-
-//     for entry in entries {
-//         let path: Vec<&str> = entry.stack.split(';').collect();
-//         let mut current = &root;
-
-//         for part in &path {
-//             if let Some(next) = current.children.get(part) {
-//                 current = next;
-//             }
-//         }
-
-//         // Child overhead is all overhead in this node's subtree MINUS this node's own overhead
-//         let child_overhead = current
-//             .subtree_overhead
-//             .saturating_sub(entry.overhead_micros);
-//         let clean_payload = entry.payload_micros.saturating_sub(child_overhead);
-
-//         // eprintln!("entry={}, subtree_overhead={}, own overhead={}, child_overhead={child_overhead}, clean_payload={clean_payload}",
-//         // entry.stack, current.subtree_overhead, entry.overhead_micros);
-
-//         *stack_totals.entry(&entry.stack).or_insert(0) += clean_payload;
-//     }
-
-//     // 3. Preserve original order with accumulated totals
-//     let mut result = Vec::with_capacity(entries.len());
-//     let mut processed_stacks = std::collections::HashSet::new();
-
-//     for entry in entries {
-//         if processed_stacks.insert(&entry.stack) {
-//             if let Some(&total_time) = stack_totals.get(entry.stack.as_str()) {
-//                 // if total_time > 0 {
-//                 result.push((entry.stack.clone(), total_time));
-//                 // }
-//             }
-//         }
-//     }
-
-//     debug_log!("Generated {} clean inclusive times", result.len());
-//     result
-// }
 
 /// Converts .profraw file to clean .folded file by subtracting overhead
 ///

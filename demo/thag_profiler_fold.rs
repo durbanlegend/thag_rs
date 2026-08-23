@@ -44,7 +44,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let folded_stem = &args[1];
 
-    let folded_file = format!("{folded_stem}.inclusive.folded");
+    let inclusive_file = format!("{folded_stem}.inclusive.folded");
+    let exclusive_file = format!("{folded_stem}.folded");
 
     let selected_file = if args.len() >= 3 {
         args[2].to_string()
@@ -59,7 +60,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     dbg!(&selected_file);
-    profiling::process_profraw_to_folded(&selected_file, &folded_file)?;
+    profiling::process_profraw_to_folded(&selected_file, &inclusive_file)?;
+
+    profiling::convert_to_exclusive_time(&inclusive_file, &exclusive_file)?;
 
     // Flush logs directly
     if let Some(logger) = DebugLogger::get() {

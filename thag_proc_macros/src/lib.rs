@@ -363,7 +363,7 @@ pub fn ansi_styling_support(input: TokenStream) -> TokenStream {
     )
 }
 
-/// Stage a resource directory into the CARGO_MANIFEST_DIR of the invoking program.
+/// Stage a resource directory into the `CARGO_MANIFEST_DIR` of the invoking program.
 /// Useful for locales files required by `irust_i18n::i18n!` or any other assets.
 #[proc_macro]
 pub fn copy_resource_dir(input: TokenStream) -> TokenStream {

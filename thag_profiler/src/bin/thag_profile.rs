@@ -418,12 +418,24 @@ fn generate_time_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Profi
     // opts.color_diffusion = true;
     opts.flame_chart = as_chart;
 
+    let stacks = profile
+        .stacks
+        .iter()
+        .rev()
+        .map(|line| {
+            let mut parts: Vec<String> = line.splitn(3, ' ').map(ToString::to_string).collect();
+            let count = &parts.len();
+            if *count == 3 {
+                // Remove calls
+                parts.remove(1);
+            }
+            let stack = parts.join(" ");
+            stack
+        })
+        .collect::<Vec<String>>();
+
     // Reverse iter in case of flamechart (regular flamegraph will ignore this sort order).
-    flamegraph::from_lines(
-        &mut opts,
-        profile.stacks.iter().rev().map(String::as_str),
-        output,
-    )?;
+    flamegraph::from_lines(&mut opts, stacks.iter().rev().map(String::as_str), output)?;
 
     enhance_svg_accessibility(svg)?;
 
@@ -1285,15 +1297,27 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
 fn build_time_stats(processed: &ProcessedProfile) -> ProfileResult<ProfileStats> {
     let mut stats = ProfileStats::default();
     for line in &processed.stacks {
-        if let Some((stack, time)) = line.rsplit_once(' ') {
+        let mut iter = line.rsplitn(3, ' ');
+        let count = iter.clone().count();
+        let time = iter.next();
+        let calls = if count == 3 { iter.next() } else { Some("0") };
+        let stack = iter.next();
+        if let Some(time) = time {
             if let Ok(duration) = time.parse::<u128>() {
-                stats.record(
-                    stack,
-                    Duration::from_micros(
-                        u64::try_from(duration)
-                            .map_err(|e| ProfileError::General(e.to_string()))?,
-                    ),
-                );
+                if let Some(calls) = calls {
+                    if let Ok(calls) = calls.parse::<u64>() {
+                        if let Some(stack) = stack {
+                            stats.record(
+                                stack,
+                                calls,
+                                Duration::from_micros(
+                                    u64::try_from(duration)
+                                        .map_err(|e| ProfileError::General(e.to_string()))?,
+                                ),
+                            );
+                        }
+                    }
+                }
             }
         }
     }

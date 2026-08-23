@@ -42,8 +42,7 @@ pub fn copy_resource_dir_impl(input: TokenStream) -> TokenStream {
     let dest_subdir = args
         .dest_subdir
         .as_ref()
-        .map(LitStr::value)
-        .unwrap_or_else(|| args.source_subdir.value());
+        .map_or_else(|| args.source_subdir.value(), LitStr::value);
 
     if let Err(err) = do_copy(
         &args.env_var.value(),

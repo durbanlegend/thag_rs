@@ -14,6 +14,8 @@ use std::{
     time::{Duration, Instant},
 };
 use thag_common::{re, static_lazy};
+
+#[cfg(feature = "time_profiling")]
 use thag_proc_macros::timing;
 
 #[cfg(feature = "time_profiling")]
@@ -2656,8 +2658,8 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         .map_err(|e| ProfileError::General(format!("Failed to open input file: {e}")))?;
     let reader = BufReader::new(file);
 
-    // Store stack lines as (stack_str, time) pairs
-    let mut stack_lines: Vec<(String, u64)> = Vec::new();
+    // Store stack lines as (stack_str, calls, time) triples
+    let mut stack_lines: Vec<(String, u64, u64)> = Vec::new();
     let mut input_lines = 0;
 
     // First pass: Parse the file and separate headers from stack lines
@@ -2665,14 +2667,22 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         input_lines = line_count;
         let line = line.map_err(|e| ProfileError::General(format!("Failed to read line: {e}")))?;
 
-        // Parse line: "stack time"
-        let parts: Vec<&str> = line.rsplitn(2, ' ').collect();
-        if parts.len() != 2 {
+        // Parse line: "stack calls time"
+        let parts: Vec<&str> = line.rsplitn(3, ' ').collect();
+        if parts.len() != 3 {
             debug_log!("Warning: Invalid line format at line {line_count}: {line}");
             continue;
         }
 
-        let stack_str = parts[1].trim();
+        let stack_str = parts[2].trim();
+        let calls = match parts[1].parse::<u64>() {
+            Ok(t) => t,
+            Err(e) => {
+                debug_log!("Warning: Invalid time value at line {line_count}: {e}");
+                continue;
+            }
+        };
+
         let time = match parts[0].parse::<u64>() {
             Ok(t) => t,
             Err(e) => {
@@ -2682,7 +2692,13 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         };
 
         // Store the stack line
-        stack_lines.push((stack_str.to_string(), time));
+        // eprintln!(
+        //     "stack_lines.push(({}, {}, {})",
+        //     stack_str.to_string(),
+        //     calls,
+        //     time
+        // );
+        stack_lines.push((stack_str.to_string(), calls, time));
     }
 
     // Calculate exclusive times using forward processing
@@ -2691,27 +2707,30 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
     let len = &stack_lines.len();
 
     // Pre-parse all stacks once to avoid repeated string operations
-    let parsed_stacks: Vec<(Vec<String>, u64, String)> = stack_lines
+    let parsed_stacks: Vec<(Vec<String>, u64, u64, String)> = stack_lines
         .into_iter()
-        .map(|(stack, time)| {
+        .map(|(stack, calls, time)| {
             let parts: Vec<String> = stack.split(';').map(ToString::to_string).collect();
-            (parts, time, stack)
+            (parts, calls, time, stack)
         })
         .collect();
 
     // Initialize exclusive times with original inclusive times
-    let mut exclusive_times: Vec<(String, u64)> = parsed_stacks
+    let mut exclusive_times: Vec<(String, u64, u64)> = parsed_stacks
         .iter()
-        .map(|(_, time, stack)| (stack.clone(), *time))
+        .map(|(_, calls, time, stack)| (stack.clone(), *calls, *time))
         .collect();
+
+    eprintln!("exclusive_times={exclusive_times:#?}");
 
     // Process from bottom (deepest stacks) to top to adjust parent times
     for i in (0..parsed_stacks.len()).rev() {
-        let (ref current_parts, _, _) = &parsed_stacks[i];
+        let (ref current_parts, _, _, _) = &parsed_stacks[i];
 
         // Look forward (upward in file) for direct children
         for stack in parsed_stacks.iter().take(i) {
-            let (ref child_parts, child_time, _) = &stack;
+            let (ref child_parts, _, child_time, _) = &stack;
+            // eprintln!("child_parts={child_parts:#?},child_time={child_time}");
 
             // Check if this is a direct child (exactly one level deeper)
             if child_parts.len() == current_parts.len() + 1 {
@@ -2723,7 +2742,8 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
 
                 if is_parent {
                     // This direct child should be subtracted from current stack
-                    exclusive_times[i].1 = exclusive_times[i].1.saturating_sub(*child_time);
+                    // eprintln!("Is parent!");
+                    exclusive_times[i].2 = exclusive_times[i].2.saturating_sub(*child_time);
                 }
             }
         }
@@ -2738,8 +2758,8 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         .map_err(|e| ProfileError::General(format!("Failed to create output file: {e}")))?;
     let mut writer = BufWriter::new(output_file);
 
-    for (stack, exclusive) in &exclusive_times {
-        writeln!(writer, "{stack} {exclusive}")
+    for (stack, calls, exclusive) in &exclusive_times {
+        writeln!(writer, "{stack} {calls} {exclusive}")
             .map_err(|e| ProfileError::General(format!("Failed to write stack line: {e}")))?;
     }
 
@@ -2751,7 +2771,7 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
     debug_log!("Found {len} stacks");
 
     // Sum up exclusive times to validate
-    let total_exclusive: u64 = exclusive_times.iter().map(|(_, time)| *time).sum();
+    let total_exclusive: u64 = exclusive_times.iter().map(|(_, _, time)| *time).sum();
     debug_log!("Total exclusive time: {total_exclusive} µs");
     debug_log!("Successfully converted time profile from inclusive to exclusive time");
 
@@ -3052,8 +3072,8 @@ impl ProfileStats {
     /// # Arguments
     /// * `func_name` - The name of the function being profiled
     /// * `duration` - The duration of this particular call
-    pub fn record(&mut self, func_name: &str, duration: std::time::Duration) {
-        *self.calls.entry(func_name.to_string()).or_default() += 1;
+    pub fn record(&mut self, func_name: &str, calls: u64, duration: std::time::Duration) {
+        *self.calls.entry(func_name.to_string()).or_default() += calls;
         *self.total_time.entry(func_name.to_string()).or_default() += duration.as_micros();
     }
 
@@ -3354,14 +3374,16 @@ fn parse_profraw_file(profraw_path: &str) -> ProfileResult<Vec<ProfrawEntry>> {
 }
 
 #[derive(Debug)]
+#[cfg(feature = "time_profiling")]
 struct TrieNode<'a> {
-    children: HashMap<&'a str, TrieNode<'a>>,
+    children: HashMap<&'a str, Self>,
     calls: u32,
     payload: u64,
     subtree_overhead: u64,
 }
 
-impl<'a> TrieNode<'a> {
+#[cfg(feature = "time_profiling")]
+impl TrieNode<'_> {
     // fn new(seq: usize) -> Self {
     fn new() -> Self {
         Self {
@@ -3416,17 +3438,15 @@ fn subtract_child_overhead(entries: &[ProfrawEntry]) -> Vec<(String, u64)> {
             let net_payload = current.payload.saturating_sub(current.subtree_overhead);
 
             if net_payload > 0 {
-                // Format leaf frame with call count: "parent;child(42)"
-                // let stack_str = if current.calls > 0 {
-                //     let mut path_clone = path;
-                //     let last_idx = path_clone.len() - 1;
-                //     let leaf_with_calls = format!("{}({})", path_clone[last_idx], current.calls);
-                //     path_clone[last_idx] = &leaf_with_calls;
-                //     path_clone.join(";")
-                // } else {
-                //     entry.stack.clone()
-                // };
-                let stack_str = entry.stack.clone();
+                // let stack_str = entry.stack.clone();
+                // Format leaf frame with call count: "parent;child 42"
+                let stack_str = {
+                    let mut path_clone = path;
+                    let last_idx = path_clone.len() - 1;
+                    let leaf_with_calls = format!("{} {}", path_clone[last_idx], current.calls);
+                    path_clone[last_idx] = &leaf_with_calls;
+                    path_clone.join(";")
+                };
 
                 results.push((stack_str, net_payload));
             }

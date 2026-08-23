@@ -1322,7 +1322,7 @@ Profiles generate "folded" stack traces in the output directory by default:
 
 - `your_program-<yyyymmdd>-<hhmmss>-memory_detail_dealloc.folded`: Detailed memory deallocation data (if enabled in 4th argument of THAG_PROFILER with #[enable_profiling(runtime)])
 
-These files can be visualized with the included `thag_profile` or with tools like [inferno-flamegraph](https://github.com/jonhoo/inferno) or the beautiful [speedscope](https://www.speedscope.app/).
+These files can be visualized with the included `thag_profile` or with tools like [inferno-flamegraph](https://github.com/jonhoo/inferno) or the beautiful [speedscope](https://www.speedscope.app/). As of v1.2, the time-profiling .folded files now include call counts for reporting purposes, which are supported by `thag_profile` and `speedscope` but not directly by `inferno`.
 
 `thag_profile` is recommended because it offers:
 

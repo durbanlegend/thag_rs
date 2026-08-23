@@ -3369,57 +3369,18 @@ impl<'a> TrieNode<'a> {
             calls: 0,
             payload: 0,
             subtree_overhead: 0,
-            seq: 0,
-        }
-    }
-
-    fn collect_clean_times(
-        &self,
-        current_stack: &mut Vec<&'a str>,
-        results: &mut Vec<(String, u64)>,
-    ) {
-        // // Calculate total overhead originating from immediate children subtrees
-        // let child_overhead: u64 = self
-        //     .children
-        //     .values()
-        //     .map(|child| child.subtree_overhead)
-        //     .sum();
-
-        // let net_payload = self.payload.saturating_sub(child_overhead);
-        let net_payload = self.payload.saturating_sub(self.subtree_overhead);
-
-        if net_payload > 0 {
-            results.push((current_stack.join(";"), net_payload));
-        }
-
-        // Sort child references by their creation sequence
-        let mut sorted_children: Vec<(&&str, &TrieNode<'a>)> = self.children.iter().collect();
-        sorted_children.sort_unstable_by_key(|(_, node)| node.seq);
-
-        for (&frame, child_node) in sorted_children {
-            // May be interfering with subsequent conversion to exclusive.
-            // current_stack.push(if child_node.calls == 0 {
-            //     // Parent of `profile!` section
-            //     frame
-            // } else {
-            //     Box::leak(format!("{frame}({})", child_node.calls).into_boxed_str())
-            // });
-            current_stack.push(frame);
-            // current_stack.push(Box::leak(child_node.calls.to_string().into_boxed_str()));
-            child_node.collect_clean_times(current_stack, results);
-            current_stack.pop();
         }
     }
 }
 
-/// Subtracts child overhead from parent payload to get clean inclusive times
+/// Subtracts child overhead from parent payload to get clean inclusive times,
+/// preserving the exact order of first appearance from the input entries.
 #[cfg(feature = "time_profiling")]
 #[timing]
 fn subtract_child_overhead(entries: &[ProfrawEntry]) -> Vec<(String, u64)> {
     debug_log!("Subtracting child overhead from parent payload");
 
-    // 1. Build a Trie in O(N * length) time
-    let mut seq_counter = 0;
+    // 1. Build the Trie and aggregate metrics in O(N * depth)
     let mut root = TrieNode::new();
 
     for entry in entries {
@@ -3427,34 +3388,49 @@ fn subtract_child_overhead(entries: &[ProfrawEntry]) -> Vec<(String, u64)> {
         let mut current = &mut root;
 
         for part in path {
-            current = current
-                .children
-                .entry(part)
-                .or_insert_with(|| TrieNode::new());
+            current = current.children.entry(part).or_insert_with(TrieNode::new);
             current.subtree_overhead += entry.overhead_micros;
-        }
-        // Sequence only the first instance of leaf nodes.
-        if current.seq == 0 {
-            seq_counter += 1;
-            current.seq = seq_counter;
         }
         current.calls += 1;
         current.payload += entry.payload_micros;
-        // Subtree overhead doesn't apply to leaf-level entries, by definition
         current.subtree_overhead -= entry.overhead_micros;
     }
 
-    eprintln!("trie={root:#?}");
+    // 2. Iterate entries 0..N, querying the Trie on first appearance of each stack
+    let mut results = Vec::with_capacity(entries.len());
+    let mut processed_stacks = HashSet::with_capacity(entries.len());
 
-    // 2. Traverse the Trie and collect nodes with non-zero net payload
-    let mut results = Vec::new();
-    let mut stack_buffer = Vec::new();
+    for entry in entries {
+        // HashSet::insert returns true ONLY the first time it encounters a stack
+        if processed_stacks.insert(entry.stack.as_str()) {
+            let path: Vec<&str> = entry.stack.split(';').collect();
+            let mut current = &root;
 
-    // Traverse root's children (root itself corresponds to an empty stack string)
-    for (&frame, child_node) in &root.children {
-        stack_buffer.push(frame);
-        child_node.collect_clean_times(&mut stack_buffer, &mut results);
-        stack_buffer.pop();
+            // Navigate directly to the aggregated TrieNode in O(depth)
+            for part in &path {
+                if let Some(next) = current.children.get(part) {
+                    current = next;
+                }
+            }
+
+            let net_payload = current.payload.saturating_sub(current.subtree_overhead);
+
+            if net_payload > 0 {
+                // Format leaf frame with call count: "parent;child(42)"
+                // let stack_str = if current.calls > 0 {
+                //     let mut path_clone = path;
+                //     let last_idx = path_clone.len() - 1;
+                //     let leaf_with_calls = format!("{}({})", path_clone[last_idx], current.calls);
+                //     path_clone[last_idx] = &leaf_with_calls;
+                //     path_clone.join(";")
+                // } else {
+                //     entry.stack.clone()
+                // };
+                let stack_str = entry.stack.clone();
+
+                results.push((stack_str, net_payload));
+            }
+        }
     }
 
     debug_log!("Generated {} clean inclusive times", results.len());

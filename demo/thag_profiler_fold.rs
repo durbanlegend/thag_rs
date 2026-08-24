@@ -11,12 +11,12 @@ debug_logging = ["thag_profiler/debug_logging"]
 default = ["time_profiling", "debug_logging"]
 */
 
-/// Tool to post_process `.profraw` files from `thag_profiler`, e.g. if the process didn't complete at runtime.
+/// Tool to post_process `.profraw` files from `thag_profiler` time profiling, e.g. if the process was cancelled at runtime.
 /// E.g.:
 ///
-/// `THAG_PROFILER=time,,announce thag demo/thag_profiler_fold.rs -- test`
+/// `thag demo/thag_profiler_fold.rs -- <folded_stem>`
 ///
-//# Purpose: Post_process `.profraw` files from `thag_profiler`
+//# Purpose: Post_process a selected `.profraw` file from `thag_profiler` into a `<folded_stem>.folded` and a `<folded_stem>-inclusive.folded` file.
 //# Categories: profiling, tools
 use std::error::Error;
 use std::io::Write;
@@ -31,6 +31,9 @@ file_navigator! {}
 fn main() -> Result<(), Box<dyn Error>> {
     let help = auto_help!();
     check_help_and_exit(&help);
+
+    // Switch on `thag_profiler` debug logging
+    std::env::set_var("THAG_PROFILER", ",,announce");
 
     let logger = DebugLogger::get();
     assert!(logger.is_some(), "Logger should be available");

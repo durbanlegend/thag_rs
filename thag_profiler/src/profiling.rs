@@ -3503,6 +3503,7 @@ pub fn process_profraw_to_folded(profraw_path: &str, output_path: &str) -> Profi
 ///
 /// Will bubble up any i/o errors encountered processing the files.
 #[cfg(feature = "time_profiling")]
+#[allow(unused)]
 pub fn process_all_profraw_files() -> ProfileResult<()> {
     debug_log!("Processing all .profraw files in current directory");
 

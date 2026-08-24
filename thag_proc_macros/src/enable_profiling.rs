@@ -331,7 +331,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             ::thag_profiler::Profile::new(None, Some(#fn_name_str), #function_profile_type, #is_async, #is_detailed_memory, file!(), None, None)
         }
     } else {
-        quote! {}
+        quote! { None::<thag_profiler::Profile>  }
     };
 
     #[cfg(not(feature = "full_profiling"))]

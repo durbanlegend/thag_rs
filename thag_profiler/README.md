@@ -582,7 +582,7 @@ The following optional arguments are available:
 
 - `runtime`: Specifies that a detailed specification is to be provided at runtime via the `THAG_PROFILER` environment variable. This is the only option that allows you to influence profiling at runtime. This includes switching profiling off, thus trading the efficiency of zero-cost abstraction for the flexibility of runtime configuration. That being said, the overhead is still very small, for the reasons stated under the `no` option above.
 
-- `function(...)`: Configures profiling options specific to the current function. Within the parentheses, you can specify any of the arguments that would be accepted by the `#[profiled]` attribute: `time`, `mem_summary`, `mem_detail`, `both`, `global`, `test`
+- `function(...)`: Configures profiling options specific to the current function. Within the parentheses, you can specify any of the arguments that would be accepted by the `#[profiled]` attribute: `time`, `mem_summary`, `mem_detail`, `both`, `global`, and `test`. You can also specify `none` if you don't want to profile the `main` function itself.
 
 Examples:
 

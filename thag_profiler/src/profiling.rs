@@ -2721,8 +2721,6 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         .map(|(_, calls, time, stack)| (stack.clone(), *calls, *time))
         .collect();
 
-    eprintln!("exclusive_times={exclusive_times:#?}");
-
     // Process from bottom (deepest stacks) to top to adjust parent times
     for i in (0..parsed_stacks.len()).rev() {
         let (ref current_parts, _, _, _) = &parsed_stacks[i];

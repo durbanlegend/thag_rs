@@ -483,7 +483,7 @@ impl<R: BufRead> FilteringReader<R> {
 
         let (text, _calls) = without_count
             .rsplit_once(char::is_whitespace)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "missing calls"))?;
+            .unwrap_or_else(|| (without_count, ""));
 
         self.output.extend_from_slice(text.as_bytes());
         self.output.push(b' ');

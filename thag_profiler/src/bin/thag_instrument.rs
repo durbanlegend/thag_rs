@@ -8,8 +8,8 @@ use std::io::Read;
 
 /// A stand-alone convenience tool to instrument a Rust source program for `thag_profiler` profiling.
 /// It accepts the source code on stdin and outputs instrumented code to stdout.
-/// The instrumentation consists of adding the #[thag_profiler::enable_profiling] attribute to `fn main` if
-/// present, and the #[thag_profiler::profiled] attribute to all functions and methods.
+/// The instrumentation consists of adding the #[`thag_profiler::enable_profiling`] attribute to `fn main` if
+/// present, and the #[`thag_profiler::profiled`] attribute to all functions and methods.
 /// module and proc macro library. It is intended to be lossless, using the `rust-analyzer` crate
 /// to preserve the original source code intact with its comments and formatting. However, by using
 /// it you accept responsibility for all consequences of instrumentation and profiling.
@@ -17,7 +17,7 @@ use std::io::Read;
 /// instrumented code before deploying it.
 /// It's also recommended to do a side-by-side comparison of the original and instrumented code
 /// to ensure that the instrumentation did not introduce any unintended changes.
-/// Free tools for this purpose include `diff`, `sdiff` git diff, GitHub desktop and BBEdit.
+/// Free tools for this purpose include `diff`, `sdiff` git diff, GitHub desktop and `BBEdit`.
 ///
 /// This tool attempts to position the injected code sensibly and to avoid duplication of existing
 /// `thag_profiler` profiling code. It implements default profiling which currently includes both execution
@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let content = read_stdin()?;
     let instrumented = instrument_code(edition, &content);
-    print!("{}", instrumented);
+    print!("{instrumented}");
     Ok(())
 }
 
@@ -95,7 +95,7 @@ fn instrument_code(edition: Edition, source: &str) -> String {
 
     let imports = ["use thag_profiler::{enable_profiling, end, profile, profiled};"];
 
-    for import_text in imports.iter() {
+    for import_text in imports {
         if !source.contains(import_text) {
             // Parse import as a use statement
             let parse = SourceFile::parse(import_text, Edition::Edition2021);
@@ -139,15 +139,9 @@ fn instrument_code(edition: Edition, source: &str) -> String {
             let maybe_async_token = function.async_token();
             let maybe_unsafe_token = function.unsafe_token();
             let target_token = if let Some(visibility) = maybe_visibility {
-                if let Some(pub_token) = visibility.pub_token() {
-                    pub_token
-                } else if let Some(async_token) = maybe_async_token {
-                    async_token
-                } else if let Some(unsafe_token) = maybe_unsafe_token {
-                    unsafe_token
-                } else {
-                    fn_token
-                }
+                visibility.pub_token().unwrap_or_else(|| {
+                    maybe_async_token.unwrap_or_else(|| maybe_unsafe_token.unwrap_or(fn_token))
+                })
             } else if let Some(async_token) = maybe_async_token {
                 async_token
             } else if let Some(unsafe_token) = maybe_unsafe_token {
@@ -159,14 +153,13 @@ fn instrument_code(edition: Edition, source: &str) -> String {
             if function.body().is_some()
                 && !function_syntax.descendants_with_tokens().any(|it| {
                     let text = it.to_string();
-                    let filtered_out = text.starts_with("#[profiled")
+                    text.starts_with("#[profiled")
                         || text.starts_with("#[thag_profiler::profiled")
                         || text.starts_with("#[enable_profiling")
                         || text.starts_with("#[thag_profiler::enable_profiling")
                         || text.starts_with("#[test")
                         || text.starts_with("profile!")
-                        || text.starts_with("enable_profiling");
-                    filtered_out
+                        || text.starts_with("enable_profiling")
                 })
             {
                 // Get original indentation.
@@ -182,7 +175,7 @@ fn instrument_code(edition: Edition, source: &str) -> String {
                             let new_indent = s
                                 .rmatch_indices('\n')
                                 .next()
-                                .map_or(s.clone(), |(i, _)| (&s[i..]).to_string());
+                                .map_or_else(|| s.clone(), |(i, _)| (s[i..]).to_string());
                             Some(new_indent)
                         } else {
                             None

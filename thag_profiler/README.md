@@ -1554,6 +1554,15 @@ The folded stack files are human-readable:
 head your_executable-<yyyymmdd>-<hhmmss>.folded
 ```
 
+### Debug Logging
+
+Debug logging is output to a file called `$TMPDIR/thag_profiler/<program_stem>-yyyymmdd-HHmmss-debug.log`.
+
+To enable debug logging:
+
+1. Ensure that the `debug_logging` feature of the `thag_profiler` dependency is enabled.
+2. Enable debug logging by setting the third argument of the `THAG_PROFILER` environment variable to `announce` or `quiet`. It's recommended to use `announce`, as this will output the location of the debug log to the terminal at the start of execution.
+
 ## Verification against `dhat` crate
 
 The `bash` script `scripts/compare_profilers.sh` can be used to verify the accuracy of `thag_profiler` memory profiling against the established `dhat` crate.

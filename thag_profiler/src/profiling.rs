@@ -1467,7 +1467,7 @@ impl Profile {
             self.registered_name,
             self.profile_type,
             self.detailed_memory,
-            self.memory_task.as_ref().map_or("N/A".to_string(), |context| format!("{}", context.task_id))
+            self.memory_task.as_ref().map_or_else(|| "N/A".to_string(), |context| format!("{}", context.task_id))
         );
 
         if size == 0 {
@@ -3509,7 +3509,7 @@ pub fn process_all_profraw_files() -> ProfileResult<()> {
     let current_dir = std::env::current_dir()
         .map_err(|e| ProfileError::General(format!("Failed to get current directory: {e}")))?;
 
-    let mut _processed_count = 0;
+    let mut processed_count = 0;
 
     for entry in std::fs::read_dir(&current_dir)
         .map_err(|e| ProfileError::General(format!("Failed to read directory: {e}")))?
@@ -3527,7 +3527,7 @@ pub fn process_all_profraw_files() -> ProfileResult<()> {
 
                 match process_profraw_to_folded(&profraw_path, &folded_path) {
                     Ok(()) => {
-                        _processed_count += 1;
+                        processed_count += 1;
                         debug_log!("Successfully processed: {}", profraw_path);
                     }
                     Err(e) => {
@@ -3538,7 +3538,7 @@ pub fn process_all_profraw_files() -> ProfileResult<()> {
         }
     }
 
-    debug_log!("Processed {} .profraw files", _processed_count);
+    debug_log!("Processed {} .profraw files", processed_count);
     Ok(())
 }
 

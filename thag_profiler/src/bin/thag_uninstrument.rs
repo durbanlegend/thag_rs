@@ -17,7 +17,7 @@ use thag_profiler::re;
 /// remove the instrumented code before deploying it.
 /// It's also recommended to do a side-by-side comparison of the original and de-instrumented code
 /// to ensure that the removal of instrumentation did not introduce any unintended changes.
-/// Free tools for this purpose include `diff`, `sdiff` git diff, GitHub desktop and BBEdit.
+/// Free tools for this purpose include `diff`, `sdiff` git diff, GitHub desktop and `BBEdit`.
 ///
 /// E.g.
 ///
@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let content = read_stdin()?;
     let stripped = deinstrument_code(edition, &content);
-    print!("{}", stripped);
+    print!("{stripped}");
     Ok(())
 }
 
@@ -104,7 +104,7 @@ fn deinstrument_code(edition: Edition, source: &str) -> String {
     let functions: Vec<_> = tree
         .syntax()
         .descendants()
-        .filter_map(|node| ast::Fn::cast(node))
+        .filter_map(ast::Fn::cast)
         .collect();
 
     let re = re!(r"#\[.*(profiled|enable_profiling)");
@@ -152,21 +152,17 @@ fn deinstrument_code(edition: Edition, source: &str) -> String {
             let statements = body.statements();
             let statements: Vec<_> = statements
                 .map(|statement| statement.syntax().clone())
-                .map(|stmt| stmt.clone())
-                .filter_map(|stmt| ast::ExprStmt::cast(stmt.clone()))
+                .filter_map(ast::ExprStmt::cast)
                 .filter(|stmt| {
-                    stmt.syntax()
-                        .descendants()
-                        .find(|descendant| {
-                            descendant.kind() == SyntaxKind::MACRO_CALL && {
-                                let text = descendant.text().to_string();
-                                text.starts_with("profile!")
-                                    || text.starts_with("thag_profile::profile")
-                                    || text.starts_with("end")
-                                    || text.starts_with("thag_profile::end")
-                            }
-                        })
-                        .is_some()
+                    stmt.syntax().descendants().any(|descendant| {
+                        descendant.kind() == SyntaxKind::MACRO_CALL && {
+                            let text = descendant.text().to_string();
+                            text.starts_with("profile!")
+                                || text.starts_with("thag_profile::profile")
+                                || text.starts_with("end")
+                                || text.starts_with("thag_profile::end")
+                        }
+                    })
                 })
                 .collect();
 

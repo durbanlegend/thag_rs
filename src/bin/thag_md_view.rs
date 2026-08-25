@@ -20,7 +20,7 @@ default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_com
 
 # Make sure the result runs fast
 [profile.dev]
-opt-level = 3     # Apply maximum performance optimizations
+opt-level = 3       # Apply maximum performance optimizations
 debug = true
 */
 /// A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
@@ -129,17 +129,6 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
             v.window_fill = Color32::from_rgb(255, 255, 255);
             v.code_bg_color = Color32::from_rgb(225, 225, 230);
             v.hyperlink_color = Color32::from_rgb(0, 100, 210);
-            // v.widgets.noninteractive.fg_stroke.color =
-            //     adjust_color(v.widgets.noninteractive.fg_stroke.color, DARKEN);
-            // v.panel_fill = adjust_color(v.panel_fill, BRIGHTEN);
-            // v.window_fill = adjust_color(v.window_fill, BRIGHTEN);
-            // // v.code_bg_color = adjust_color(v.code_bg_color, DARKEN);
-            // v.extreme_bg_color = adjust_color(v.extreme_bg_color, BRIGHTEN);
-            // v.faint_bg_color = adjust_color(v.faint_bg_color, BRIGHTEN);
-            // v.hyperlink_color = adjust_color(v.hyperlink_color, DARKEN);
-            // // } else {
-            // //     v.code_bg_color = Color32::LIGHT_GRAY;
-            // //     v.extreme_bg_color = Color32::from_gray(120);
         } else {
             v.code_bg_color = Color32::from_rgb(225, 225, 230);
         }
@@ -721,8 +710,7 @@ fn main() -> eframe::Result<()> {
     fonts.font_data.insert(
         preferred_font.to_owned(),
         egui::FontData::from_static(include_bytes!(
-            // "../../assets/fonts/Fonts/ttf/BDOGrotesk-Medium.ttf"
-            "../../assets/fonts/Inter-VariableFont_opsz,wght.ttf" // "../../assets/fonts/Satoshi-Medium.otf" // Satoshi is a trademark of the Indian Type Foundry.
+            "../../assets/fonts/Inter-VariableFont_opsz,wght.ttf"
         ))
         .into(),
     );
@@ -791,7 +779,7 @@ struct MarkdownApp {
     search_open: bool,
     /// When `true`, the search text field will grab keyboard focus on the next frame.
     search_focus: bool,
-    // /// Whether the F1 help window is visible.
+    /// Whether the F1 help window is visible.
     show_help: bool,
     /// Separate cache for the help window's `CommonMarkViewer`.
     help_cache: CommonMarkCache,
@@ -809,9 +797,9 @@ struct MarkdownApp {
     watcher_rx: Option<Receiver<()>>,
     /// When set, a brief "reloaded" notice is shown in the toolbar until this instant.
     last_auto_reload: Option<Instant>,
-    // /// `true` until the end of the very first frame; used to request key-window focus
-    // /// on startup so that keyboard shortcuts work without requiring a prior mouse click.
-    // first_frame: bool,
+    /// `true` until the end of the very first frame; used to request key-window focus
+    /// on startup so that keyboard shortcuts work without requiring a prior mouse click.
+    first_frame: bool,
     /// Whether the viewport-cache performance mode is active.
     /// Auto-enabled for documents ≥ [`VIEWPORT_CACHE_THRESHOLD`] bytes.
     /// Hidden from the UI for smaller documents.
@@ -847,7 +835,7 @@ impl MarkdownApp {
             watcher: None,
             watcher_rx: None,
             last_auto_reload: None,
-            // first_frame: true,
+            first_frame: true,
             use_viewport_cache: content_len >= &VIEWPORT_CACHE_THRESHOLD,
         };
         // eprintln!("CWD={}", std::env::current_dir().unwrap().display());
@@ -1126,13 +1114,6 @@ fn add_code_block_themes(cache: &mut CommonMarkCache) {
 impl eframe::App for MarkdownApp {
     #[allow(clippy::cast_precision_loss, clippy::too_many_lines)]
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        // ── On the very first frame, claim key-window focus so shortcuts work immediately
-        // without requiring the user to click first (macOS key-window / winit issue).
-        // if self.first_frame {
-        //     ui.ctx().send_viewport_cmd(egui::ViewportCommand::Focus);
-        //     self.first_frame = false;
-        // }
-
         const RED_ALERT: usize = 10_000_000;
         const AMBER_ALERT: usize = 2_000_000;
 
@@ -1897,7 +1878,14 @@ impl eframe::App for MarkdownApp {
                 self.show_help = false;
             }
         }
-        ui.ctx().request_repaint_after(Duration::from_millis(250));
+        // ui.ctx().request_repaint_after(Duration::from_millis(250));
+        // ── On the very first frame, claim key-window focus so shortcuts work immediately
+        // without requiring the user to click first (macOS key-window / winit issue).
+        if self.first_frame {
+            // dbg!(&self.first_frame);
+            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Focus);
+            self.first_frame = false;
+        }
     }
 }
 

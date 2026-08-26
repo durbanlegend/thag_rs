@@ -288,7 +288,7 @@ Note that you can also link to individual demo files via their links in `demo/RE
 
 ## Quick start: ways to run the `thag` command
 
-### * With an expression argument:
+### With an expression argument:
 
 ```bash
 thag --expr '"Hello world!"'                                    # Short form: -e
@@ -319,7 +319,7 @@ Zoned::now().round(Unit::Second)?
 ```
 ![Expr](assets/jifft.png)
 
-### * With a script:
+### With a script:
 
 Here's a sample interactive script for discovering Pythagorean triangles with integer sides:
 
@@ -345,7 +345,7 @@ demo/fib_basic.rs -- 10
 This is useful, but a shebang still means building the script each time you use it.
 Instead, you can simply compile it to a fast Rust command with the --executable (-x) option. See `As an executable` below.
 
-### * In rapid iteration mode:
+### In rapid iteration mode:
 
 ```bash
 thag --rapid                                                    # Short form: -r
@@ -358,7 +358,7 @@ thag --rapid                                                    # Short form: -r
 (The orange flashes on the command line as I paste in input are caused by the `reedline` hinter helpfully matching the pasted input against history to offer completion hints.)
 Rapid iteration mode has file-backed searchable history and access to graphical and text-based editors such as VS Code, Zed, Helix, Vim, nano etc. via the VISUAL or EDITOR environment variables, in case its `reedline` editor falls short for a particular task. The key bindings in the latter depend on your terminal settings and you should probably not expect too much in the way of navigation shortcuts.
 
-### * With standard input:
+### With standard input:
 
 ```bash
 echo '(1..=10).product::<u32>()' | thag --stdin                 # Short form: -s
@@ -376,7 +376,7 @@ This is equivalent to:
 thag -e 'println!("Hello {}", std::env::args().nth(1).ok_or_else(|| "No name supplied")?);' -- Ferris
 ```
 
-### * With the built-in TUI (Terminal User Interface) editor
+### With the built-in TUI (Terminal User Interface) editor
 
 ```bash
 thag --edit                                                     # Short form: -d
@@ -401,7 +401,7 @@ thag --edit                                                     # Short form: -d
 
 *[Click to watch](https://asciinema.org/a/LvSHLiZPC6lfCgSN4Q0sUJjpG): Copy lines with `thag_copy`, retrieve skeleton from history, paste clipboard contents, rearrange code with TextArea buffer (Ctrl-X/Ctrl-Y), and run*
 
-### * With standard input into the TUI editor:
+### With standard input into the TUI editor:
 
 ```bash
 cat my_file.rs | thag --edit                                    # Short form: -d
@@ -427,7 +427,7 @@ above also applies there.
 Similar considerations apply to rapid iteration mode (--rapid / -r). Note that the key bindings there are not identical to the TUI because rapid iteration mode uses mostly standard `reedline` emacs
 key bindings and the TUI uses mostly standard `tui-textarea` key bindings.
 
-### * As a filter on standard input (loop mode):
+### As a filter on standard input (loop mode):
 
 At a minimum, this loops though `stdin` running the `--loop` expression against every line. The line number and content are made available to the expression as `i` and `line` respectively.
 
@@ -466,27 +466,22 @@ Normal: 687, long: 175
 ──────────────────────────────────────────────────────────────────────
 ```
 
-### Using scripts in a pipeline
+Reordering data columns or stripping out unwanted columns:
 
-Note: in general if you are planning to **pipe Rust output**, it's probably a good idea to use `writeln!(io::stdout(), "{...}")`,
-rather than `println!`, since (as at edition 2021) `println!` panics if it encounters an error, and this
-includes the broken pipe error from a head command. **This is a Rust issue not a `thag_rs` issue.**
-See `https://github.com/BurntSushi/advent-of-code/issues/17`.
-For an example of tolerating a broken pipe, see
-`demo/thag_from_rust_script.rs`.
-
-#### Using `writeln!` with a pipe:
-
-As from v1.1, `thag` now writes all feedback to the user on `stderr`, so there should be no need to use the `--qq` option to suppress it.
-
-```zsh
-$ thag -l 'let _ = writeln!(io::stdout(), "{i:>3}.  {line}");' < demo/hello.rs | grep Categories
-   Compiling temp v0.0.1 (/var/folders/rx/mng2ds0s6y53v12znz5jhpk80000gn/T/rs_dyn)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.41s
-  3.  //# Categories: basic
+```bash
+thag -l 'let (stack, _calls, micros) = sscanf::sscanf!(line, "{&str} {&str} {u64}").unwrap(); println!("{stack} {micros}");' < $data
 ```
 
-### * As an executable:
+Notes:
+
+1. When piping Rust output, `writeln!` behaves better than `println!`. See the explanation below.
+2. As from v1.1, `thag` now writes all feedback to the user on `stderr`, so it doesn't interfere with piping output, but `-qq` is still handy to suppress it as noise.
+
+```bash
+thag -qql 'let (stack, _calls, micros) = sscanf::sscanf!(line, "{&str} {&str} {u64}").unwrap(); writeln!(io::stdout(), "{stack} {micros}")?;' < $data | less
+```
+
+### As an executable:
 The --executable (-x) option builds your script in **release mode** and moves it to ~/.cargo/bin/, which is highly recommended to be in your path as `thag` and its tools are installed there.
 
 ```bash
@@ -515,7 +510,7 @@ Putting it to use:
 
 ![XBuild](assets/xuset.png)
 
-### * Run `cargo test` in place:
+### Run `cargo test` in place:
 The --test-only (-T) is for scripts (not snippets) with embedded unit tests. (For snippets there's the --cargo (-A) option that accepts cargo subcommands including `test`).
 This option leaves the source script untouched but generates a temporary Cargo.toml for it in the usual way and invokes `cargo test` on this to run the internal unit tests.
 
@@ -527,13 +522,19 @@ import statements and a small toml block for the `thag_rs` crate itself. In this
 env TEST_CONFIG_PATH=/absolute/path/to/config.toml thag demo/config_with_tests.rs -Tvf -- --show-output --test-threads=3  # Long form: --test-only
 ```
 
-### * Command-line options
+### Command-line options
 
 Hopefully the help screen is self-explanatory:
 
 ![Help](assets/helpt.png)
 
 `thag_rs` uses a standard `clap` CLI, so it follows the common `clap` conventions, in a very similar way to `cargo`. You can enter `thag` arguments and options in any order. If your script or dynamic run accepts arguments of its own, they must come after the `thag` arguments and separated from them by a double dash (`--`).
+
+### Piping Rust output: `println!` vs `writeln!`
+
+Note: in general if you are planning to **pipe Rust output**, it's probably a good idea to use `writeln!(io::stdout(), "{...}")?`,
+rather than `println!`, since `println!` panics if it encounters an error, and this includes the broken pipe error from a head command. This is a Rust feature not a `thag_rs` issue. See `https://github.com/BurntSushi/advent-of-code/issues/17`.
+For an example of tolerating a broken pipe, see `demo/thag_from_rust_script.rs`.
 
 ## Overview
 
@@ -565,7 +566,7 @@ _— The Rust Reference_
 * Automatic support for **light or dark backgrounds** and a **16- or 256- color palette** for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows prior to the Windows Terminal 1.22 Preview of August 2024, interrogating the terminal is not supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` currently defaults to basic Ansi-16 colors and dark mode support. However, the dark mode colors it uses have been chosen to work well with most light modes.
 * In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from `thag_rs`. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug a new module without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.
 
-### * Getting started:
+### Getting started
 
 You have the choice of installing `thag_rs` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run`.
 

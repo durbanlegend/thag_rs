@@ -6,8 +6,13 @@ _version: 2
 #   en  English        de  German         fr  French
 #   es  Spanish        pt  Portuguese     sv  Swedish
 #   it  Italian        pl  Polish         cs  Czech
-#   ru  Russian        zu  Zulu
-#   st  Sesotho        xh  Xhosa
+#   ru  Russian        zu  Zulu           st  Sesotho
+#   xh  Xhosa          nl  Dutch          nb  Norwegian Bokmål
+#   no  Norwegian      da  Danish         fi  Finnish
+#   cy  Welsh          ca  Catalan        ro  Romanian
+#   hu  Hungarian      sk  Slovak         hr  Croatian
+#   sl  Slovenian      uk  Ukrainian      bg  Bulgarian
+#   el  Greek          af  Afrikaans
 #
 # NOTE: Zulu (zu), Sesotho (st) and Xhosa (xh) translations are a best-effort
 # first pass; review by native speakers is recommended before considering them
@@ -27,6 +32,22 @@ toolbar.contrast_restore:
   zu: "Buyisela ukulingana okujwayelekile kwe-egui"
   st: "Busa tlhaho ea phapang ea egui"
   xh: "Buyisela ukulingana okujwayelekileyo kwe-egui"
+  nl: "Standaard egui-contrast herstellen"
+  nb: "Gjenopprett standard egui-kontrast"
+  no: "Gjenopprett standard egui-kontrast"
+  da: "Gendan standard egui-kontrast"
+  fi: "Palauta egui:n oletuskontrasti"
+  cy: "Adfer cyferbyniad egui rhagosodiad"
+  ca: "Restaura el contrast egui predeterminat"
+  ro: "Restaurați contrastul implicit egui"
+  hu: "Alapértelmezett egui-kontraszt visszaállítása"
+  sk: "Obnoviť predvolený kontrast egui"
+  hr: "Vrati zadani kontrast egui"
+  sl: "Obnovi privzeti kontrast egui"
+  uk: "Відновити контраст egui за замовчуванням"
+  bg: "Възстановяване на контраста по подразбиране на egui"
+  el: "Επαναφορά προεπιλεγμένης αντίθεσης egui"
+  af: "Herstel egui se verstekkontrast"
 
 toolbar.contrast_apply:
   en: "Apply high-contrast colours"
@@ -42,6 +63,22 @@ toolbar.contrast_apply:
   zu: "Sebenzisa imibala enokulungana okukhulu"
   st: "Sebedisa mebala e nang le phapang e phahameng"
   xh: "Sebenzisa imibala enokulungana okuphezulu"
+  nl: "Hoog-contrastkleuren toepassen"
+  nb: "Bruk høykontrastfarger"
+  no: "Bruk høykontrastfarger"
+  da: "Anvend høj-kontrastfarver"
+  fi: "Käytä korkean kontrastin värejä"
+  cy: "Cymhwyso lliwiau cyferbyniad uchel"
+  ca: "Aplica colors d'alt contrast"
+  ro: "Aplicați culori cu contrast ridicat"
+  hu: "Nagy kontrasztú színek alkalmazása"
+  sk: "Použiť farby s vysokým kontrastom"
+  hr: "Primijeni boje s visokim kontrastom"
+  sl: "Uporabi barve z visokim kontrastom"
+  uk: "Застосувати кольори з високим контрастом"
+  bg: "Прилагане на цветове с висок контраст"
+  el: "Εφαρμογή χρωμάτων υψηλής αντίθεσης"
+  af: "Pas hoëkontraskleure toe"
 
 toolbar.open_file:
   en: "Open a markdown file (%{cmd}-O)"
@@ -57,6 +94,22 @@ toolbar.open_file:
   zu: "Vula ifayili ye-Markdown (%{cmd}-O)"
   st: "Bula faele ea Markdown (%{cmd}-O)"
   xh: "Vula ifayile ye-Markdown (%{cmd}-O)"
+  nl: "Een Markdown-bestand openen (%{cmd}-O)"
+  nb: "Åpne en Markdown-fil (%{cmd}-O)"
+  no: "Åpne en Markdown-fil (%{cmd}-O)"
+  da: "Åbn en Markdown-fil (%{cmd}-O)"
+  fi: "Avaa Markdown-tiedosto (%{cmd}-O)"
+  cy: "Agor ffeil Markdown (%{cmd}-O)"
+  ca: "Obre un fitxer Markdown (%{cmd}-O)"
+  ro: "Deschideți un fișier Markdown (%{cmd}-O)"
+  hu: "Markdown fájl megnyitása (%{cmd}-O)"
+  sk: "Otvoriť súbor Markdown (%{cmd}-O)"
+  hr: "Otvori Markdown datoteku (%{cmd}-O)"
+  sl: "Odpri datoteko Markdown (%{cmd}-O)"
+  uk: "Відкрити файл Markdown (%{cmd}-O)"
+  bg: "Отваряне на Markdown файл (%{cmd}-O)"
+  el: "Άνοιγμα αρχείου Markdown (%{cmd}-O)"
+  af: "Maak 'n Markdown-lêer oop (%{cmd}-O)"
 
 toolbar.reload:
   en: "Reload current file from disk (%{cmd}-R)"
@@ -72,6 +125,22 @@ toolbar.reload:
   zu: "Layisha kabusha ifayili yamanje kudiski (%{cmd}-R)"
   st: "Tlatsa faele ea jwale ho tsoa desteng (%{cmd}-R)"
   xh: "Layisha kwakhona ifayile yangoku ukusuka kudisk (%{cmd}-R)"
+  nl: "Huidig bestand opnieuw laden van schijf (%{cmd}-R)"
+  nb: "Last inn gjeldende fil fra disk på nytt (%{cmd}-R)"
+  no: "Last inn gjeldende fil fra disk på nytt (%{cmd}-R)"
+  da: "Genindlæs den aktuelle fil fra disken (%{cmd}-R)"
+  fi: "Lataa nykyinen tiedosto uudelleen levyltä (%{cmd}-R)"
+  cy: "Ail-lwytho'r ffeil bresennol o'r ddisg (%{cmd}-R)"
+  ca: "Torna a carregar el fitxer actual des del disc (%{cmd}-R)"
+  ro: "Reîncărcați fișierul curent de pe disc (%{cmd}-R)"
+  hu: "Jelenlegi fájl újratöltése lemezről (%{cmd}-R)"
+  sk: "Znovu načítať aktuálny súbor z disku (%{cmd}-R)"
+  hr: "Ponovo učitaj trenutnu datoteku s diska (%{cmd}-R)"
+  sl: "Znova naloži trenutno datoteko z diska (%{cmd}-R)"
+  uk: "Перезавантажити поточний файл з диска (%{cmd}-R)"
+  bg: "Презареждане на текущия файл от диска (%{cmd}-R)"
+  el: "Επαναφόρτωση τρέχοντος αρχείου από δίσκο (%{cmd}-R)"
+  af: "Herlaai huidige lêer van skyf (%{cmd}-R)"
 
 toolbar.toc_toggle:
   en: "Toggle table of contents (%{cmd}-T)"
@@ -87,6 +156,22 @@ toolbar.toc_toggle:
   zu: "Bonisa/Fihla uhlu lwezindikimba (%{cmd}-T)"
   st: "Bontša/Patela lenane la litlhophelo (%{cmd}-T)"
   xh: "Bonisa/Fihla uluhlu lwezindikimba (%{cmd}-T)"
+  nl: "Inhoudsopgave in-/uitschakelen (%{cmd}-T)"
+  nb: "Vis/skjul innholdsfortegnelse (%{cmd}-T)"
+  no: "Vis/skjul innholdsfortegnelse (%{cmd}-T)"
+  da: "Slå indholdsfortegnelse til/fra (%{cmd}-T)"
+  fi: "Näytä/piilota sisällysluettelo (%{cmd}-T)"
+  cy: "Toglo tabl cynnwys (%{cmd}-T)"
+  ca: "Mostra/amaga la taula de continguts (%{cmd}-T)"
+  ro: "Comutați cuprinsul (%{cmd}-T)"
+  hu: "Tartalomjegyzék be-/kikapcsolása (%{cmd}-T)"
+  sk: "Prepnúť obsah (%{cmd}-T)"
+  hr: "Uključi/isključi sadržaj (%{cmd}-T)"
+  sl: "Preklopi kazalo vsebine (%{cmd}-T)"
+  uk: "Показати/приховати зміст (%{cmd}-T)"
+  bg: "Показване/скриване на съдържанието (%{cmd}-T)"
+  el: "Εναλλαγή πίνακα περιεχομένων (%{cmd}-T)"
+  af: "Wissel inhoudsopgawe (%{cmd}-T)"
 
 toolbar.search_toggle:
   en: "Search (%{cmd}-F)"
@@ -102,6 +187,22 @@ toolbar.search_toggle:
   zu: "Sesha (%{cmd}-F)"
   st: "Batla (%{cmd}-F)"
   xh: "Khangela (%{cmd}-F)"
+  nl: "Zoeken (%{cmd}-F)"
+  nb: "Søk (%{cmd}-F)"
+  no: "Søk (%{cmd}-F)"
+  da: "Søg (%{cmd}-F)"
+  fi: "Haku (%{cmd}-F)"
+  cy: "Chwilio (%{cmd}-F)"
+  ca: "Cerca (%{cmd}-F)"
+  ro: "Căutare (%{cmd}-F)"
+  hu: "Keresés (%{cmd}-F)"
+  sk: "Hľadať (%{cmd}-F)"
+  hr: "Pretraži (%{cmd}-F)"
+  sl: "Iskanje (%{cmd}-F)"
+  uk: "Пошук (%{cmd}-F)"
+  bg: "Търсене (%{cmd}-F)"
+  el: "Αναζήτηση (%{cmd}-F)"
+  af: "Soek (%{cmd}-F)"
 
 toolbar.close:
   en: "Close (%{cmd}-W)"
@@ -117,6 +218,22 @@ toolbar.close:
   zu: "Vala (%{cmd}-W)"
   st: "Koala (%{cmd}-W)"
   xh: "Vala (%{cmd}-W)"
+  nl: "Sluiten (%{cmd}-W)"
+  nb: "Lukk (%{cmd}-W)"
+  no: "Lukk (%{cmd}-W)"
+  da: "Luk (%{cmd}-W)"
+  fi: "Sulje (%{cmd}-W)"
+  cy: "Cau (%{cmd}-W)"
+  ca: "Tanca (%{cmd}-W)"
+  ro: "Închideți (%{cmd}-W)"
+  hu: "Bezárás (%{cmd}-W)"
+  sk: "Zatvoriť (%{cmd}-W)"
+  hr: "Zatvori (%{cmd}-W)"
+  sl: "Zapri (%{cmd}-W)"
+  uk: "Закрити (%{cmd}-W)"
+  bg: "Затваряне (%{cmd}-W)"
+  el: "Κλείσιμο (%{cmd}-W)"
+  af: "Sluit (%{cmd}-W)"
 
 toolbar.help:
   en: "Help (F1)"
@@ -132,6 +249,22 @@ toolbar.help:
   zu: "Usizo (F1)"
   st: "Thuso (F1)"
   xh: "Uncedo (F1)"
+  nl: "Help (F1)"
+  nb: "Hjelp (F1)"
+  no: "Hjelp (F1)"
+  da: "Hjælp (F1)"
+  fi: "Ohje (F1)"
+  cy: "Cymorth (F1)"
+  ca: "Ajuda (F1)"
+  ro: "Ajutor (F1)"
+  hu: "Súgó (F1)"
+  sk: "Pomocník (F1)"
+  hr: "Pomoć (F1)"
+  sl: "Pomoč (F1)"
+  uk: "Довідка (F1)"
+  bg: "Помощ (F1)"
+  el: "Βοήθεια (F1)"
+  af: "Hulp (F1)"
 
 toolbar.font_enlarge:
   en: "Enlarge fonts (%{cmd}-Shift-A)"
@@ -147,6 +280,22 @@ toolbar.font_enlarge:
   zu: "Khulisa uhlobo lombhalo (%{cmd}-Shift-A)"
   st: "Hola mongolo (%{cmd}-Shift-A)"
   xh: "Yandisa uhlobo lombhalo (%{cmd}-Shift-A)"
+  nl: "Lettertype vergroten (%{cmd}-Shift-A)"
+  nb: "Forstørr skrift (%{cmd}-Shift-A)"
+  no: "Forstørr skrift (%{cmd}-Shift-A)"
+  da: "Forstør skrifttype (%{cmd}-Shift-A)"
+  fi: "Suurenna fonttia (%{cmd}-Shift-A)"
+  cy: "Helaethu ffontiau (%{cmd}-Shift-A)"
+  ca: "Ampliar tipus de lletra (%{cmd}-Maj-A)"
+  ro: "Măriți fonturile (%{cmd}-Shift-A)"
+  hu: "Betűméret növelése (%{cmd}-Shift-A)"
+  sk: "Zväčšiť písmo (%{cmd}-Shift-A)"
+  hr: "Povećaj font (%{cmd}-Shift-A)"
+  sl: "Povečaj pisavo (%{cmd}-Shift-A)"
+  uk: "Збільшити шрифт (%{cmd}-Shift-A)"
+  bg: "Увеличаване на шрифта (%{cmd}-Shift-A)"
+  el: "Μεγέθυνση γραμματοσειράς (%{cmd}-Shift-A)"
+  af: "Vergroot lettertipe (%{cmd}-Shift-A)"
 
 toolbar.font_reset:
   en: "Reset font size to 100% (%{cmd}-0)"
@@ -162,6 +311,22 @@ toolbar.font_reset:
   zu: "Buyisela usayizi wombhalo ku-100% (%{cmd}-0)"
   st: "Busa boholo ba mongolo ho 100% (%{cmd}-0)"
   xh: "Buyisela usayizi wombhalo ku-100% (%{cmd}-0)"
+  nl: "Lettergrootte terugzetten naar 100% (%{cmd}-0)"
+  nb: "Tilbakestill skriftstørrelse til 100% (%{cmd}-0)"
+  no: "Tilbakestill skriftstørrelse til 100% (%{cmd}-0)"
+  da: "Nulstil skriftstørrelse til 100% (%{cmd}-0)"
+  fi: "Nollaa fonttikoko 100%:iin (%{cmd}-0)"
+  cy: "Ailosod maint ffont i 100% (%{cmd}-0)"
+  ca: "Restableix la mida de lletra al 100% (%{cmd}-0)"
+  ro: "Resetați dimensiunea fontului la 100% (%{cmd}-0)"
+  hu: "Betűméret visszaállítása 100%-ra (%{cmd}-0)"
+  sk: "Obnoviť veľkosť písma na 100 % (%{cmd}-0)"
+  hr: "Vrati veličinu fonta na 100% (%{cmd}-0)"
+  sl: "Ponastavi velikost pisave na 100% (%{cmd}-0)"
+  uk: "Скинути розмір шрифту до 100% (%{cmd}-0)"
+  bg: "Нулиране на размера на шрифта до 100% (%{cmd}-0)"
+  el: "Επαναφορά μεγέθους γραμματοσειράς στο 100% (%{cmd}-0)"
+  af: "Stel lettertipegrootte na 100% terug (%{cmd}-0)"
 
 toolbar.font_reduce:
   en: "Reduce fonts (%{cmd}-a)"
@@ -177,6 +342,22 @@ toolbar.font_reduce:
   zu: "Nciphisa uhlobo lombhalo (%{cmd}-a)"
   st: "Fokotsa mongolo (%{cmd}-a)"
   xh: "Nciphisa uhlobo lombhalo (%{cmd}-a)"
+  nl: "Lettertype verkleinen (%{cmd}-a)"
+  nb: "Forminsk skrift (%{cmd}-a)"
+  no: "Forminsk skrift (%{cmd}-a)"
+  da: "Formindsk skrifttype (%{cmd}-a)"
+  fi: "Pienennä fonttia (%{cmd}-a)"
+  cy: "Lleihau ffontiau (%{cmd}-a)"
+  ca: "Reduir tipus de lletra (%{cmd}-a)"
+  ro: "Micșorați fonturile (%{cmd}-a)"
+  hu: "Betűméret csökkentése (%{cmd}-a)"
+  sk: "Zmenšiť písmo (%{cmd}-a)"
+  hr: "Smanji font (%{cmd}-a)"
+  sl: "Zmanjšaj pisavo (%{cmd}-a)"
+  uk: "Зменшити шрифт (%{cmd}-a)"
+  bg: "Намаляване на шрифта (%{cmd}-a)"
+  el: "Σμίκρυνση γραμματοσειράς (%{cmd}-a)"
+  af: "Verklein lettertipe (%{cmd}-a)"
 
 toolbar.zoom_in:
   en: "Zoom in (%{cmd}-=)"
@@ -192,6 +373,22 @@ toolbar.zoom_in:
   zu: "Sondeza (%{cmd}-=)"
   st: "Holisa (%{cmd}-=)"
   xh: "Sondeza (%{cmd}-=)"
+  nl: "Inzoomen (%{cmd}-=)"
+  nb: "Zoom inn (%{cmd}-=)"
+  no: "Zoom inn (%{cmd}-=)"
+  da: "Zoom ind (%{cmd}-=)"
+  fi: "Lähennä (%{cmd}-=)"
+  cy: "Chwyddo i mewn (%{cmd}-=)"
+  ca: "Apropa (%{cmd}-=)"
+  ro: "Măriți (%{cmd}-=)"
+  hu: "Nagyítás (%{cmd}-=)"
+  sk: "Priblížiť (%{cmd}-=)"
+  hr: "Povećaj prikaz (%{cmd}-=)"
+  sl: "Povečaj (%{cmd}-=)"
+  uk: "Збільшити масштаб (%{cmd}-=)"
+  bg: "Увеличаване (%{cmd}-=)"
+  el: "Μεγέθυνση (%{cmd}-=)"
+  af: "Zoem in (%{cmd}-=)"
 
 toolbar.zoom_reset:
   en: "Reset zoom to 100% (%{cmd}-Z)"
@@ -207,6 +404,22 @@ toolbar.zoom_reset:
   zu: "Buyisela ukusondeza ku-100% (%{cmd}-Z)"
   st: "Busa holimo ho 100% (%{cmd}-Z)"
   xh: "Buyisela ukusondeza ku-100% (%{cmd}-Z)"
+  nl: "Zoom terugzetten naar 100% (%{cmd}-Z)"
+  nb: "Tilbakestill zoom til 100% (%{cmd}-Z)"
+  no: "Tilbakestill zoom til 100% (%{cmd}-Z)"
+  da: "Nulstil zoom til 100% (%{cmd}-Z)"
+  fi: "Nollaa zoom 100%:iin (%{cmd}-Z)"
+  cy: "Ailosod chwyddo i 100% (%{cmd}-Z)"
+  ca: "Restableix el zoom al 100% (%{cmd}-Z)"
+  ro: "Resetați zoom-ul la 100% (%{cmd}-Z)"
+  hu: "Zoom visszaállítása 100%-ra (%{cmd}-Z)"
+  sk: "Obnoviť priblíženie na 100 % (%{cmd}-Z)"
+  hr: "Vrati zoom na 100% (%{cmd}-Z)"
+  sl: "Ponastavi zoom na 100% (%{cmd}-Z)"
+  uk: "Скинути масштаб до 100% (%{cmd}-Z)"
+  bg: "Нулиране на мащаба до 100% (%{cmd}-Z)"
+  el: "Επαναφορά ζουμ στο 100% (%{cmd}-Z)"
+  af: "Stel zoom na 100% terug (%{cmd}-Z)"
 
 toolbar.zoom_out:
   en: "Zoom out (%{cmd}-−)"
@@ -222,6 +435,22 @@ toolbar.zoom_out:
   zu: "Nciphisa (%{cmd}-−)"
   st: "Fokotsa (%{cmd}-−)"
   xh: "Nciphisa (%{cmd}-−)"
+  nl: "Uitzoomen (%{cmd}-−)"
+  nb: "Zoom ut (%{cmd}-−)"
+  no: "Zoom ut (%{cmd}-−)"
+  da: "Zoom ud (%{cmd}-−)"
+  fi: "Loitonna (%{cmd}-−)"
+  cy: "Chwyddo allan (%{cmd}-−)"
+  ca: "Allunya (%{cmd}-−)"
+  ro: "Micșorați (%{cmd}-−)"
+  hu: "Kicsinyítés (%{cmd}-−)"
+  sk: "Oddialiť (%{cmd}-−)"
+  hr: "Smanji prikaz (%{cmd}-−)"
+  sl: "Pomanjšaj (%{cmd}-−)"
+  uk: "Зменшити масштаб (%{cmd}-−)"
+  bg: "Намаляване (%{cmd}-−)"
+  el: "Σμίκρυνση (%{cmd}-−)"
+  af: "Zoem uit (%{cmd}-−)"
 
 toolbar.theme_system:
   en: "Follow system theme"
@@ -237,6 +466,22 @@ toolbar.theme_system:
   zu: "Landela ithemu yesistimu"
   st: "Latela mokgwa wa sisteme"
   xh: "Landela ithiyam yesistimu"
+  nl: "Systeemthema volgen"
+  nb: "Følg systemets tema"
+  no: "Følg systemets tema"
+  da: "Følg systemtema"
+  fi: "Seuraa järjestelmän teemaa"
+  cy: "Dilyn thema'r system"
+  ca: "Segueix el tema del sistema"
+  ro: "Urmați tema sistemului"
+  hu: "Rendszertéma követése"
+  sk: "Sledovať systémový motív"
+  hr: "Prati temu sustava"
+  sl: "Sledi sistemski temi"
+  uk: "Слідувати системній темі"
+  bg: "Следване на системната тема"
+  el: "Ακολουθήστε θέμα συστήματος"
+  af: "Volg stelseltema"
 
 toolbar.theme_dark:
   en: "Switch to dark mode"
@@ -252,6 +497,22 @@ toolbar.theme_dark:
   zu: "Shintsha ku-mode emnyama"
   st: "Fetola ho mokgwa o lefifi"
   xh: "Tshintsha kumowudi emnyama"
+  nl: "Overschakelen naar donkere modus"
+  nb: "Bytt til mørk modus"
+  no: "Bytt til mørk modus"
+  da: "Skift til mørk tilstand"
+  fi: "Vaihda tummaan tilaan"
+  cy: "Newid i fodd tywyll"
+  ca: "Canvia al mode fosc"
+  ro: "Comutați la modul întunecat"
+  hu: "Váltás sötét módra"
+  sk: "Prepnúť na tmavý režim"
+  hr: "Prebaci na tamni način"
+  sl: "Preklopi na temni način"
+  uk: "Перейти на темну тему"
+  bg: "Превключване към тъмен режим"
+  el: "Εναλλαγή σε σκοτεινή λειτουργία"
+  af: "Skakel na donkermodus"
 
 toolbar.theme_light:
   en: "Switch to light mode"
@@ -267,6 +528,22 @@ toolbar.theme_light:
   zu: "Shintsha ku-mode ekhanyayo"
   st: "Fetola ho mokgwa o phatsimang"
   xh: "Tshintsha kumowudi ekhanyayo"
+  nl: "Overschakelen naar lichte modus"
+  nb: "Bytt til lys modus"
+  no: "Bytt til lys modus"
+  da: "Skift til lys tilstand"
+  fi: "Vaihda vaaleaan tilaan"
+  cy: "Newid i fodd golau"
+  ca: "Canvia al mode clar"
+  ro: "Comutați la modul luminos"
+  hu: "Váltás világos módra"
+  sk: "Prepnúť na svetlý režim"
+  hr: "Prebaci na svijetli način"
+  sl: "Preklopi na svetli način"
+  uk: "Перейти на світлу тему"
+  bg: "Превключване към светъл режим"
+  el: "Εναλλαγή σε φωτεινή λειτουργία"
+  af: "Skakel na ligmodus"
 
 status.reloaded:
   en: "↻ reloaded"
@@ -282,6 +559,22 @@ status.reloaded:
   zu: "↻ ilayishiwe kabusha"
   st: "↻ e tsotlehilwe bocha"
   xh: "↻ ilayishiwe kwakhona"
+  nl: "↻ opnieuw geladen"
+  nb: "↻ lastet inn på nytt"
+  no: "↻ lastet inn på nytt"
+  da: "↻ genindlæst"
+  fi: "↻ ladattu uudelleen"
+  cy: "↻ ail-lwythwyd"
+  ca: "↻ recarregat"
+  ro: "↻ reîncărcat"
+  hu: "↻ újratöltve"
+  sk: "↻ znovu načítané"
+  hr: "↻ ponovo učitano"
+  sl: "↻ znova naloženo"
+  uk: "↻ перезавантажено"
+  bg: "↻ презаредено"
+  el: "↻ επαναφορτώθηκε"
+  af: "↻ herlaai"
 
 status.reloaded_tip:
   en: "File changed on disk — reloaded automatically"
@@ -297,6 +590,22 @@ status.reloaded_tip:
   zu: "Ifayili ishintshiwe kudiski — ilayishiwe kabusha ngokuzenzakalelayo"
   st: "Faele e fetohile desteng — e tsotlehilwe bocha ka ho iphepa"
   xh: "Ifayile itshintshiwe kudisk — ilayishiwe kwakhona ngokuzenzakalelayo"
+  nl: "Bestand gewijzigd op schijf — automatisch opnieuw geladen"
+  nb: "Filen ble endret på disk — lastet inn på nytt automatisk"
+  no: "Filen ble endret på disk — lastet inn på nytt automatisk"
+  da: "Filen er ændret på disken — genindlæst automatisk"
+  fi: "Tiedosto muuttui levyllä — ladattu uudelleen automaattisesti"
+  cy: "Newidiwyd y ffeil ar y ddisg — ail-lwythwyd yn awtomatig"
+  ca: "El fitxer ha canviat al disc — recarregat automàticament"
+  ro: "Fișierul s-a modificat pe disc — reîncărcat automat"
+  hu: "A fájl megváltozott a lemezen — automatikusan újratöltve"
+  sk: "Súbor sa zmenil na disku — automaticky znovu načítaný"
+  hr: "Datoteka promijenjena na disku — automatski ponovo učitana"
+  sl: "Datoteka spremenjena na disku — samodejno znova naložena"
+  uk: "Файл змінено на диску — перезавантажено автоматично"
+  bg: "Файлът е променен на диска — презареден автоматично"
+  el: "Το αρχείο άλλαξε στον δίσκο — επαναφορτώθηκε αυτόματα"
+  af: "Lêer op skyf verander — outomaties herlaai"
 
 status.large_file_tip:
   en: "Large file — initial render is slow. Scroll responsiveness improves once the document is fully laid out."
@@ -312,6 +621,22 @@ status.large_file_tip:
   zu: "Ifayili enkulu — ukusebenza kokuqala kuyahamba kancane. Ukusabela kokuskrola kuyathuthuka uma idokhumenti ilayishwe ngokugcwele."
   st: "Faele e kgolo — ho bontša ha mathomo ho pata. Ho araba ha ho potoloha ho ntlafala ha tokomane e tsotlehilwe ka botlalo."
   xh: "Ifayile enkulu — ukulayisha kokuqala kuyachitha. Ukusabela kokuskrola kuyathuthuka xa idokhumenti ilayishiwe ngokupheleleyo."
+  nl: "Groot bestand — het eerste renderen is traag. De scrollresponsiviteit verbetert zodra het document volledig is opgemaakt."
+  nb: "Stor fil — første gjengivelse er treg. Rulleresponsen forbedres når dokumentet er fullt lagt ut."
+  no: "Stor fil — første gjengivelse er treg. Rulleresponsen forbedres når dokumentet er fullt lagt ut."
+  da: "Stor fil — den første gengivelse er langsom. Scrollresponstiden forbedres, når dokumentet er fuldt lagt ud."
+  fi: "Suuri tiedosto — ensimmäinen renderöinti on hidas. Vierityksen vasteaika paranee, kun asiakirja on kokonaan ladattu."
+  cy: "Ffeil fawr — mae'r rendrad cyntaf yn araf. Mae ymatebedd sgrolio yn gwella unwaith y bydd y ddogfen wedi'i gosod yn llawn."
+  ca: "Fitxer gran — la representació inicial és lenta. La resposta al desplaçament millora un cop el document ha estat completament composat."
+  ro: "Fișier mare — redarea inițială este lentă. Capacitatea de reacție la derulare se îmbunătățește odată ce documentul este complet afișat."
+  hu: "Nagy fájl — a kezdeti megjelenítés lassú. A görgetési válaszidő javul, miután a dokumentum teljesen be van töltve."
+  sk: "Veľký súbor — prvé vykreslenie je pomalé. Odozva posúvania sa zlepší po úplnom rozložení dokumentu."
+  hr: "Velika datoteka — prvo prikazivanje je sporo. Odziv pomicanja poboljšava se kada je dokument u potpunosti prikazan."
+  sl: "Velika datoteka — začetno upodabljanje je počasno. Odzivnost pomikanja se izboljša, ko je dokument v celoti prikazan."
+  uk: "Великий файл — початковий рендеринг повільний. Чутливість прокрутки покращується після повного завантаження документа."
+  bg: "Голям файл — първоначалното изобразяване е бавно. Реактивността на превъртането се подобрява след пълното зареждане на документа."
+  el: "Μεγάλο αρχείο — η αρχική απόδοση είναι αργή. Η ανταπόκριση κύλισης βελτιώνεται μόλις φορτωθεί πλήρως το έγγραφο."
+  af: "Groot lêer — aanvanklike weergawe is stadig. Blaairesponsiwiteit verbeter sodra die dokument volledig uitgelê is."
 
 search.placeholder:
   en: "Find in document…"
@@ -327,6 +652,115 @@ search.placeholder:
   zu: "Sesha edokhumeni…"
   st: "Batla tokomaning…"
   xh: "Khangela kwidokhumenti…"
+  nl: "Zoeken in document…"
+  nb: "Finn i dokument…"
+  no: "Finn i dokument…"
+  da: "Find i dokument…"
+  fi: "Etsi asiakirjasta…"
+  cy: "Dod o hyd yn y ddogfen…"
+  ca: "Cerca al document…"
+  ro: "Găsiți în document…"
+  hu: "Keresés a dokumentumban…"
+  sk: "Hľadať v dokumente…"
+  hr: "Pronađi u dokumentu…"
+  sl: "Iskanje v dokumentu…"
+  uk: "Знайти в документі…"
+  bg: "Намиране в документа…"
+  el: "Εύρεση στο έγγραφο…"
+  af: "Soek in dokument…"
+
+search.case_sensitive_tip:
+  en: "Case sensitive search"
+  de: "Suche mit Groß-/Kleinschreibung"
+  fr: "Recherche sensible à la casse"
+  es: "Búsqueda con distinción de mayúsculas"
+  pt: "Pesquisa sensível a maiúsculas"
+  sv: "Skiftlägeskänslig sökning"
+  it: "Ricerca con distinzione tra maiuscole e minuscole"
+  pl: "Wyszukiwanie z rozróżnianiem wielkości liter"
+  cs: "Vyhledávání s rozlišením velikosti písmen"
+  ru: "Поиск с учётом регистра"
+  zu: "Ukusesha okubheka izinhlamvu ezikhulu nezincane"
+  st: "Ho batla ka ho hlokomelisa boholo ba mangolo"
+  xh: "Ukukhangela ngokucaphukisa amagama"
+  nl: "Hoofdlettergevoelig zoeken"
+  nb: "Søk med store/små bokstaver"
+  no: "Søk med store/små bokstaver"
+  da: "Søgning med skelnen mellem store/små bogstaver"
+  fi: "Kirjainkokoa erotteleva haku"
+  cy: "Chwilio sensitif i achos"
+  ca: "Cerca sensible a majúscules"
+  ro: "Căutare cu distincție de majuscule"
+  hu: "Kis- és nagybetű-érzékeny keresés"
+  sk: "Vyhľadávanie s rozlišovaním veľkosti písmen"
+  hr: "Pretraga s razlikovanjem velikih i malih slova"
+  sl: "Iskanje z razlikovanjem velikih in malih črk"
+  uk: "Пошук з урахуванням регістру"
+  bg: "Търсене с разграничаване на регистъра"
+  el: "Αναζήτηση με διάκριση πεζών-κεφαλαίων"
+  af: "Kassensitiewe soektog"
+
+search.whole_word_tip:
+  en: "Match whole words"
+  de: "Ganze Wörter abgleichen"
+  fr: "Correspondre aux mots entiers"
+  es: "Buscar palabras completas"
+  pt: "Corresponder palavras inteiras"
+  sv: "Matcha hela ord"
+  it: "Corrispondenza parole intere"
+  pl: "Dopasowuj całe słowa"
+  cs: "Hledat celá slova"
+  ru: "Искать целые слова"
+  zu: "Fanelana namagama aphelele"
+  st: "Tšoantša mantsoe a phethehileng"
+  xh: "Fanela namagama aphelelileyo"
+  nl: "Hele woorden zoeken"
+  nb: "Samsvar med hele ord"
+  no: "Samsvar med hele ord"
+  da: "Match hele ord"
+  fi: "Täsmää kokonaisiin sanoihin"
+  cy: "Cydweddu geiriau cyfan"
+  ca: "Coincidència de paraules completes"
+  ro: "Potriviți cuvinte întregi"
+  hu: "Teljes szavak egyeztetése"
+  sk: "Zhoda celých slov"
+  hr: "Podudaranje cijelih riječi"
+  sl: "Ujemanje celih besed"
+  uk: "Шукати цілі слова"
+  bg: "Съответствие на цели думи"
+  el: "Αντιστοίχιση ολόκληρων λέξεων"
+  af: "Pas volledige woorde"
+
+search.regex_tip:
+  en: "Use regular expressions"
+  de: "Reguläre Ausdrücke verwenden"
+  fr: "Utiliser les expressions régulières"
+  es: "Usar expresiones regulares"
+  pt: "Usar expressões regulares"
+  sv: "Använd reguljära uttryck"
+  it: "Usa espressioni regolari"
+  pl: "Użyj wyrażeń regularnych"
+  cs: "Použít regulární výrazy"
+  ru: "Использовать регулярные выражения"
+  zu: "Sebenzisa izisetshenziswa ezijwayelekile"
+  st: "Sebedisa melao ea maemo"
+  xh: "Sebenzisa izivakalisi ezihlukeneyo"
+  nl: "Reguliere expressies gebruiken"
+  nb: "Bruk regulære uttrykk"
+  no: "Bruk regulære uttrykk"
+  da: "Brug regulære udtryk"
+  fi: "Käytä säännöllisiä lausekkeita"
+  cy: "Defnyddio mynegiadau rheolaidd"
+  ca: "Usa expressions regulars"
+  ro: "Utilizați expresii regulate"
+  hu: "Reguláris kifejezések használata"
+  sk: "Použiť regulárne výrazy"
+  hr: "Koristi regularne izraze"
+  sl: "Uporabi regularne izraze"
+  uk: "Використовувати регулярні вирази"
+  bg: "Използване на регулярни изрази"
+  el: "Χρήση κανονικών εκφράσεων"
+  af: "Gebruik regulêre uitdrukkings"
 
 search.no_matches:
   en: "No matches"
@@ -342,6 +776,22 @@ search.no_matches:
   zu: "Awekho amafanelo"
   st: "Ha ho litšoantšo"
   xh: "Akukho zifanelana"
+  nl: "Geen resultaten"
+  nb: "Ingen treff"
+  no: "Ingen treff"
+  da: "Ingen resultater"
+  fi: "Ei tuloksia"
+  cy: "Dim cyfatebiaethau"
+  ca: "Cap coincidència"
+  ro: "Nicio potrivire"
+  hu: "Nincs találat"
+  sk: "Žiadne zhody"
+  hr: "Nema rezultata"
+  sl: "Ni zadetkov"
+  uk: "Немає збігів"
+  bg: "Няма съвпадения"
+  el: "Δεν βρέθηκαν αποτελέσματα"
+  af: "Geen resultate"
 
 search.match_counter:
   en: "%{current} / %{total}"
@@ -357,6 +807,22 @@ search.match_counter:
   zu: "%{current} / %{total}"
   st: "%{current} / %{total}"
   xh: "%{current} / %{total}"
+  nl: "%{current} / %{total}"
+  nb: "%{current} / %{total}"
+  no: "%{current} / %{total}"
+  da: "%{current} / %{total}"
+  fi: "%{current} / %{total}"
+  cy: "%{current} / %{total}"
+  ca: "%{current} / %{total}"
+  ro: "%{current} / %{total}"
+  hu: "%{current} / %{total}"
+  sk: "%{current} / %{total}"
+  hr: "%{current} / %{total}"
+  sl: "%{current} / %{total}"
+  uk: "%{current} / %{total}"
+  bg: "%{current} / %{total}"
+  el: "%{current} / %{total}"
+  af: "%{current} / %{total}"
 
 search.prev_tip:
   en: "Previous match (Shift-Enter)"
@@ -372,6 +838,22 @@ search.prev_tip:
   zu: "Ukufanelana kwangaphambilini (Shift-Enter)"
   st: "Tšoantšo e fetileng (Shift-Enter)"
   xh: "Ukufanelana okwangaphambili (Shift-Enter)"
+  nl: "Vorige overeenkomst (Shift-Enter)"
+  nb: "Forrige treff (Shift-Enter)"
+  no: "Forrige treff (Shift-Enter)"
+  da: "Forrige match (Shift-Enter)"
+  fi: "Edellinen osuma (Shift-Enter)"
+  cy: "Cyfatebiaeth flaenorol (Shift-Enter)"
+  ca: "Coincidència anterior (Maj-Intro)"
+  ro: "Potrivire anterioară (Shift-Enter)"
+  hu: "Előző egyezés (Shift-Enter)"
+  sk: "Predchádzajúca zhoda (Shift-Enter)"
+  hr: "Prethodni rezultat (Shift-Enter)"
+  sl: "Prejšnji zadetek (Shift-Enter)"
+  uk: "Попередній збіг (Shift-Enter)"
+  bg: "Предишно съвпадение (Shift-Enter)"
+  el: "Προηγούμενη αντιστοιχία (Shift-Enter)"
+  af: "Vorige treffer (Shift-Enter)"
 
 search.next_tip:
   en: "Next match (Enter)"
@@ -387,6 +869,22 @@ search.next_tip:
   zu: "Ukufanelana okulandelayo (Enter)"
   st: "Tšoantšo e latelang (Enter)"
   xh: "Ukufanelana okulandelayo (Enter)"
+  nl: "Volgende overeenkomst (Enter)"
+  nb: "Neste treff (Enter)"
+  no: "Neste treff (Enter)"
+  da: "Næste match (Enter)"
+  fi: "Seuraava osuma (Enter)"
+  cy: "Cyfatebiaeth nesaf (Enter)"
+  ca: "Coincidència següent (Intro)"
+  ro: "Potrivire următoare (Enter)"
+  hu: "Következő egyezés (Enter)"
+  sk: "Nasledujúca zhoda (Enter)"
+  hr: "Sljedeći rezultat (Enter)"
+  sl: "Naslednji zadetek (Enter)"
+  uk: "Наступний збіг (Enter)"
+  bg: "Следващо съвпадение (Enter)"
+  el: "Επόμενη αντιστοιχία (Enter)"
+  af: "Volgende treffer (Enter)"
 
 search.close_tip:
   en: "Close search (Esc)"
@@ -402,6 +900,22 @@ search.close_tip:
   zu: "Vala ukusesha (Esc)"
   st: "Koala ho batla (Esc)"
   xh: "Vala ukukhangela (Esc)"
+  nl: "Zoeken sluiten (Esc)"
+  nb: "Lukk søk (Esc)"
+  no: "Lukk søk (Esc)"
+  da: "Luk søgning (Esc)"
+  fi: "Sulje haku (Esc)"
+  cy: "Cau chwilio (Esc)"
+  ca: "Tanca la cerca (Esc)"
+  ro: "Închideți căutarea (Esc)"
+  hu: "Keresés bezárása (Esc)"
+  sk: "Zatvoriť vyhľadávanie (Esc)"
+  hr: "Zatvori pretragu (Esc)"
+  sl: "Zapri iskanje (Esc)"
+  uk: "Закрити пошук (Esc)"
+  bg: "Затваряне на търсенето (Esc)"
+  el: "Κλείσιμο αναζήτησης (Esc)"
+  af: "Sluit soektog (Esc)"
 
 toc.title:
   en: "Contents"
@@ -417,6 +931,22 @@ toc.title:
   zu: "Okuqukethwe"
   st: "Litlhophelo"
   xh: "Okuqukethiweyo"
+  nl: "Inhoud"
+  nb: "Innhold"
+  no: "Innhold"
+  da: "Indhold"
+  fi: "Sisällys"
+  cy: "Cynnwys"
+  ca: "Contingut"
+  ro: "Cuprins"
+  hu: "Tartalom"
+  sk: "Obsah"
+  hr: "Sadržaj"
+  sl: "Vsebina"
+  uk: "Зміст"
+  bg: "Съдържание"
+  el: "Περιεχόμενα"
+  af: "Inhoud"
 
 help.window_title:
   en: "Help"
@@ -432,6 +962,22 @@ help.window_title:
   zu: "Usizo"
   st: "Thuso"
   xh: "Uncedo"
+  nl: "Help"
+  nb: "Hjelp"
+  no: "Hjelp"
+  da: "Hjælp"
+  fi: "Ohje"
+  cy: "Cymorth"
+  ca: "Ajuda"
+  ro: "Ajutor"
+  hu: "Súgó"
+  sk: "Pomocník"
+  hr: "Pomoć"
+  sl: "Pomoč"
+  uk: "Довідка"
+  bg: "Помощ"
+  el: "Βοήθεια"
+  af: "Hulp"
 
 help.text:
   en: |
@@ -1188,3 +1734,931 @@ help.text:
     | Isitshixo | Isenzo |
     |---|---|
     | F1 | Bonisa/Fihla lesi sikrini soncedo |
+  nl: |
+    # Markdown-viewer — Help
+
+    ## Sneltoetsen
+
+    ### Bestand
+    | Toets | Actie |
+    |---|---|
+    | Cmd/Ctrl-o | Een Markdown-bestand openen |
+    | Cmd/Ctrl-r | Vernieuwen — het huidige bestand opnieuw laden van schijf |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Afsluiten |
+
+    De viewer bewaakt het huidige bestand op wijzigingen en laadt het automatisch opnieuw.
+    Gebruik `--no-detach` of `--foreground` op de opdrachtregel om het verbonden te houden met de terminal (alleen Unix).
+
+    ### Navigatie
+    | Toets | Actie |
+    |---|---|
+    | Knoppen ◀ / ▶ | Terug / Vooruit in geschiedenis |
+    | Cmd/Ctrl-t | Inhoudsopgave-paneel in-/uitschakelen |
+
+    ### Zoeken
+    | Toets | Actie |
+    |---|---|
+    | Cmd/Ctrl-f | Zoekbalk openen / sluiten |
+    | Enter  of  knop ⬇ | Volgende overeenkomst |
+    | Shift-Enter  of  knop ⬆ | Vorige overeenkomst |
+    | Escape | Zoekbalk sluiten |
+
+    > Zoeken navigeert naar het gedeelte dat elke overeenkomst bevat en markeert de gevonden tekst.
+    > De actieve overeenkomst wordt oranje weergegeven; andere geel.
+
+    ### Automatisch herladen
+    De viewer bewaakt het geopende bestand op wijzigingen op schijf en laadt het automatisch opnieuw.
+    Na elk automatisch herladen verschijnt kort een «↻ Opnieuw geladen»-melding in de werkbalk.
+
+    ### Zoom en Lettertype
+    | Toets | Actie |
+    |---|---|
+    | Cmd/Ctrl-= | Inzoomen |
+    | Cmd/Ctrl-− | Uitzoomen |
+    | Cmd/Ctrl-z | Zoom terugzetten naar 100% |
+    | Cmd/Ctrl-Shift-a | Lettertype vergroten |
+    | Cmd/Ctrl-a | Lettertype verkleinen |
+    | Cmd/Ctrl-0 | Lettergrootte terugzetten naar 100% |
+
+    ### Scrollen (wanneer geen tekstveld gefocust is)
+    | Toets | Actie |
+    |---|---|
+    | Pijl omhoog / omlaag | Één regel scrollen |
+    | Page Up / Page Down | Één viewport scrollen (Fn-Omhoog / Fn-Omlaag op Mac) |
+    | Home / Cmd-Omhoog | Naar het begin van het document (Fn-Links op Mac) |
+    | End / Cmd-Omlaag | Naar het einde van het document (Fn-Rechts op Mac) |
+
+    ### Help
+    | Toets | Actie |
+    |---|---|
+    | F1 | Dit helpscherm in-/uitschakelen |
+  nb: |
+    # Markdown-visning — Hjelp
+
+    ## Tastatursnarveier
+
+    ### Fil
+    | Tast | Handling |
+    |---|---|
+    | Cmd/Ctrl-o | Åpne en Markdown-fil |
+    | Cmd/Ctrl-r | Oppdater — last inn gjeldende fil fra disk på nytt |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Avslutt |
+
+    Visningen overvåker gjeldende fil for endringer og laster inn på nytt automatisk.
+    Bruk `--no-detach` eller `--foreground` på kommandolinjen for å holde den tilkoblet terminalen (kun Unix).
+
+    ### Navigasjon
+    | Tast | Handling |
+    |---|---|
+    | Knapper ◀ / ▶ | Tilbake / Fremover i historikk |
+    | Cmd/Ctrl-t | Vis/skjul innholdsfortegnelsespanel |
+
+    ### Søk
+    | Tast | Handling |
+    |---|---|
+    | Cmd/Ctrl-f | Åpne / lukk søkefeltet |
+    | Enter  eller  knapp ⬇ | Neste treff |
+    | Shift-Enter  eller  knapp ⬆ | Forrige treff |
+    | Escape | Lukk søkefeltet |
+
+    > Søk navigerer til avsnittet som inneholder hvert treff og uthever den funne teksten.
+    > Det aktive treffet vises i oransje; andre treff i gult.
+
+    ### Automatisk innlasting
+    Visningen overvåker den åpne filen for diskendringer og laster inn på nytt automatisk.
+    En kort «↻ Lastet inn på nytt»-melding vises i verktøylinjen etter hver automatisk innlasting.
+
+    ### Zoom og Skrift
+    | Tast | Handling |
+    |---|---|
+    | Cmd/Ctrl-= | Zoom inn |
+    | Cmd/Ctrl-− | Zoom ut |
+    | Cmd/Ctrl-z | Tilbakestill zoom til 100% |
+    | Cmd/Ctrl-Shift-a | Forstørr skrift |
+    | Cmd/Ctrl-a | Forminsk skrift |
+    | Cmd/Ctrl-0 | Tilbakestill skriftstørrelse til 100% |
+
+    ### Rulling (når intet tekstfelt er fokusert)
+    | Tast | Handling |
+    |---|---|
+    | Pil opp / ned | Rull én linje |
+    | Page Up / Page Down | Rull ett visningsvindu (Fn-Opp / Fn-Ned på Mac) |
+    | Home / Cmd-Opp | Hopp til toppen av dokumentet (Fn-Venstre på Mac) |
+    | End / Cmd-Ned | Hopp til bunnen av dokumentet (Fn-Høyre på Mac) |
+
+    ### Hjelp
+    | Tast | Handling |
+    |---|---|
+    | F1 | Vis/skjul denne hjelpeskjermen |
+  no: |
+    # Markdown-visning — Hjelp
+
+    ## Tastatursnarveier
+
+    ### Fil
+    | Tast | Handling |
+    |---|---|
+    | Cmd/Ctrl-o | Åpne en Markdown-fil |
+    | Cmd/Ctrl-r | Oppdater — last inn gjeldende fil fra disk på nytt |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Avslutt |
+
+    Visningen overvåker gjeldende fil for endringer og laster inn på nytt automatisk.
+    Bruk `--no-detach` eller `--foreground` på kommandolinjen for å holde den tilkoblet terminalen (kun Unix).
+
+    ### Navigasjon
+    | Tast | Handling |
+    |---|---|
+    | Knapper ◀ / ▶ | Tilbake / Fremover i historikk |
+    | Cmd/Ctrl-t | Vis/skjul innholdsfortegnelsespanel |
+
+    ### Søk
+    | Tast | Handling |
+    |---|---|
+    | Cmd/Ctrl-f | Åpne / lukk søkefeltet |
+    | Enter  eller  knapp ⬇ | Neste treff |
+    | Shift-Enter  eller  knapp ⬆ | Forrige treff |
+    | Escape | Lukk søkefeltet |
+
+    > Søk navigerer til avsnittet som inneholder hvert treff og uthever den funne teksten.
+    > Det aktive treffet vises i oransje; andre treff i gult.
+
+    ### Automatisk innlasting
+    Visningen overvåker den åpne filen for diskendringer og laster inn på nytt automatisk.
+    En kort «↻ Lastet inn på nytt»-melding vises i verktøylinjen etter hver automatisk innlasting.
+
+    ### Zoom og Skrift
+    | Tast | Handling |
+    |---|---|
+    | Cmd/Ctrl-= | Zoom inn |
+    | Cmd/Ctrl-− | Zoom ut |
+    | Cmd/Ctrl-z | Tilbakestill zoom til 100% |
+    | Cmd/Ctrl-Shift-a | Forstørr skrift |
+    | Cmd/Ctrl-a | Forminsk skrift |
+    | Cmd/Ctrl-0 | Tilbakestill skriftstørrelse til 100% |
+
+    ### Rulling (når intet tekstfelt er fokusert)
+    | Tast | Handling |
+    |---|---|
+    | Pil opp / ned | Rull én linje |
+    | Page Up / Page Down | Rull ett visningsvindu (Fn-Opp / Fn-Ned på Mac) |
+    | Home / Cmd-Opp | Hopp til toppen av dokumentet (Fn-Venstre på Mac) |
+    | End / Cmd-Ned | Hopp til bunnen av dokumentet (Fn-Høyre på Mac) |
+
+    ### Hjelp
+    | Tast | Handling |
+    |---|---|
+    | F1 | Vis/skjul denne hjelpeskjermen |
+  da: |
+    # Markdown-fremviser — Hjælp
+
+    ## Tastaturgenveje
+
+    ### Fil
+    | Tast | Handling |
+    |---|---|
+    | Cmd/Ctrl-o | Åbn en Markdown-fil |
+    | Cmd/Ctrl-r | Opdater — genindlæs den aktuelle fil fra disken |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Afslut |
+
+    Fremviseren overvåger den aktuelle fil for ændringer og genindlæser automatisk.
+    Brug `--no-detach` eller `--foreground` på kommandolinjen for at holde den tilsluttet terminalen (kun Unix).
+
+    ### Navigation
+    | Tast | Handling |
+    |---|---|
+    | Knapper ◀ / ▶ | Tilbage / Frem i historik |
+    | Cmd/Ctrl-t | Vis/skjul indholdsfortegnelsespanel |
+
+    ### Søgning
+    | Tast | Handling |
+    |---|---|
+    | Cmd/Ctrl-f | Åbn / luk søgefeltet |
+    | Enter  eller  knap ⬇ | Næste match |
+    | Shift-Enter  eller  knap ⬆ | Forrige match |
+    | Escape | Luk søgefeltet |
+
+    > Søgning navigerer til afsnittet med hvert match og fremhæver den fundne tekst.
+    > Det aktive match vises i orange; andre i gult.
+
+    ### Automatisk genindlæsning
+    Fremviseren overvåger den åbne fil for diskændringer og genindlæser automatisk.
+    En kort «↻ Genindlæst»-meddelelse vises i værktøjslinjen efter hver automatisk genindlæsning.
+
+    ### Zoom og Skrifttype
+    | Tast | Handling |
+    |---|---|
+    | Cmd/Ctrl-= | Zoom ind |
+    | Cmd/Ctrl-− | Zoom ud |
+    | Cmd/Ctrl-z | Nulstil zoom til 100% |
+    | Cmd/Ctrl-Shift-a | Forstør skrifttype |
+    | Cmd/Ctrl-a | Formindsk skrifttype |
+    | Cmd/Ctrl-0 | Nulstil skriftstørrelse til 100% |
+
+    ### Rulning (når intet tekstfelt er fokuseret)
+    | Tast | Handling |
+    |---|---|
+    | Pil op / ned | Rul én linje |
+    | Page Up / Page Down | Rul ét visningsvindue (Fn-Op / Fn-Ned på Mac) |
+    | Home / Cmd-Op | Hop til toppen af dokumentet (Fn-Venstre på Mac) |
+    | End / Cmd-Ned | Hop til bunden af dokumentet (Fn-Højre på Mac) |
+
+    ### Hjælp
+    | Tast | Handling |
+    |---|---|
+    | F1 | Vis/skjul dette hjælpeskærmbillede |
+  fi: |
+    # Markdown-katselin — Ohje
+
+    ## Pikanäppäimet
+
+    ### Tiedosto
+    | Näppäin | Toiminto |
+    |---|---|
+    | Cmd/Ctrl-o | Avaa Markdown-tiedosto |
+    | Cmd/Ctrl-r | Päivitä — lataa nykyinen tiedosto uudelleen levyltä |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Lopeta |
+
+    Katselin tarkkailee nykyistä tiedostoa muutosten varalta ja lataa sen uudelleen automaattisesti.
+    Käytä `--no-detach` tai `--foreground` komentoriviltä pitääksesi sen yhteydessä terminaaliin (vain Unix).
+
+    ### Navigointi
+    | Näppäin | Toiminto |
+    |---|---|
+    | Painikkeet ◀ / ▶ | Takaisin / Eteenpäin historiassa |
+    | Cmd/Ctrl-t | Näytä/piilota sisällysluettelopaneeli |
+
+    ### Haku
+    | Näppäin | Toiminto |
+    |---|---|
+    | Cmd/Ctrl-f | Avaa / sulje hakupalkki |
+    | Enter  tai  painike ⬇ | Seuraava osuma |
+    | Shift-Enter  tai  painike ⬆ | Edellinen osuma |
+    | Escape | Sulje hakupalkki |
+
+    > Haku navigoi osioon, joka sisältää kunkin osuman ja korostaa löydetyn tekstin.
+    > Aktiivinen osuma näytetään oranssina; muut keltaisina.
+
+    ### Automaattinen uudelleenlataus
+    Katselin tarkkailee avointa tiedostoa levymuutosten varalta ja lataa sen uudelleen automaattisesti.
+    Lyhyt «↻ Ladattu uudelleen» -ilmoitus näkyy työkalupalkissa jokaisen automaattisen uudelleenlatauksen jälkeen.
+
+    ### Zoom ja Fontti
+    | Näppäin | Toiminto |
+    |---|---|
+    | Cmd/Ctrl-= | Lähennä |
+    | Cmd/Ctrl-− | Loitonna |
+    | Cmd/Ctrl-z | Nollaa zoom 100%:iin |
+    | Cmd/Ctrl-Shift-a | Suurenna fonttia |
+    | Cmd/Ctrl-a | Pienennä fonttia |
+    | Cmd/Ctrl-0 | Nollaa fonttikoko 100%:iin |
+
+    ### Vieritys (kun yksikään tekstikenttä ei ole aktiivinen)
+    | Näppäin | Toiminto |
+    |---|---|
+    | Nuoli ylös / alas | Vieritä yksi rivi |
+    | Page Up / Page Down | Vieritä yksi näkymä (Fn-Ylös / Fn-Alas Macilla) |
+    | Home / Cmd-Ylös | Hyppää asiakirjan alkuun (Fn-Vasen Macilla) |
+    | End / Cmd-Alas | Hyppää asiakirjan loppuun (Fn-Oikea Macilla) |
+
+    ### Ohje
+    | Näppäin | Toiminto |
+    |---|---|
+    | F1 | Näytä/piilota tämä ohjenäyttö |
+  cy: |
+    # Gwyliedydd Markdown — Cymorth
+
+    ## Bysellau Byrrach
+
+    ### Ffeil
+    | Bysell | Gweithred |
+    |---|---|
+    | Cmd/Ctrl-o | Agor ffeil Markdown |
+    | Cmd/Ctrl-r | Adnewyddu — ail-lwytho'r ffeil bresennol o'r ddisg |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Gadael |
+
+    Mae'r gwyliedydd yn gwylio'r ffeil bresennol am newidiadau ac yn ail-lwytho'n awtomatig.
+    Defnyddiwch `--no-detach` neu `--foreground` ar y llinell orchymyn i'w gadw wedi'i gysylltu â'r terminal (Unix yn unig).
+
+    ### Llywio
+    | Bysell | Gweithred |
+    |---|---|
+    | Botymau ◀ / ▶ | Yn ôl / Ymlaen yn y hanes |
+    | Cmd/Ctrl-t | Toglo panel tabl cynnwys |
+
+    ### Chwilio
+    | Bysell | Gweithred |
+    |---|---|
+    | Cmd/Ctrl-f | Agor / cau'r bar chwilio |
+    | Enter  neu  botwm ⬇ | Cyfatebiaeth nesaf |
+    | Shift-Enter  neu  botwm ⬆ | Cyfatebiaeth flaenorol |
+    | Escape | Cau'r bar chwilio |
+
+    > Mae chwilio'n llywio i'r adran sy'n cynnwys pob cyfatebiaeth ac yn amlygu'r testun a ganfuwyd.
+    > Dangosir y cyfatebiaeth weithredol mewn oren; eraill mewn melyn.
+
+    ### Ail-lwytho Awtomatig
+    Mae'r gwyliedydd yn gwylio'r ffeil agored am newidiadau ar y ddisg ac yn ail-lwytho'n awtomatig.
+    Ymddengys hysbysiad byr «↻ Ail-lwythwyd» yn y bar offer ar ôl pob ail-lwytho awtomatig.
+
+    ### Zoom a Ffont
+    | Bysell | Gweithred |
+    |---|---|
+    | Cmd/Ctrl-= | Chwyddo i mewn |
+    | Cmd/Ctrl-− | Chwyddo allan |
+    | Cmd/Ctrl-z | Ailosod zoom i 100% |
+    | Cmd/Ctrl-Shift-a | Helaethu ffont |
+    | Cmd/Ctrl-a | Lleihau ffont |
+    | Cmd/Ctrl-0 | Ailosod maint ffont i 100% |
+
+    ### Sgrolio (pan nad oes maes testun wedi'i ffocysu)
+    | Bysell | Gweithred |
+    |---|---|
+    | Saeth i fyny / lawr | Sgrolio un llinell |
+    | Page Up / Page Down | Sgrolio un porth gweld (Fn-Lan / Fn-Lawr ar Mac) |
+    | Home / Cmd-Lan | Neidio i dop y ddogfen (Fn-Chwith ar Mac) |
+    | End / Cmd-Lawr | Neidio i waelod y ddogfen (Fn-De ar Mac) |
+
+    ### Cymorth
+    | Bysell | Gweithred |
+    |---|---|
+    | F1 | Toglo'r sgrin cymorth hon |
+  ca: |
+    # Visualitzador Markdown — Ajuda
+
+    ## Dreceres de Teclat
+
+    ### Fitxer
+    | Tecla | Acció |
+    |---|---|
+    | Cmd/Ctrl-o | Obre un fitxer Markdown |
+    | Cmd/Ctrl-r | Actualitza — torna a carregar el fitxer actual des del disc |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Surt |
+
+    El visualitzador vigila el fitxer actual per detectar canvis i el torna a carregar automàticament.
+    Usa `--no-detach` o `--foreground` a la línia d'ordres per mantenir-lo connectat al terminal (només Unix).
+
+    ### Navegació
+    | Tecla | Acció |
+    |---|---|
+    | Botons ◀ / ▶ | Enrere / Endavant en l'historial |
+    | Cmd/Ctrl-t | Mostra/amaga el tauler de la taula de continguts |
+
+    ### Cerca
+    | Tecla | Acció |
+    |---|---|
+    | Cmd/Ctrl-f | Obre / tanca la barra de cerca |
+    | Intro  o  botó ⬇ | Coincidència següent |
+    | Maj-Intro  o  botó ⬆ | Coincidència anterior |
+    | Escape | Tanca la barra de cerca |
+
+    > La cerca navega a la secció que conté cada coincidència i ressalta el text trobat.
+    > La coincidència activa es mostra en taronja; les altres en groc.
+
+    ### Recàrrega automàtica
+    El visualitzador vigila el fitxer obert per detectar canvis al disc i el torna a carregar automàticament.
+    Apareix un breu avís «↻ Recarregat» a la barra d'eines després de cada recàrrega automàtica.
+
+    ### Zoom i Tipus de lletra
+    | Tecla | Acció |
+    |---|---|
+    | Cmd/Ctrl-= | Apropa |
+    | Cmd/Ctrl-− | Allunya |
+    | Cmd/Ctrl-z | Restableix el zoom al 100% |
+    | Cmd/Ctrl-Maj-a | Ampliar tipus de lletra |
+    | Cmd/Ctrl-a | Reduir tipus de lletra |
+    | Cmd/Ctrl-0 | Restableix la mida de lletra al 100% |
+
+    ### Desplaçament (quan cap camp de text està enfocat)
+    | Tecla | Acció |
+    |---|---|
+    | Fletxa amunt / avall | Desplaça una línia |
+    | Re Pàg / Av Pàg | Desplaça un viewport (Fn-Amunt / Fn-Avall al Mac) |
+    | Inici / Cmd-Amunt | Salta al principi del document (Fn-Esquerra al Mac) |
+    | Final / Cmd-Avall | Salta al final del document (Fn-Dreta al Mac) |
+
+    ### Ajuda
+    | Tecla | Acció |
+    |---|---|
+    | F1 | Mostra/amaga aquesta pantalla d'ajuda |
+  ro: |
+    # Vizualizator Markdown — Ajutor
+
+    ## Comenzi Rapide de la Tastatură
+
+    ### Fișier
+    | Tastă | Acțiune |
+    |---|---|
+    | Cmd/Ctrl-o | Deschideți un fișier Markdown |
+    | Cmd/Ctrl-r | Reîmprospătați — reîncărcați fișierul curent de pe disc |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Ieșiți |
+
+    Vizualizatorul urmărește fișierul curent pentru modificări și se reîncarcă automat.
+    Utilizați `--no-detach` sau `--foreground` pe linia de comandă pentru a-l menține conectat la terminal (numai Unix).
+
+    ### Navigare
+    | Tastă | Acțiune |
+    |---|---|
+    | Butoane ◀ / ▶ | Înapoi / Înainte în istoric |
+    | Cmd/Ctrl-t | Comutați panoul cuprinsului |
+
+    ### Căutare
+    | Tastă | Acțiune |
+    |---|---|
+    | Cmd/Ctrl-f | Deschideți / închideți bara de căutare |
+    | Enter  sau  buton ⬇ | Potrivire următoare |
+    | Shift-Enter  sau  buton ⬆ | Potrivire anterioară |
+    | Escape | Închideți bara de căutare |
+
+    > Căutarea navighează la secțiunea care conține fiecare potrivire și evidențiază textul găsit.
+    > Potrivirea activă este afișată în portocaliu; celelalte în galben.
+
+    ### Reîncărcare automată
+    Vizualizatorul urmărește fișierul deschis pentru modificări pe disc și îl reîncarcă automat.
+    Un scurt aviz «↻ Reîncărcat» apare în bara de instrumente după fiecare reîncărcare automată.
+
+    ### Zoom și Font
+    | Tastă | Acțiune |
+    |---|---|
+    | Cmd/Ctrl-= | Măriți |
+    | Cmd/Ctrl-− | Micșorați |
+    | Cmd/Ctrl-z | Resetați zoom-ul la 100% |
+    | Cmd/Ctrl-Shift-a | Măriți fontul |
+    | Cmd/Ctrl-a | Micșorați fontul |
+    | Cmd/Ctrl-0 | Resetați dimensiunea fontului la 100% |
+
+    ### Derulare (când niciun câmp de text nu este focalizat)
+    | Tastă | Acțiune |
+    |---|---|
+    | Săgeată sus / jos | Derulați o linie |
+    | Page Up / Page Down | Derulați un viewport (Fn-Sus / Fn-Jos pe Mac) |
+    | Home / Cmd-Sus | Salt la începutul documentului (Fn-Stânga pe Mac) |
+    | End / Cmd-Jos | Salt la sfârșitul documentului (Fn-Dreapta pe Mac) |
+
+    ### Ajutor
+    | Tastă | Acțiune |
+    |---|---|
+    | F1 | Comutați acest ecran de ajutor |
+  hu: |
+    # Markdown-nézegető — Súgó
+
+    ## Billentyűparancsok
+
+    ### Fájl
+    | Billentyű | Művelet |
+    |---|---|
+    | Cmd/Ctrl-o | Markdown-fájl megnyitása |
+    | Cmd/Ctrl-r | Frissítés — jelenlegi fájl újratöltése lemezről |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Kilépés |
+
+    A nézegető figyeli az aktuális fájlt változások szempontjából, és automatikusan újratölti.
+    Használja a `--no-detach` vagy `--foreground` kapcsolót a parancssorban, hogy terminálon csatlakozva maradjon (csak Unix).
+
+    ### Navigáció
+    | Billentyű | Művelet |
+    |---|---|
+    | ◀ / ▶ gombok | Vissza / Előre az előzményekben |
+    | Cmd/Ctrl-t | Tartalomjegyzék-panel be-/kikapcsolása |
+
+    ### Keresés
+    | Billentyű | Művelet |
+    |---|---|
+    | Cmd/Ctrl-f | Keresősáv megnyitása / bezárása |
+    | Enter  vagy  ⬇ gomb | Következő egyezés |
+    | Shift-Enter  vagy  ⬆ gomb | Előző egyezés |
+    | Escape | Keresősáv bezárása |
+
+    > A keresés az egyes egyezéseket tartalmazó szakaszhoz navigál és kiemeli az egyező szöveget.
+    > Az aktív egyezés narancsszínnel jelenik meg; a többi sárgával.
+
+    ### Automatikus újratöltés
+    A nézegető figyeli a nyitott fájlt lemezváltozások szempontjából, és automatikusan újratölti.
+    Minden automatikus újratöltés után egy rövid «↻ Újratöltve» értesítés jelenik meg az eszköztárban.
+
+    ### Zoom és Betűtípus
+    | Billentyű | Művelet |
+    |---|---|
+    | Cmd/Ctrl-= | Nagyítás |
+    | Cmd/Ctrl-− | Kicsinyítés |
+    | Cmd/Ctrl-z | Zoom visszaállítása 100%-ra |
+    | Cmd/Ctrl-Shift-a | Betűméret növelése |
+    | Cmd/Ctrl-a | Betűméret csökkentése |
+    | Cmd/Ctrl-0 | Betűméret visszaállítása 100%-ra |
+
+    ### Görgetés (ha nincs szövegmező fókuszban)
+    | Billentyű | Művelet |
+    |---|---|
+    | Fel / Le nyíl | Egy sor görgetése |
+    | Page Up / Page Down | Egy nézet görgetése (Fn-Fel / Fn-Le Mac-en) |
+    | Home / Cmd-Fel | Ugrás a dokumentum elejére (Fn-Bal Mac-en) |
+    | End / Cmd-Le | Ugrás a dokumentum végére (Fn-Jobb Mac-en) |
+
+    ### Súgó
+    | Billentyű | Művelet |
+    |---|---|
+    | F1 | Súgóképernyő be-/kikapcsolása |
+  sk: |
+    # Prehliadač Markdown — Pomocník
+
+    ## Klávesové Skratky
+
+    ### Súbor
+    | Kláves | Akcia |
+    |---|---|
+    | Cmd/Ctrl-o | Otvoriť súbor Markdown |
+    | Cmd/Ctrl-r | Aktualizovať — znovu načítať aktuálny súbor z disku |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Ukončiť |
+
+    Prehliadač sleduje aktuálny súbor na zmeny a automaticky ho znovu načítava.
+    Použite `--no-detach` alebo `--foreground` na príkazovom riadku, aby zostal pripojený k terminálu (len Unix).
+
+    ### Navigácia
+    | Kláves | Akcia |
+    |---|---|
+    | Tlačidlá ◀ / ▶ | Späť / Vpred v histórii |
+    | Cmd/Ctrl-t | Zobraziť/skryť panel obsahu |
+
+    ### Hľadanie
+    | Kláves | Akcia |
+    |---|---|
+    | Cmd/Ctrl-f | Otvoriť / zatvoriť panel vyhľadávania |
+    | Enter  alebo  tlačidlo ⬇ | Nasledujúca zhoda |
+    | Shift-Enter  alebo  tlačidlo ⬆ | Predchádzajúca zhoda |
+    | Escape | Zatvoriť panel vyhľadávania |
+
+    > Hľadanie prechádza na oddiel obsahujúci každú zhodu a zvýrazní nájdený text.
+    > Aktívna zhoda sa zobrazuje oranžovo; ostatné žlto.
+
+    ### Automatické znovu načítanie
+    Prehliadač sleduje otvorený súbor na zmeny na disku a automaticky ho znovu načítava.
+    Po každom automatickom znovu načítaní sa krátko zobrazí správa «↻ Znovu načítané» na paneli nástrojov.
+
+    ### Zoom a Písmo
+    | Kláves | Akcia |
+    |---|---|
+    | Cmd/Ctrl-= | Priblížiť |
+    | Cmd/Ctrl-− | Oddialiť |
+    | Cmd/Ctrl-z | Obnoviť priblíženie na 100 % |
+    | Cmd/Ctrl-Shift-a | Zväčšiť písmo |
+    | Cmd/Ctrl-a | Zmenšiť písmo |
+    | Cmd/Ctrl-0 | Obnoviť veľkosť písma na 100 % |
+
+    ### Posúvanie (keď nie je aktívne žiadne textové pole)
+    | Kláves | Akcia |
+    |---|---|
+    | Šípka nahor / nadol | Posunúť o jeden riadok |
+    | Page Up / Page Down | Posunúť o jedno zobrazenie (Fn-Hore / Fn-Dole na Mac) |
+    | Home / Cmd-Hore | Prejsť na začiatok dokumentu (Fn-Vľavo na Mac) |
+    | End / Cmd-Dole | Prejsť na koniec dokumentu (Fn-Vpravo na Mac) |
+
+    ### Pomocník
+    | Kláves | Akcia |
+    |---|---|
+    | F1 | Zobraziť/skryť túto obrazovku pomocníka |
+  hr: |
+    # Preglednik Markdown — Pomoć
+
+    ## Tipkovni Prečaci
+
+    ### Datoteka
+    | Tipka | Radnja |
+    |---|---|
+    | Cmd/Ctrl-o | Otvori Markdown datoteku |
+    | Cmd/Ctrl-r | Osvježi — ponovo učitaj trenutnu datoteku s diska |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Izađi |
+
+    Preglednik prati trenutnu datoteku radi promjena i automatski je ponovo učitava.
+    Koristite `--no-detach` ili `--foreground` u naredbenom retku da ostane spojen na terminal (samo Unix).
+
+    ### Navigacija
+    | Tipka | Radnja |
+    |---|---|
+    | Gumbi ◀ / ▶ | Natrag / Naprijed u povijesti |
+    | Cmd/Ctrl-t | Uključi/isključi panel sadržaja |
+
+    ### Pretraživanje
+    | Tipka | Radnja |
+    |---|---|
+    | Cmd/Ctrl-f | Otvori / zatvori traku za pretraživanje |
+    | Enter  ili  gumb ⬇ | Sljedeći rezultat |
+    | Shift-Enter  ili  gumb ⬆ | Prethodni rezultat |
+    | Escape | Zatvori traku za pretraživanje |
+
+    > Pretraživanje navigira do odjeljka koji sadrži svaki rezultat i ističe pronađeni tekst.
+    > Aktivni rezultat prikazuje se narančasto; ostali žuto.
+
+    ### Automatsko učitavanje
+    Preglednik prati otvorenu datoteku radi promjena na disku i automatski je ponovo učitava.
+    Nakon svakog automatskog učitavanja kratko se prikazuje obavijest «↻ Ponovo učitano» na alatnoj traci.
+
+    ### Zoom i Font
+    | Tipka | Radnja |
+    |---|---|
+    | Cmd/Ctrl-= | Povećaj prikaz |
+    | Cmd/Ctrl-− | Smanji prikaz |
+    | Cmd/Ctrl-z | Vrati zoom na 100% |
+    | Cmd/Ctrl-Shift-a | Povećaj font |
+    | Cmd/Ctrl-a | Smanji font |
+    | Cmd/Ctrl-0 | Vrati veličinu fonta na 100% |
+
+    ### Pomicanje (kada nije fokusirano nijedno tekstualno polje)
+    | Tipka | Radnja |
+    |---|---|
+    | Strelica gore / dolje | Pomakni jedan redak |
+    | Page Up / Page Down | Pomakni jedan prikaz (Fn-Gore / Fn-Dolje na Mac) |
+    | Home / Cmd-Gore | Skoči na početak dokumenta (Fn-Lijevo na Mac) |
+    | End / Cmd-Dolje | Skoči na kraj dokumenta (Fn-Desno na Mac) |
+
+    ### Pomoć
+    | Tipka | Radnja |
+    |---|---|
+    | F1 | Uključi/isključi ovaj zaslon pomoći |
+  sl: |
+    # Pregledovalnik Markdown — Pomoč
+
+    ## Bližnjice na Tipkovnici
+
+    ### Datoteka
+    | Tipka | Dejanje |
+    |---|---|
+    | Cmd/Ctrl-o | Odpri datoteko Markdown |
+    | Cmd/Ctrl-r | Osveži — znova naloži trenutno datoteko z diska |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Zapusti |
+
+    Pregledovalnik opazuje trenutno datoteko za spremembe in jo samodejno znova naloži.
+    Uporabite `--no-detach` ali `--foreground` v ukazni vrstici, da ostane priključen na terminal (samo Unix).
+
+    ### Navigacija
+    | Tipka | Dejanje |
+    |---|---|
+    | Gumba ◀ / ▶ | Nazaj / Naprej v zgodovini |
+    | Cmd/Ctrl-t | Preklopi kazalo vsebine |
+
+    ### Iskanje
+    | Tipka | Dejanje |
+    |---|---|
+    | Cmd/Ctrl-f | Odpri / zapri iskalno vrstico |
+    | Enter  ali  gumb ⬇ | Naslednji zadetek |
+    | Shift-Enter  ali  gumb ⬆ | Prejšnji zadetek |
+    | Escape | Zapri iskalno vrstico |
+
+    > Iskanje se pomakne na razdelek, ki vsebuje vsak zadetek, in označi najdeno besedilo.
+    > Aktivni zadetek je prikazan oranžno; drugi rumeno.
+
+    ### Samodejno ponovito nalaganje
+    Pregledovalnik opazuje odprto datoteko za spremembe na disku in jo samodejno znova naloži.
+    Po vsakem samodejnem nalaganju se v orodni vrstici kratko prikaže obvestilo «↻ Znova naloženo».
+
+    ### Zoom in Pisava
+    | Tipka | Dejanje |
+    |---|---|
+    | Cmd/Ctrl-= | Povečaj |
+    | Cmd/Ctrl-− | Pomanjšaj |
+    | Cmd/Ctrl-z | Ponastavi zoom na 100% |
+    | Cmd/Ctrl-Shift-a | Povečaj pisavo |
+    | Cmd/Ctrl-a | Zmanjšaj pisavo |
+    | Cmd/Ctrl-0 | Ponastavi velikost pisave na 100% |
+
+    ### Pomikanje (ko ni fokusiranega besedilnega polja)
+    | Tipka | Dejanje |
+    |---|---|
+    | Puščica gor / dol | Pomakni za eno vrstico |
+    | Page Up / Page Down | Pomakni za en pogled (Fn-Gor / Fn-Dol na Mac) |
+    | Home / Cmd-Gor | Skoči na začetek dokumenta (Fn-Levo na Mac) |
+    | End / Cmd-Dol | Skoči na konec dokumenta (Fn-Desno na Mac) |
+
+    ### Pomoč
+    | Tipka | Dejanje |
+    |---|---|
+    | F1 | Preklopi ta zaslon pomoči |
+  uk: |
+    # Переглядач Markdown — Довідка
+
+    ## Гарячі Клавіші
+
+    ### Файл
+    | Клавіша | Дія |
+    |---|---|
+    | Cmd/Ctrl-o | Відкрити файл Markdown |
+    | Cmd/Ctrl-r | Оновити — перезавантажити поточний файл з диска |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Вийти |
+
+    Переглядач стежить за поточним файлом на наявність змін і перезавантажує його автоматично.
+    Використовуйте `--no-detach` або `--foreground` у командному рядку, щоб залишити підключеним до терміналу (лише Unix).
+
+    ### Навігація
+    | Клавіша | Дія |
+    |---|---|
+    | Кнопки ◀ / ▶ | Назад / Вперед в історії |
+    | Cmd/Ctrl-t | Показати/приховати панель змісту |
+
+    ### Пошук
+    | Клавіша | Дія |
+    |---|---|
+    | Cmd/Ctrl-f | Відкрити / закрити рядок пошуку |
+    | Enter  або  кнопка ⬇ | Наступний збіг |
+    | Shift-Enter  або  кнопка ⬆ | Попередній збіг |
+    | Escape | Закрити рядок пошуку |
+
+    > Пошук переходить до розділу, що містить кожен збіг, і виділяє знайдений текст.
+    > Активний збіг відображається помаранчевим; інші — жовтим.
+
+    ### Автоматичне перезавантаження
+    Переглядач стежить за відкритим файлом на наявність змін на диску і перезавантажує його автоматично.
+    Після кожного автоматичного перезавантаження на панелі інструментів ненадовго з'являється сповіщення «↻ Перезавантажено».
+
+    ### Масштаб і Шрифт
+    | Клавіша | Дія |
+    |---|---|
+    | Cmd/Ctrl-= | Збільшити масштаб |
+    | Cmd/Ctrl-− | Зменшити масштаб |
+    | Cmd/Ctrl-z | Скинути масштаб до 100% |
+    | Cmd/Ctrl-Shift-a | Збільшити шрифт |
+    | Cmd/Ctrl-a | Зменшити шрифт |
+    | Cmd/Ctrl-0 | Скинути розмір шрифту до 100% |
+
+    ### Прокрутка (коли жодне текстове поле не у фокусі)
+    | Клавіша | Дія |
+    |---|---|
+    | Стрілка вгору / вниз | Прокрутити на один рядок |
+    | Page Up / Page Down | Прокрутити на один екран (Fn-Вгору / Fn-Вниз на Mac) |
+    | Home / Cmd-Вгору | Перейти на початок документа (Fn-Вліво на Mac) |
+    | End / Cmd-Вниз | Перейти в кінець документа (Fn-Вправо на Mac) |
+
+    ### Довідка
+    | Клавіша | Дія |
+    |---|---|
+    | F1 | Показати/приховати цей екран довідки |
+  bg: |
+    # Преглед на Markdown — Помощ
+
+    ## Клавишни Комбинации
+
+    ### Файл
+    | Клавиш | Действие |
+    |---|---|
+    | Cmd/Ctrl-o | Отваряне на файл Markdown |
+    | Cmd/Ctrl-r | Опресняване — презареждане на текущия файл от диска |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Изход |
+
+    Прегледачът следи текущия файл за промени и го презарежда автоматично.
+    Използвайте `--no-detach` или `--foreground` в командния ред, за да остане свързан с терминала (само Unix).
+
+    ### Навигация
+    | Клавиш | Действие |
+    |---|---|
+    | Бутони ◀ / ▶ | Назад / Напред в историята |
+    | Cmd/Ctrl-t | Показване/скриване на панела за съдържание |
+
+    ### Търсене
+    | Клавиш | Действие |
+    |---|---|
+    | Cmd/Ctrl-f | Отваряне / затваряне на лентата за търсене |
+    | Enter  или  бутон ⬇ | Следващо съвпадение |
+    | Shift-Enter  или  бутон ⬆ | Предишно съвпадение |
+    | Escape | Затваряне на лентата за търсене |
+
+    > Търсенето навигира до раздела, съдържащ всяко съвпадение, и маркира намерения текст.
+    > Активното съвпадение е показано в оранжево; другите в жълто.
+
+    ### Автоматично презареждане
+    Прегледачът следи отворения файл за промени на диска и го презарежда автоматично.
+    След всяко автоматично презареждане се появява кратко известие «↻ Презаредено» в лентата с инструменти.
+
+    ### Мащаб и Шрифт
+    | Клавиш | Действие |
+    |---|---|
+    | Cmd/Ctrl-= | Увеличаване |
+    | Cmd/Ctrl-− | Намаляване |
+    | Cmd/Ctrl-z | Нулиране на мащаба до 100% |
+    | Cmd/Ctrl-Shift-a | Увеличаване на шрифта |
+    | Cmd/Ctrl-a | Намаляване на шрифта |
+    | Cmd/Ctrl-0 | Нулиране на размера на шрифта до 100% |
+
+    ### Превъртане (когато няма фокусирано текстово поле)
+    | Клавиш | Действие |
+    |---|---|
+    | Стрелка нагоре / надолу | Превъртане с един ред |
+    | Page Up / Page Down | Превъртане с един изглед (Fn-Нагоре / Fn-Надолу на Mac) |
+    | Home / Cmd-Нагоре | Скачане в началото на документа (Fn-Наляво на Mac) |
+    | End / Cmd-Надолу | Скачане в края на документа (Fn-Надясно на Mac) |
+
+    ### Помощ
+    | Клавиш | Действие |
+    |---|---|
+    | F1 | Показване/скриване на този екран с помощ |
+  el: |
+    # Προβολή Markdown — Βοήθεια
+
+    ## Συντομεύσεις Πληκτρολογίου
+
+    ### Αρχείο
+    | Πλήκτρο | Ενέργεια |
+    |---|---|
+    | Cmd/Ctrl-o | Άνοιγμα αρχείου Markdown |
+    | Cmd/Ctrl-r | Ανανέωση — επαναφόρτωση τρέχοντος αρχείου από δίσκο |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Έξοδος |
+
+    Η προβολή παρακολουθεί το τρέχον αρχείο για αλλαγές και το επαναφορτώνει αυτόματα.
+    Χρησιμοποιήστε `--no-detach` ή `--foreground` στη γραμμή εντολών για να παραμείνει συνδεδεμένο με τον τερματικό (μόνο Unix).
+
+    ### Πλοήγηση
+    | Πλήκτρο | Ενέργεια |
+    |---|---|
+    | Κουμπιά ◀ / ▶ | Πίσω / Μπροστά στο ιστορικό |
+    | Cmd/Ctrl-t | Εναλλαγή πίνακα περιεχομένων |
+
+    ### Αναζήτηση
+    | Πλήκτρο | Ενέργεια |
+    |---|---|
+    | Cmd/Ctrl-f | Άνοιγμα / κλείσιμο γραμμής αναζήτησης |
+    | Enter  ή  κουμπί ⬇ | Επόμενη αντιστοιχία |
+    | Shift-Enter  ή  κουμπί ⬆ | Προηγούμενη αντιστοιχία |
+    | Escape | Κλείσιμο γραμμής αναζήτησης |
+
+    > Η αναζήτηση πλοηγείται στην ενότητα που περιέχει κάθε αντιστοιχία και επισημαίνει το βρεθέν κείμενο.
+    > Η ενεργή αντιστοιχία εμφανίζεται πορτοκαλί· οι άλλες κίτρινο.
+
+    ### Αυτόματη επαναφόρτωση
+    Η προβολή παρακολουθεί το ανοιχτό αρχείο για αλλαγές στον δίσκο και το επαναφορτώνει αυτόματα.
+    Μια σύντομη ειδοποίηση «↻ Επαναφορτώθηκε» εμφανίζεται στη γραμμή εργαλείων μετά από κάθε αυτόματη επαναφόρτωση.
+
+    ### Ζουμ και Γραμματοσειρά
+    | Πλήκτρο | Ενέργεια |
+    |---|---|
+    | Cmd/Ctrl-= | Μεγέθυνση |
+    | Cmd/Ctrl-− | Σμίκρυνση |
+    | Cmd/Ctrl-z | Επαναφορά ζουμ στο 100% |
+    | Cmd/Ctrl-Shift-a | Μεγέθυνση γραμματοσειράς |
+    | Cmd/Ctrl-a | Σμίκρυνση γραμματοσειράς |
+    | Cmd/Ctrl-0 | Επαναφορά μεγέθους γραμματοσειράς στο 100% |
+
+    ### Κύλιση (όταν δεν υπάρχει εστιασμένο πεδίο κειμένου)
+    | Πλήκτρο | Ενέργεια |
+    |---|---|
+    | Βέλος πάνω / κάτω | Κύλιση μίας γραμμής |
+    | Page Up / Page Down | Κύλιση μίας οθόνης (Fn-Πάνω / Fn-Κάτω σε Mac) |
+    | Home / Cmd-Πάνω | Μετάβαση στην αρχή του εγγράφου (Fn-Αριστερά σε Mac) |
+    | End / Cmd-Κάτω | Μετάβαση στο τέλος του εγγράφου (Fn-Δεξιά σε Mac) |
+
+    ### Βοήθεια
+    | Πλήκτρο | Ενέργεια |
+    |---|---|
+    | F1 | Εναλλαγή αυτής της οθόνης βοήθειας |
+  af: |
+    # Markdown-kyker — Hulp
+
+    ## Sleutelbordkortpaaie
+
+    ### Lêer
+    | Sleutel | Aksie |
+    |---|---|
+    | Cmd/Ctrl-o | Maak 'n Markdown-lêer oop |
+    | Cmd/Ctrl-r | Verfris — herlaai die huidige lêer van skyf |
+    | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Verlaat |
+
+    Die kyker dophou die huidige lêer vir veranderinge en herlaai outomaties.
+    Gebruik `--no-detach` of `--foreground` op die opdragreël om dit aan die terminaal gekoppel te hou (slegs Unix).
+
+    ### Navigasie
+    | Sleutel | Aksie |
+    |---|---|
+    | Knoppies ◀ / ▶ | Terug / Vorentoe in geskiedenis |
+    | Cmd/Ctrl-t | Wissel inhoudsopgawe-paneel |
+
+    ### Soektog
+    | Sleutel | Aksie |
+    |---|---|
+    | Cmd/Ctrl-f | Maak soekbalk oop / toe |
+    | Enter  of  knoppie ⬇ | Volgende treffer |
+    | Shift-Enter  of  knoppie ⬆ | Vorige treffer |
+    | Escape | Sluit soekbalk |
+
+    > Soektog navigeer na die afdeling wat elke treffer bevat en merk die gevonde teks.
+    > Die aktiewe treffer word oranje gewys; ander in geel.
+
+    ### Outomatiese herlaai
+    Die kyker dophou die oop lêer vir skyfveranderinge en herlaai dit outomaties.
+    'n Kort «↻ Herlaai» kennisgewing verskyn in die nutsbalk na elke outomatiese herlaai.
+
+    ### Zoom en Lettertipe
+    | Sleutel | Aksie |
+    |---|---|
+    | Cmd/Ctrl-= | Zoem in |
+    | Cmd/Ctrl-− | Zoem uit |
+    | Cmd/Ctrl-z | Stel zoom na 100% terug |
+    | Cmd/Ctrl-Shift-a | Vergroot lettertipe |
+    | Cmd/Ctrl-a | Verklein lettertipe |
+    | Cmd/Ctrl-0 | Stel lettertipegrootte na 100% terug |
+
+    ### Blaai (wanneer geen teksveld gefokus is)
+    | Sleutel | Aksie |
+    |---|---|
+    | Op / Af pyl | Blaai een reël |
+    | Page Up / Page Down | Blaai een venster (Fn-Op / Fn-Af op Mac) |
+    | Home / Cmd-Op | Spring na bokant van dokument (Fn-Links op Mac) |
+    | End / Cmd-Af | Spring na onderkant van dokument (Fn-Regs op Mac) |
+
+    ### Hulp
+    | Sleutel | Aksie |
+    |---|---|
+    | F1 | Wissel hierdie hulpskerm |

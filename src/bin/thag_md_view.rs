@@ -52,7 +52,7 @@ use egui::{
     load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint},
     Color32,
 };
-use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
+use egui_commonmark::{CommonMarkCache, CommonMarkViewer, SearchOptions};
 use notify::{RecursiveMode, Watcher};
 use pulldown_cmark::{Event, Options, Parser, Tag};
 use rfd::FileDialog;
@@ -1503,21 +1503,29 @@ impl eframe::App for MarkdownApp {
         if new_search_open {
             egui::Panel::top("search_bar").show(ui, |ui| {
                 ui.horizontal(|ui| {
+                    let text_color = if self.cache.search_regex_error.is_some() {
+                        ui.visuals().error_fg_color
+                    } else {
+                        ui.visuals().text_color()
+                    };
+
                     ui.label("🔍");
                     let response = ui.add(
                         egui::TextEdit::singleline(&mut self.cache.search_query)
+                            .text_color(text_color)
                             .hint_text(t!("search.placeholder").to_string())
                             .desired_width(280.0),
                     );
+                    if let Some(error) = &self.cache.search_regex_error {
+                        response.clone().on_hover_text(error);
+                    }
+
                     // Grab focus when the bar first opens.
                     if self.search_focus {
                         response.request_focus();
                         self.search_focus = false;
                     }
-                    if response.changed() {
-                        self.cache
-                            .update_search_matches(&current_path_label, &self.content);
-                    }
+
                     // Checked unconditionally (not gated on the text edit still
                     // having focus): a single-line TextEdit surrenders focus the
                     // moment Enter is pressed, so `response.has_focus()` would
@@ -1529,12 +1537,58 @@ impl eframe::App for MarkdownApp {
                         response.request_focus();
                     }
 
+                    let mut search_options_changed = false;
+
+                    let mut search_toggle =
+                        |ui: &mut egui::Ui,
+                         flag: SearchOptions,
+                         label: egui::WidgetText,
+                         tooltip: String| {
+                            let selected = self.cache.search_options.contains(flag);
+
+                            if ui
+                                .selectable_label(selected, label)
+                                .on_hover_text(tooltip)
+                                .clicked()
+                            {
+                                self.cache.search_options.toggle(flag);
+                                search_options_changed = true;
+                            }
+                        };
+
+                    search_toggle(
+                        ui,
+                        SearchOptions::CASE_SENSITIVE,
+                        "Aa".into(),
+                        t!("search.case_sensitive_tip").to_string(),
+                    );
+
+                    search_toggle(
+                        ui,
+                        SearchOptions::WHOLE_WORD,
+                        egui::RichText::new("wd").underline().into(),
+                        t!("search.whole_word_tip").to_string(),
+                    );
+
+                    search_toggle(
+                        ui,
+                        SearchOptions::REGEX,
+                        ".*".into(),
+                        t!("search.regex_tip").to_string(),
+                    );
+
+                    if search_options_changed {
+                        self.cache
+                            .update_search_matches(&current_path_label, &self.content);
+                    }
+
+                    if response.changed() {
+                        self.cache
+                            .update_search_matches(&current_path_label, &self.content);
+                    }
                     let match_count = self.cache.search_ranges().len();
                     match self.cache.active_match() {
-                        Some(i) if match_count > 0 => ui.weak(
-                            t!("search.match_counter", current = i + 1, total = match_count)
-                                .to_string(),
-                        ),
+                        Some(i) if match_count > 0 => ui.weak(format!("{} / {match_count}", i + 1)),
                         _ => ui.weak(t!("search.no_matches").to_string()),
                     };
 

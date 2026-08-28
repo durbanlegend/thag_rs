@@ -429,7 +429,7 @@ key bindings and the TUI uses mostly standard `tui-textarea` key bindings.
 
 ### As a filter on standard input (loop mode):
 
-At a minimum, this loops though `stdin` running the `--loop` expression against every line. The line number and content are made available to the expression as `i` and `line` respectively.
+At a minimum, this loops though `stdin` running the `--loop` expression against every line. The line number (starting from 1) and content are made available to the expression as `i` and `line` respectively.
 
 ```bash
 thag --loop 'println!("{i:>3}.  {line}")' < demo/iter.rs       # Short form: -l

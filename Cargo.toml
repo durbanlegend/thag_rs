@@ -40,7 +40,7 @@ features = ["tools"]
 all-features = true
 
 [package.metadata.i18n]
-available-locales = ["cs", "de", "en", "es", "fr", "it", "pl", "pt", "ru", "sv"]
+available-locales = ["af", "bg", "ca", "cs", "cy", "da", "de", "el", "en", "es", "fi", "fr", "hr", "hu", "it", "nb", "nl", "no", "pl", "pt", "ro", "ru", "sk", "sl", "st", "sv", "uk", "xh", "zu"]
 default-locale = "en"
 load-path = "locales"
 

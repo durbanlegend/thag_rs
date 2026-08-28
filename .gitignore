@@ -171,3 +171,7 @@ sublime_themes/GitHub.tmTheme
 assets/sublime_themes/GitHub.tmTheme
 assets/sublime_themes/Material_Theme_Darker.tmTheme
 assets/sublime_themes/Material_Theme_Lighter.tmTheme
+src/bin/locales/TODO.yml
+src/bin/Cargo.toml
+src/bin/locales/app.yaml
+src/bin/locales/TODO.yml

@@ -607,6 +607,18 @@ status.reloaded_tip:
   xh: "Ifayile itshintshiwe kudisk — ilayishiwe kwakhona ngokuzenzakalelayo"
   zu: "Ifayili ishintshiwe kudiski — ilayishiwe kabusha ngokuzenzakalelayo"
 
+status.cached:
+  en: "⚡ cached"
+
+status.cached_tip:
+  en: "Viewport cache ON — faster for large docs, may have minor scroll artefacts.\nClick to switch to full-render mode."
+
+status.plain:
+  en: "🐢 plain"
+
+status.plain_tip:
+  en: "Viewport cache OFF — smooth scrolling, but poor response for large docs.\nClick to enable cache for large-doc speed."
+
 status.large_file_tip:
   af: "Groot lêer — aanvanklike weergawe is stadig. Blaairesponsiwiteit verbeter sodra die dokument volledig uitgelê is."
   bg: "Голям файл — първоначалното изобразяване е бавно. Реактивността на превъртането се подобрява след пълното зареждане на документа."

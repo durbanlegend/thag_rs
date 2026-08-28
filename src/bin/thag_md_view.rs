@@ -1365,22 +1365,14 @@ impl eframe::App for MarkdownApp {
                 // Viewport-cache toggle — only shown for large documents.
                 if doc_is_large {
                     ui.separator();
+                    let (status_view_mode, status_view_mode_tip) = if use_viewport_cache {
+                        ("status.cached", "status.cached_tip")
+                    } else {
+                        ("status.plain", "status.plain_tip")
+                    };
                     if ui
-                        .selectable_label(
-                            use_viewport_cache,
-                            if use_viewport_cache {
-                                "⚡ cached"
-                            } else {
-                                "🐢 plain" // 🐌
-                            },
-                        )
-                        .on_hover_text(if use_viewport_cache {
-                            "Viewport cache ON — faster for large docs, may have scroll \
-                             artefacts. Click to switch to accurate full-render mode."
-                        } else {
-                            "Viewport cache OFF — accurate scrolling for all doc sizes. \
-                             Click to enable for large-doc speed."
-                        })
+                        .selectable_label(use_viewport_cache, t!(status_view_mode).to_string())
+                        .on_hover_text(t!(status_view_mode_tip).to_string())
                         .clicked()
                     {
                         new_use_viewport_cache = !use_viewport_cache;

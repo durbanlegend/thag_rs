@@ -5,7 +5,7 @@
 [![Build Status](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge.svg)](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge)
 [![Rust](https://img.shields.io/badge/rustc-stable+-green.svg)](https://img.shields.io/badge/rustc-stable+-green)
 [![Dependencies](https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg)](https://deps.rs/repo/github/durbanlegend/thag_rs/status)
-[![Documentation](https://docs.rs/thag_styling/badge.svg)](https://docs.rs/thag_styling)
+[![Documentation](https://docs.rs/thag_rs/badge.svg)](https://docs.rs/thag_rs)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
 ## Intro
@@ -229,7 +229,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/markdown.rs -- R
 
 - 35 new optional commands as above
 
-- Gorgeous coloration and styling across the board thanks to our companion crate, [thag_styling](thag_styling/README.md). `thag_styling` supports 290+ popular themes and automatically adapts based on an environment variable or your terminal's background color. Also available for use in your own projects, with integrations for `console`, `crossterm`, `nu-ansi-term`, `owo-colors`, and `ratatui`.
+- Gorgeous coloration and styling across the board provided by companion crate [thag_styling](thag_styling/README.md). `thag_styling` supports 290+ popular themes and automatically adapts based on an environment variable or your terminal's background color. Also available for use in your own projects, with integrations for `console`, `crossterm`, `nu-ansi-term`, `owo-colors`, and `ratatui`.
 
 ![Catppuccin Mocha](assets/theme_catp_mocha.png)
 ![Gruvbox light, hard (base16)](assets/theme_gbox_lh.png)

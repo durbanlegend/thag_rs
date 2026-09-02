@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "1, thag-auto", features = ["full_profiling"] }
+thag_profiler = { version = "1, thag-auto" }
 */
 
 /// This script demonstrates the usage of the `warn_once` pattern for suppressing repeated
@@ -10,9 +10,7 @@ thag_profiler = { version = "1, thag-auto", features = ["full_profiling"] }
 /// not in any way a profiling-specific function.
 ///
 /// Disclosure: the `thag_profiler` `warn_once` macro uses unsafe code.
-///
-/// Credit to `Claude 3.7 Sonnet`.
-//# Purpose: Demo a macro I found useful, explained and benchmarked here in great detail thanks to Claude.
+//# Purpose: Demo a macro I found useful, explained and benchmarked here in great detail by Claude.
 //# Categories: demo, macros, technique
 use std::sync::{Arc, Mutex};
 use std::time::Instant;

@@ -59,7 +59,7 @@ use rfd::FileDialog;
 use rust_i18n::t;
 use std::{
     collections::HashMap,
-    env,
+    env, fs,
     path::{Path, PathBuf},
     sync::{
         mpsc::{self, Receiver},
@@ -1098,14 +1098,16 @@ impl MarkdownApp {
 }
 
 fn add_code_block_themes(cache: &mut CommonMarkCache) {
-    for theme in &["Gruvbox_Dark", "Gruvbox_Light"] {
+    for theme in &["Dunkel_Theme", "Slush_and_Poppies"] {
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
         cache
             .add_syntax_theme_from_bytes(
                 *theme,
-                include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/assets/sublime_themes/Gruvbox_Light.tmTheme"
-                )),
+                &fs::read(format!(
+                    "{}/assets/sublime_themes/{theme}.tmTheme",
+                    manifest_dir
+                ))
+                .unwrap(),
             )
             .unwrap();
     }
@@ -1783,8 +1785,8 @@ impl eframe::App for MarkdownApp {
             // visible viewport on all subsequent frames.  The source_id is
             // keyed to the file path so navigating to a new file resets state.
             CommonMarkViewer::new()
-                .syntax_theme_dark("Gruvbox_Dark")
-                .syntax_theme_light("Gruvbox_Light")
+                .syntax_theme_dark("Dunkel_Theme")
+                .syntax_theme_light("Slush_and_Poppies")
                 .search_match_color(match_bg)
                 .search_active_match_color(active_bg)
                 .enable_scroll_to_heading(true)

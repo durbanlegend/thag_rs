@@ -480,13 +480,13 @@ fn test_profile_stats() {
     let mut stats = ProfileStats::default();
 
     // Record some measurements
-    stats.record("function1", Duration::from_micros(100));
-    stats.record("function1", Duration::from_micros(200));
-    stats.record("function2", Duration::from_micros(150));
+    stats.record("function1", 2, Duration::from_micros(100));
+    stats.record("function1", 4, Duration::from_micros(200));
+    stats.record("function2", 5, Duration::from_micros(150));
 
     // Verify stats
-    assert_eq!(*stats.calls.get("function1").unwrap(), 2);
-    assert_eq!(*stats.calls.get("function2").unwrap(), 1);
+    assert_eq!(*stats.calls.get("function1").unwrap(), 6);
+    assert_eq!(*stats.calls.get("function2").unwrap(), 5);
 
     assert_eq!(*stats.total_time.get("function1").unwrap(), 300);
     assert_eq!(*stats.total_time.get("function2").unwrap(), 150);

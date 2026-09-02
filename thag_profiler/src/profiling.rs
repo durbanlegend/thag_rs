@@ -3069,7 +3069,8 @@ impl ProfileStats {
     ///
     /// # Arguments
     /// * `func_name` - The name of the function being profiled
-    /// * `duration` - The duration of this particular call
+    /// * `calls` - The count of calls
+    /// * `duration` - The cumulative duration of this particular function call
     pub fn record(&mut self, func_name: &str, calls: u64, duration: std::time::Duration) {
         *self.calls.entry(func_name.to_string()).or_default() += calls;
         *self.total_time.entry(func_name.to_string()).or_default() += duration.as_micros();
@@ -3626,13 +3627,13 @@ mod tests_internal {
         let mut stats = ProfileStats::default();
 
         // Record some calls
-        stats.record("func1", Duration::from_micros(100));
-        stats.record("func1", Duration::from_micros(200));
-        stats.record("func2", Duration::from_micros(150));
+        stats.record("func1", 2, Duration::from_micros(100));
+        stats.record("func1", 5, Duration::from_micros(200));
+        stats.record("func2", 3, Duration::from_micros(150));
 
         // Check call counts
-        assert_eq!(*stats.calls.get("func1").unwrap(), 2);
-        assert_eq!(*stats.calls.get("func2").unwrap(), 1);
+        assert_eq!(*stats.calls.get("func1").unwrap(), 7);
+        assert_eq!(*stats.calls.get("func2").unwrap(), 3);
 
         // Check total times
         assert_eq!(*stats.total_time.get("func1").unwrap(), 300);

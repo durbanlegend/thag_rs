@@ -5,11 +5,12 @@
 [![Build Status](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge.svg)](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge)
 [![Rust](https://img.shields.io/badge/rustc-stable+-green.svg)](https://img.shields.io/badge/rustc-stable+-green)
 [![Dependencies](https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg)](https://deps.rs/repo/github/durbanlegend/thag_rs/status)
-
+[![Documentation](https://docs.rs/thag_rs/badge.svg)](https://docs.rs/thag_rs)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
 ## Intro
 
-***thag_rs*** (command ***thag***) is a robust toolkit and playground designed to make your Rust development experience smoother and more rewarding.
+***thag_rs*** (command ***thag***) is a robust toolkit and playground designed to make your Rust development experience smoother and more rewarding. For example, a Rust program often only needs a single file instead of a whole project.
 
 ***thag*** includes:
 
@@ -23,19 +24,17 @@
 
   - an option to build fast commands from your scripts
 
-<details>
-<summary>📋 an improved <a href="demo/proc_macros/README.md">demo proc macro starter kit</a></summary>
+  - an improved [demo proc macro starter kit](demo/proc_macros/README.md)
 
-- a ***select set of 12 useful and educational examples***
-
-- full documentation
-
-- demo scripts
-
-- a learning path
-
-- compile-time macro expansion support for proc macro debugging
-</details>
+    - a ***select set of 12 useful and educational examples***
+    
+    - full documentation
+    
+    - demo scripts
+    
+    - a learning path
+    
+    - compile-time macro expansion support for proc macro debugging
 
 ***thag*** has sleek styling with themes to match your terminal preferences.
 
@@ -65,82 +64,78 @@ Whether you're:
 
 ### `thag` includes:
 
-<details>
-<summary>A command ***thag_url*** to intelligently run example scripts directly from URLs</summary>
+
+  - A command ***`thag_url`*** to intelligently run example scripts directly from URLs
 
   - Automatically resolves straightforward dependencies.
 
   - Default features for crates can be configured with `thag --config/-C`.
 
-<details>
-<summary>Supports popular repo, playground and other URLs.</summary>
+  - Supports popular repo, playground and other URLs.</summary>
 
-  - GitHub
+    - GitHub
+  
+    - GitLab
+  
+    - BitBucket
+  
+    - Rust Playground
+  
+    - Straightforward URLs.
 
-  - GitLab
-
-  - BitBucket
-
-  - Rust Playground
-
-  - Straightforward URLs.
-
-</details>
-
-<details>
-<summary>Over 30 other independently installable <a href="src/bin/README.md">command-line tools</a></summary>
-
-  - AST display tool
-
-  - cargo runner for scripts
-
-  - clippy runner for scripts
-
-  - demo directory downloader
-
-  - demo finder
-
-  - expander for scripts
-
-  - config file generator
-
-  - stdin to clipboard copy tool
-
-  - clipboard to stdout paste tool
-
-  - error variant code generator
-
-  - markdown viewer and GitHub markdown compatibility checker
-
-  - prompted `thag` front-end
-
-  - `\n` to newline unscrambler
-
-  - terminal characteristics detector
-
-  - `thag_styling` tools, including:
-
-    - theme display
-
-    - theme browser
-
-    - theme editor
-
-    - terminal palette vs theme displays
-
-    - base16/24 to `thag_styling` theme converter
-
-    - image to `thag_styling` theme converter
-
-    - `thag_styling` theme to terminal theme converter and installers for popular terminal emulators
-
-    - `thag_styling` theme to terminal palette sync tool
-
-</details>
+  - Over 30 other independently installable [command-line tools](src/bin/README.md) promoted from `thag` scripts
+  
+    - fast (WGPU) competitive markdown viewer
+  
+    - AST display tool
+  
+    - cargo runner for scripts
+  
+    - clippy runner for scripts
+  
+    - demo directory downloader
+  
+    - demo finder
+  
+    - expander for scripts
+  
+    - config file generator
+  
+    - stdin to clipboard copy tool
+  
+    - clipboard to stdout paste tool
+  
+    - error variant code generator
+  
+    - GitHub markdown compatibility checker
+  
+    - prompted `thag` front-end
+  
+    - `\n` to newline unscrambler
+  
+    - terminal characteristics detector
+  
+    - `thag_styling` tools, including:
+  
+      - theme display
+  
+      - theme browser
+  
+      - theme editor
+  
+      - terminal palette vs theme displays
+  
+      - base16/24 to `thag_styling` theme converter
+  
+      - image to `thag_styling` theme converter
+  
+      - `thag_styling` theme to terminal theme converter and installers for popular terminal emulators
+  
+      - `thag_styling` theme to terminal palette sync tool
 
 - **Efficient space management** of compiled scripts through a shared build target architecture. All scripts share a single build cache instead of maintaining separate `target` directories.
 
-- **Dependency efficiencies to speed rebuilds and dependency reuse**. Dependencies are compiled once and reused across all scripts.
+- **Dependency caching for fast rebuilds and dependency sharing**. Script dependencies are compiled and cached when first used, reducing compile times for all scripts that use them.
 
 - **A proc macro starter kit: a select set of useful and educational examples** with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
 
@@ -148,9 +143,9 @@ Whether you're:
 
 The `thag` ecosystem also includes profiling and styling crates that can be used with `thag_rs` or independently in your own projects, and a demo crate:
 
-  - ***thag_profiler*** - A capable, easy-to-use graphical cross-platform profiler packaged as an independent lightweight library and tools. Features async support, time and memory profiling, interactive flamegraphs, and zero-cost abstraction. [Readme →](thag_profiler/README.md)
+  - ***thag_profiler*** - A capable, easy-to-use graphical cross-platform profiler packaged as an independent lightweight library and tools. Features async support, time and memory profiling, interactive flamegraphs, and zero-cost abstraction. [Readme](thag_profiler/README.md)
 
-  - ***thag_styling*** - A terminal styling library supporting 290+ popular themes across all major terminal emulators. Automatically adapts to your terminal's color scheme. Used by thag_rs and available for your own projects. [Readme →](thag_styling/README.md)
+  - ***thag_styling*** - A terminal styling library supporting 290+ popular themes across all major terminal emulators. Automatically adapts to your terminal's color scheme. Used by thag_rs and available for your own projects. [Readme](thag_styling/README.md)
 
   - ***thag_demo*** - A stand-alone companion tool that lets you preview and run `thag` demo scripts and demos of `thag_profiler`. Perfect for exploring the capabilities of the `thag` script runner, `thag_profiler` and `thag_styling`. Install with `cargo install thag_demo` or view two videos of the demo in its [Readme](thag_demo/README.md).
 
@@ -178,13 +173,30 @@ ___
 
 - Toml-free by default: dependency inference from imports and Rust paths (`x::y::z`).
 
-  `thag` can run many crate examples without needing TOML information. The `thag_url` tool can run them directly URLs including GitHub, GitLab, BitBucket and Rust Playground.
+  `thag` can run many crate examples without needing TOML information. The `thag_url` tool can run them directly as URLs including GitHub, GitLab, BitBucket and Rust Playground.
 
 ```bash
 thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "is this the Krusty Krab?"
+```
 
+  `thag_url` can run with options and arguments:
+
+```bash
+$ thag_url https://github.com/PolyMeilex/rfd/blob/master/examples/simple.rs -m 2>/dev/null
+The user choose: Some(
+    "/Users/donf/projects/thag_rs/Cargo.toml",
+)
+```
+
+```bash
 thag_url https://github.com/mikaelmello/inquire/blob/main/examples/render_config.rs --features=inquire/date
 ```
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/markdown.rs -- README.md 2>/dev/null
+```
+
+  (`thag_url` fetches the remote script demo/markdown.rs and compiles and runs it locally. The compiled script converts the local README.md to HTML and opens it in the browser.)
 
   Since dependency inference has proved fast and reliable in extensive use and testing, toml block content that is no longer necessary (that is, most of it) has been removed from most demo scripts with no noticeable loss of speed. This mostly toml-free scripting is easier and more productive and removes the burden of updating dependencies, at the cost of slightly greater exposure to incompatibilities between newer versions of dependencies.
 
@@ -217,8 +229,7 @@ thag_url https://github.com/mikaelmello/inquire/blob/main/examples/render_config
 
 - 35 new optional commands as above
 
-- Gorgeous coloration and styling across the board thanks to our companion crate, [thag_styling](thag_styling/README.md). `thag_styling` supports 290+ popular themes and automatically adapts based on a 
-nvironment variable or your terminal's background color. Also available for use in your own projects, with integrations for `console`, `crossterm`, `nu-ansi-term`, `owo-colors`, and `ratatui`.
+- Gorgeous coloration and styling across the board provided by companion crate [thag_styling](thag_styling/README.md). `thag_styling` supports 290+ popular themes and automatically adapts based on an environment variable or your terminal's background color. Also available for use in your own projects, with integrations for `console`, `crossterm`, `nu-ansi-term`, `owo-colors`, and `ratatui`.
 
 ![Catppuccin Mocha](assets/theme_catp_mocha.png)
 ![Gruvbox light, hard (base16)](assets/theme_gbox_lh.png)
@@ -243,6 +254,12 @@ Full `thag` binary install with additional tools (recommended):
 
 ```bash
 cargo install thag_rs --features tools
+```
+
+To include the markdown viewer tool `thag_md_view`:
+
+```bash
+cargo install thag_rs --features tools,gui_viewer
 ```
 
 [The additional tools](src/bin/README.md)
@@ -271,7 +288,7 @@ Note that you can also link to individual demo files via their links in `demo/RE
 
 ## Quick start: ways to run the `thag` command
 
-### * With an expression argument:
+### With an expression argument:
 
 ```bash
 thag --expr '"Hello world!"'                                    # Short form: -e
@@ -290,10 +307,9 @@ Quickly calculating a percentage:
 
 No quotes, no spaces, escape asterisks and parens, and remember Rust decimal arithmetic requires decimal points or floating point notation on all numbers.
 
-Invoking `--quiet` twice (`-qq` for short) suppresses all non-error feedback including the flowerbox, allowing the
-output to be used as a filter.
+By default, `thag` and Cargo feed back to you on `stderr`.  As of v1.1 this feedback is written to `stderr` so will not affect piping of script output.
 
-By default, `thag` and Cargo feed back to you:
+Invoking `--quiet` twice (`-qq` for short) suppresses all non-error feedback including the flowerbox, similarly to `2>dev/null` except that the latter will also suppress error feedback. 
 
 ```bash
 thag -e ' {
@@ -303,7 +319,7 @@ Zoned::now().round(Unit::Second)?
 ```
 ![Expr](assets/jifft.png)
 
-### * With a script:
+### With a script:
 
 Here's a sample interactive script for discovering Pythagorean triangles with integer sides:
 
@@ -329,7 +345,7 @@ demo/fib_basic.rs -- 10
 This is useful, but a shebang still means building the script each time you use it.
 Instead, you can simply compile it to a fast Rust command with the --executable (-x) option. See `As an executable` below.
 
-### * In rapid iteration mode:
+### In rapid iteration mode:
 
 ```bash
 thag --rapid                                                    # Short form: -r
@@ -342,7 +358,7 @@ thag --rapid                                                    # Short form: -r
 (The orange flashes on the command line as I paste in input are caused by the `reedline` hinter helpfully matching the pasted input against history to offer completion hints.)
 Rapid iteration mode has file-backed searchable history and access to graphical and text-based editors such as VS Code, Zed, Helix, Vim, nano etc. via the VISUAL or EDITOR environment variables, in case its `reedline` editor falls short for a particular task. The key bindings in the latter depend on your terminal settings and you should probably not expect too much in the way of navigation shortcuts.
 
-### * With standard input:
+### With standard input:
 
 ```bash
 echo '(1..=10).product::<u32>()' | thag --stdin                 # Short form: -s
@@ -360,7 +376,7 @@ This is equivalent to:
 thag -e 'println!("Hello {}", std::env::args().nth(1).ok_or_else(|| "No name supplied")?);' -- Ferris
 ```
 
-### * With the built-in TUI (Terminal User Interface) editor
+### With the built-in TUI (Terminal User Interface) editor
 
 ```bash
 thag --edit                                                     # Short form: -d
@@ -385,7 +401,7 @@ thag --edit                                                     # Short form: -d
 
 *[Click to watch](https://asciinema.org/a/LvSHLiZPC6lfCgSN4Q0sUJjpG): Copy lines with `thag_copy`, retrieve skeleton from history, paste clipboard contents, rearrange code with TextArea buffer (Ctrl-X/Ctrl-Y), and run*
 
-### * With standard input into the TUI editor:
+### With standard input into the TUI editor:
 
 ```bash
 cat my_file.rs | thag --edit                                    # Short form: -d
@@ -411,9 +427,9 @@ above also applies there.
 Similar considerations apply to rapid iteration mode (--rapid / -r). Note that the key bindings there are not identical to the TUI because rapid iteration mode uses mostly standard `reedline` emacs
 key bindings and the TUI uses mostly standard `tui-textarea` key bindings.
 
-### * As a filter on standard input (loop mode):
+### As a filter on standard input (loop mode):
 
-At a minimum, this loops though `stdin` running the `--loop` expression against every line. The line number and content are made available to the expression as `i` and `line` respectively.
+At a minimum, this loops though `stdin` running the `--loop` expression against every line. The line number (starting from 1) and content are made available to the expression as `i` and `line` respectively.
 
 ```bash
 thag --loop 'println!("{i:>3}.  {line}")' < demo/iter.rs       # Short form: -l
@@ -426,13 +442,7 @@ thag --loop 'println!("{i:>3}.  {line}")' < demo/iter.rs       # Short form: -l
 thag -ql 'format!("{i:>3}.  {line}")' < demo/hello.rs            # Long form: --quiet --loop
 
 ```
-For a true filter that you can safely pipe to another process, use `-qq` (or `--quiet --quiet`) to suppress all non-error output:
 
-```bash
-bash-3.2$ thag -qql 'println!("{i:>3}.  {line}")' < demo/hello.rs | grep Categories
-  3.  //# Categories: basic
-bash-3.2$
-```
 Loop mode also accepts the following optional arguments supplying surrounding code, along the lines of AWK:
 
 ```bash
@@ -456,26 +466,22 @@ Normal: 687, long: 175
 ──────────────────────────────────────────────────────────────────────
 ```
 
-### Using scripts in a pipeline
-
-Note: in general if you are planning to **pipe Rust output**, it's probably a good idea to use `writeln!(io::stdout(), "{...}")`,
-rather than `println!`, since (as at edition 2021) `println!` panics if it encounters an error, and this
-includes the broken pipe error from a head command. **This is a Rust issue not a `thag_rs` issue.**
-See `https://github.com/BurntSushi/advent-of-code/issues/17`.
-For an example of tolerating a broken pipe, see
-`demo/thag_from_rust_script.rs`.
-
-#### Using `writeln!` with a pipe:
-
-Use `-qq` to suppress informative messages on `stdout` from thag itself.
+Reordering data columns or stripping out unwanted columns:
 
 ```bash
-bash-3.2$ thag -qql 'let _ = writeln!(io::stdout(), "{i:>3}.  {line}");' < demo/hello.rs | grep Categories    # long form: --quiet --quiet --loop
-  3.  //# Categories: basic
-bash-3.2$
+thag -l 'let (stack, _calls, micros) = sscanf::sscanf!(line, "{&str} {&str} {u64}").unwrap(); println!("{stack} {micros}");' < $data
 ```
 
-### * As an executable:
+Notes:
+
+1. When piping Rust output, `writeln!` behaves better than `println!`. See the explanation below.
+2. As from v1.1, `thag` now writes all feedback to the user on `stderr`, so it doesn't interfere with piping output, but `-qq` is still handy to suppress it as noise.
+
+```bash
+thag -qql 'let (stack, _calls, micros) = sscanf::sscanf!(line, "{&str} {&str} {u64}").unwrap(); writeln!(io::stdout(), "{stack} {micros}")?;' < $data | less
+```
+
+### As an executable:
 The --executable (-x) option builds your script in **release mode** and moves it to ~/.cargo/bin/, which is highly recommended to be in your path as `thag` and its tools are installed there.
 
 ```bash
@@ -504,7 +510,7 @@ Putting it to use:
 
 ![XBuild](assets/xuset.png)
 
-### * Run `cargo test` in place:
+### Run `cargo test` in place:
 The --test-only (-T) is for scripts (not snippets) with embedded unit tests. (For snippets there's the --cargo (-A) option that accepts cargo subcommands including `test`).
 This option leaves the source script untouched but generates a temporary Cargo.toml for it in the usual way and invokes `cargo test` on this to run the internal unit tests.
 
@@ -516,13 +522,19 @@ import statements and a small toml block for the `thag_rs` crate itself. In this
 env TEST_CONFIG_PATH=/absolute/path/to/config.toml thag demo/config_with_tests.rs -Tvf -- --show-output --test-threads=3  # Long form: --test-only
 ```
 
-### * Command-line options
+### Command-line options
 
 Hopefully the help screen is self-explanatory:
 
 ![Help](assets/helpt.png)
 
 `thag_rs` uses a standard `clap` CLI, so it follows the common `clap` conventions, in a very similar way to `cargo`. You can enter `thag` arguments and options in any order. If your script or dynamic run accepts arguments of its own, they must come after the `thag` arguments and separated from them by a double dash (`--`).
+
+### Piping Rust output: `println!` vs `writeln!`
+
+Note: in general if you are planning to **pipe Rust output**, it's probably a good idea to use `writeln!(io::stdout(), "{...}")?`,
+rather than `println!`, since `println!` panics if it encounters an error, and this includes the broken pipe error from a head command. This is a Rust feature not a `thag_rs` issue. See `https://github.com/BurntSushi/advent-of-code/issues/17`.
+For an example of tolerating a broken pipe, see `demo/thag_from_rust_script.rs`.
 
 ## Overview
 
@@ -538,7 +550,7 @@ _— The Rust Reference_
     * **Rapid iteration mode** offers interactivity, and accepts multi-line expressions since it uses bracket matching to wait for closing braces, brackets, parens and quotes.
     If rapid iteration mode becomes too limiting, you have two alternative ways to promote your expression to a full-fledged script from the rapid iteration editor.
     * **Stdin mode** accepts larger scripts and programs on the fly, as typed, pasted or piped input or as URLs (via `thag_url`).
-    * **Edit mode** via a basic TUI (terminal user interface) editor, with optional `thag_url` or other piped input.
+    * **Edit mode** via a basic TUI (terminal user interface) editor, with optional piped input.
     * The classic **script mode** runs an .rs file consisting of a valid Rust snippet or program.
 
 
@@ -554,15 +566,15 @@ _— The Rust Reference_
 * Automatic support for **light or dark backgrounds** and a **16- or 256- color palette** for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows prior to the Windows Terminal 1.22 Preview of August 2024, interrogating the terminal is not supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` currently defaults to basic Ansi-16 colors and dark mode support. However, the dark mode colors it uses have been chosen to work well with most light modes.
 * In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from `thag_rs`. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug a new module without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.
 
-### * Getting started:
+### Getting started
 
 You have the choice of installing `thag_rs` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run`.
 
 * Installing gives you speed out of the box and a simpler command-line interface without invoking Cargo yourself. You have a choice:
 ```bash
-cargo install thag_rs
+cargo install thag_rs [--features [tools,gui_viewer]]
 ```
-or choose an appropriate installer for your environment from the Github releases page `https://github.com/durbanlegend/thag_rs/releases`, as from `v0.1.1`.
+or choose an appropriate installer for your environment from the Github releases page `https://github.com/durbanlegend/thag_rs/releases`.
 
 You can also download the starter kit of demo scripts as `demo.zip`
 from the same page.
@@ -708,7 +720,7 @@ thag -r
 This starts an interactive rapid iteration session where you can enter or paste in a single- or multi-line Rust expression and press Enter to run it. You can also retrieve and optionally edit an expression from history.
 Having evaluated the expression you may choose to edit it, and / or the generated Cargo.toml, in your preferred editor (VS Code, Helix, Zed, nano, etc.) and rerun it. Rapid iteration mode also offers basic housekeeping functions for the temporary files generated, otherwise being in temporary space they will be cleaned up by the operating system in due course.
 
-You can access the last 25 commands or expressions from within rapid iteration mode just by using the up and down arrow keys to navigate history.
+You can access the last 40 commands or expressions from within rapid iteration mode just by using the up and down arrow keys to navigate history.
 
 #### General notes on rapid iteration mode
 Rapid iteration mode temporary files are created under the `rs_iter` subdirectory of your temporary directory (for example $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust). The generated script is called `iter_script.rs`.

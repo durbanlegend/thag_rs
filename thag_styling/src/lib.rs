@@ -26,9 +26,9 @@ pub mod exporters;
 
 // Re-export common types
 pub use thag_common::{
-    auto_help, debug_log, get_verbosity, help_system, init_verbosity, prtln, re,
-    set_global_verbosity, set_verbosity, set_verbosity_from_env, vprtln, ColorSupport, TermBgLuma,
-    ThagCommonError, ThagCommonResult, Verbosity, OUTPUT_MANAGER, V,
+    auto_help, debug_log, eprtln, get_verbosity, help_system, init_verbosity, prtln, re,
+    set_global_verbosity, set_verbosity, set_verbosity_from_env, veprtln, vprtln, ColorSupport,
+    TermBgLuma, ThagCommonError, ThagCommonResult, Verbosity, OUTPUT_MANAGER, V,
 };
 
 #[cfg(feature = "color_detect")]

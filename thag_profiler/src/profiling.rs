@@ -16,6 +16,9 @@ use std::{
 use thag_common::{re, static_lazy};
 
 #[cfg(feature = "time_profiling")]
+use thag_proc_macros::timing;
+
+#[cfg(feature = "time_profiling")]
 use std::collections::HashSet;
 
 #[cfg(feature = "full_profiling")]
@@ -58,6 +61,11 @@ use std::sync::{atomic::AtomicUsize, Arc};
 // Single atomic for runtime profiling state
 #[cfg(feature = "time_profiling")]
 static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
+
+// Prevents finalize_profiling() from running more than once (e.g. explicit
+// call + atexit handler both firing for GUI apps that exit via process::exit).
+#[cfg(feature = "time_profiling")]
+pub(crate) static PROFILING_FINALIZED: AtomicBool = AtomicBool::new(false);
 
 /// Mutex to prevent concurrent access to profiling by different executions.
 #[internal_doc]
@@ -280,11 +288,22 @@ impl TryFrom<&[&str]> for ProfileConfiguration {
             }
         };
 
-        // Parse output directory (second element)
-        let output_dir = if value.get(1).map_or("", |s| *s).trim().is_empty() {
-            Some(PathBuf::from(".")) // Default to current directory if empty
-        } else {
-            Some(PathBuf::from(value.get(1).unwrap().trim()))
+        // Parse output directory (second element).
+        // Canonicalize to an absolute path immediately so that subsequent
+        // set_current_dir() calls (e.g. in GUI scripts that navigate to the
+        // selected file's parent) don't silently redirect the profile output.
+        let output_dir = {
+            let raw = value.get(1).map_or("", |s| *s).trim();
+            let p = if raw.is_empty() {
+                std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+            } else {
+                let p = PathBuf::from(raw);
+                // Try to canonicalize; if that fails (dir not yet created) make it
+                // absolute by joining with the current directory.
+                p.canonicalize()
+                    .unwrap_or_else(|_| std::env::current_dir().map(|d| d.join(&p)).unwrap_or(p))
+            };
+            Some(p)
         };
 
         // Parse debug log (third element)
@@ -520,13 +539,31 @@ static_lazy! {
             .and_then(|s| s.to_str())
             .unwrap_or("unknown");
         let timestamp = Local::now().format("%Y%m%d-%H%M%S").to_string();
-        let base = format!("{script_stem}-{timestamp}");
+        let filename_base = format!("{script_stem}-{timestamp}");
 
-        // Create debug log path in temp directory
+        // Resolve the output directory to an absolute path now, before any
+        // set_current_dir() call can change it.  The config was already
+        // canonicalized in TryFrom, but we re-check here as a belt-and-braces
+        // measure and to handle the Default config path too.
+        let output_dir = get_profile_config()
+            .output_dir
+            .unwrap_or_else(|| std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from(".")));
+        let output_dir = output_dir.canonicalize().unwrap_or_else(|_| {
+            std::env::current_dir()
+                .map(|d| d.join(&output_dir))
+                .unwrap_or(output_dir)
+        });
+        // Ensure the output directory exists.
+        std::fs::create_dir_all(&output_dir).ok();
+        let base = output_dir.join(&filename_base);
+        let base = base.to_string_lossy();
+
+        // Debug log always goes to the OS temp directory, unaffected by CWD.
         let mut debug_log_path = std::env::temp_dir();
         debug_log_path.push("thag_profiler");
         std::fs::create_dir_all(&debug_log_path).ok();
-        debug_log_path.push(format!("{base}-debug.log"));
+        debug_log_path.push(format!("{filename_base}-debug.log"));
 
         ProfileFilePaths {
             time: format!("{base}.folded"),
@@ -1054,6 +1091,13 @@ pub(crate) fn enable_profiling(
         clear_profile_config_cache();
     }
 
+    // Reset the finalization flag when starting a new profiling session so that
+    // finalize_profiling() can run again (e.g. in tests that repeatedly enable
+    // and disable profiling, or when re-running after a previous atexit call).
+    if enabled {
+        PROFILING_FINALIZED.store(false, Ordering::SeqCst);
+    }
+
     // Check if the operation is a no-op due to environment settings
     let config = get_profile_config();
     if enabled != config.enabled {
@@ -1423,7 +1467,7 @@ impl Profile {
             self.registered_name,
             self.profile_type,
             self.detailed_memory,
-            self.memory_task.as_ref().map_or("N/A".to_string(), |context| format!("{}", context.task_id))
+            self.memory_task.as_ref().map_or_else(|| "N/A".to_string(), |context| format!("{}", context.task_id))
         );
 
         if size == 0 {
@@ -1523,6 +1567,18 @@ impl Profile {
         let cleaned_stack = extract_profile_callstack();
 
         // debug_log!("cleaned_stack={cleaned_stack:#?}");
+
+        if cleaned_stack.is_empty() {
+            warn_once!(true, || {
+                eprintln!(
+                    "thag_profiler WARNING: backtrace yielded no usable frames in \
+                         Profile::new. Profiling data will be incomplete.\n\
+                         This typically means the Rust toolchain's symbol demangling \
+                         format has changed and START_PATTERN needs updating."
+                );
+            });
+            return None;
+        }
 
         let fn_name = &cleaned_stack[0];
 
@@ -1696,10 +1752,19 @@ impl Profile {
             // debug_log!("************\n{current_backtrace:?}\n************");
 
             let cleaned_stack = extract_profile_callstack();
-            // debug_log!("cleaned_stack={cleaned_stack:#?}");
 
             if cleaned_stack.is_empty() {
-                debug_log!("Empty cleaned stack found");
+                warn_once!(
+                    true,
+                    || {
+                        eprintln!(
+                            "thag_profiler WARNING: backtrace yielded no usable frames in \
+                             Profile::new. Profiling data will be incomplete.\n\
+                             This typically means the Rust toolchain's symbol demangling \
+                             format has changed and START_PATTERN needs updating."
+                        );
+                    }
+                );
                 return None;
             }
 
@@ -2210,7 +2275,12 @@ pub fn extract_profile_callstack() -> Vec<String> {
                         break 'process_symbol;
                     }
                     if !start {
-                        if name.contains(START_PATTERN) && !name.contains("{{closure}}") {
+                        // Match both legacy mangling ("Profile::new") and
+                        // Rust v0 mangling ("<..::Profile>::new") introduced as
+                        // default in Rust ~1.78.
+                        let is_profile_new = name.contains(START_PATTERN)
+                            || (name.contains("Profile") && name.contains('>' ) && name.ends_with("::new"));
+                        if is_profile_new && !name.contains("{{closure}}") {
                             start = true;
                             is_current_fn = true;
                         }
@@ -2337,8 +2407,11 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
      */
 
     let maybe_callstack: Option<Vec<String>> = safe_alloc! {
-        // Pre-allocate with fixed capacity to avoid reallocations
-        let capacity = 100;
+        // 200 frames covers even the deepest Rust call stacks (syntect/serde/bincode
+        // can stack 80-120 frames on their own).  We gracefully truncate rather than
+        // panic when the limit is hit, so a deep-stack allocation doesn't abort the
+        // profiled process.
+        let capacity = 200;
         let mut callstack: Vec<String> = Vec::with_capacity(capacity); // Fixed size, no growing
         let mut found_recursion = false;
         let mut start = false;
@@ -2346,6 +2419,9 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
         let mut i = 0;
 
         trace(|frame| {
+            if fin || found_recursion || i >= capacity {
+                return false; // Stop walking — truncate gracefully
+            }
             let mut suppress = false;
 
             resolve_frame(frame, |symbol| {
@@ -2384,14 +2460,13 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
                         break 'process_symbol;
                     }
 
-                    // Safe to unwrap now
                     callstack.push(name);
                     i += 1;
+                    // Capacity guard: stop collecting (no panic — caller reads
+                    // the partial stack, which is still useful).
                     if i >= capacity {
-                        safe_alloc! {
-                             println!("frames={callstack:#?}");
-                         };
-                         panic!("Max limit of {capacity} frames exceeded");
+                        fin = true; // signals outer loop to stop
+                        break 'process_symbol;
                     }
                 }
             });
@@ -2583,8 +2658,8 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         .map_err(|e| ProfileError::General(format!("Failed to open input file: {e}")))?;
     let reader = BufReader::new(file);
 
-    // Store stack lines as (stack_str, time) pairs
-    let mut stack_lines: Vec<(String, u64)> = Vec::new();
+    // Store stack lines as (stack_str, calls, time) triples
+    let mut stack_lines: Vec<(String, u64, u64)> = Vec::new();
     let mut input_lines = 0;
 
     // First pass: Parse the file and separate headers from stack lines
@@ -2592,14 +2667,22 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         input_lines = line_count;
         let line = line.map_err(|e| ProfileError::General(format!("Failed to read line: {e}")))?;
 
-        // Parse line: "stack time"
-        let parts: Vec<&str> = line.rsplitn(2, ' ').collect();
-        if parts.len() != 2 {
+        // Parse line: "stack calls time"
+        let parts: Vec<&str> = line.rsplitn(3, ' ').collect();
+        if parts.len() != 3 {
             debug_log!("Warning: Invalid line format at line {line_count}: {line}");
             continue;
         }
 
-        let stack_str = parts[1].trim();
+        let stack_str = parts[2].trim();
+        let calls = match parts[1].parse::<u64>() {
+            Ok(t) => t,
+            Err(e) => {
+                debug_log!("Warning: Invalid time value at line {line_count}: {e}");
+                continue;
+            }
+        };
+
         let time = match parts[0].parse::<u64>() {
             Ok(t) => t,
             Err(e) => {
@@ -2609,7 +2692,13 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         };
 
         // Store the stack line
-        stack_lines.push((stack_str.to_string(), time));
+        // eprintln!(
+        //     "stack_lines.push(({}, {}, {})",
+        //     stack_str.to_string(),
+        //     calls,
+        //     time
+        // );
+        stack_lines.push((stack_str.to_string(), calls, time));
     }
 
     // Calculate exclusive times using forward processing
@@ -2618,27 +2707,28 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
     let len = &stack_lines.len();
 
     // Pre-parse all stacks once to avoid repeated string operations
-    let parsed_stacks: Vec<(Vec<String>, u64, String)> = stack_lines
+    let parsed_stacks: Vec<(Vec<String>, u64, u64, String)> = stack_lines
         .into_iter()
-        .map(|(stack, time)| {
+        .map(|(stack, calls, time)| {
             let parts: Vec<String> = stack.split(';').map(ToString::to_string).collect();
-            (parts, time, stack)
+            (parts, calls, time, stack)
         })
         .collect();
 
     // Initialize exclusive times with original inclusive times
-    let mut exclusive_times: Vec<(String, u64)> = parsed_stacks
+    let mut exclusive_times: Vec<(String, u64, u64)> = parsed_stacks
         .iter()
-        .map(|(_, time, stack)| (stack.clone(), *time))
+        .map(|(_, calls, time, stack)| (stack.clone(), *calls, *time))
         .collect();
 
     // Process from bottom (deepest stacks) to top to adjust parent times
     for i in (0..parsed_stacks.len()).rev() {
-        let (ref current_parts, _, _) = &parsed_stacks[i];
+        let (ref current_parts, _, _, _) = &parsed_stacks[i];
 
         // Look forward (upward in file) for direct children
         for stack in parsed_stacks.iter().take(i) {
-            let (ref child_parts, child_time, _) = &stack;
+            let (ref child_parts, _, child_time, _) = &stack;
+            // eprintln!("child_parts={child_parts:#?},child_time={child_time}");
 
             // Check if this is a direct child (exactly one level deeper)
             if child_parts.len() == current_parts.len() + 1 {
@@ -2650,7 +2740,8 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
 
                 if is_parent {
                     // This direct child should be subtracted from current stack
-                    exclusive_times[i].1 = exclusive_times[i].1.saturating_sub(*child_time);
+                    // eprintln!("Is parent!");
+                    exclusive_times[i].2 = exclusive_times[i].2.saturating_sub(*child_time);
                 }
             }
         }
@@ -2665,8 +2756,8 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         .map_err(|e| ProfileError::General(format!("Failed to create output file: {e}")))?;
     let mut writer = BufWriter::new(output_file);
 
-    for (stack, exclusive) in &exclusive_times {
-        writeln!(writer, "{stack} {exclusive}")
+    for (stack, calls, exclusive) in &exclusive_times {
+        writeln!(writer, "{stack} {calls} {exclusive}")
             .map_err(|e| ProfileError::General(format!("Failed to write stack line: {e}")))?;
     }
 
@@ -2678,7 +2769,7 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
     debug_log!("Found {len} stacks");
 
     // Sum up exclusive times to validate
-    let total_exclusive: u64 = exclusive_times.iter().map(|(_, time)| *time).sum();
+    let total_exclusive: u64 = exclusive_times.iter().map(|(_, _, time)| *time).sum();
     debug_log!("Total exclusive time: {total_exclusive} µs");
     debug_log!("Successfully converted time profile from inclusive to exclusive time");
 
@@ -2857,10 +2948,17 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
 ];
 
 /// Normalises function names by removing closure references and hash suffixes.
+/// Handles both legacy Rust mangling (`::h[hexdigits]` suffix) and v0 mangling
+/// (`[16-hex-digit]` crate disambiguators, e.g. `crate[abc123]::module::fn`).
 #[internal_doc]
 pub fn clean_function_name(name: &mut str) -> String {
-    // Trim suffix like ::{{closure}} or ::h[hexdigits]
+    // Trim closure suffixes:
+    //   Legacy mangling:  ::{{closure}}
+    //   Rust v0 mangling: ::{closure#N}
+    // Also trim legacy hex suffix: ::h[hexdigits]
     let trimmed = if let Some(pos) = name.find("::{{closure}}") {
+        &name[..pos]
+    } else if let Some(pos) = name.find("::{closure") {
         &name[..pos]
     } else if let Some(pos) = name.rfind("::h") {
         let hex = &name[pos + 3..];
@@ -2871,6 +2969,45 @@ pub fn clean_function_name(name: &mut str) -> String {
         }
     } else {
         name
+    };
+
+    // Strip Rust v0 mangling crate disambiguators: `[xxxxxxxxxxxxxxxx]` (exactly 16 hex digits).
+    // These appear as `crate_name[HASH]::...` in demangled v0 symbols.
+    let trimmed_owned: String;
+    let trimmed = if trimmed.contains('[') {
+        let mut out = String::with_capacity(trimmed.len());
+        let mut chars = trimmed.chars();
+        while let Some(c) = chars.by_ref().next() {
+            if c == '[' {
+                // Collect until ']', check it's exactly 16 hex digits
+                let mut hex_buf = String::new();
+                let mut closed = false;
+                for ch in chars.by_ref() {
+                    if ch == ']' {
+                        closed = true;
+                        break;
+                    }
+                    hex_buf.push(ch);
+                }
+                if closed && hex_buf.len() == 16 && hex_buf.chars().all(|ch| ch.is_ascii_hexdigit())
+                {
+                    // Drop the [HASH] — skip it
+                } else {
+                    // Not a v0 disambiguator; put it back literally
+                    out.push('[');
+                    out.push_str(&hex_buf);
+                    if closed {
+                        out.push(']');
+                    }
+                }
+            } else {
+                out.push(c);
+            }
+        }
+        trimmed_owned = out;
+        trimmed_owned.as_str()
+    } else {
+        trimmed
     };
 
     // Remove trailing ::
@@ -2933,8 +3070,8 @@ impl ProfileStats {
     /// # Arguments
     /// * `func_name` - The name of the function being profiled
     /// * `duration` - The duration of this particular call
-    pub fn record(&mut self, func_name: &str, duration: std::time::Duration) {
-        *self.calls.entry(func_name.to_string()).or_default() += 1;
+    pub fn record(&mut self, func_name: &str, calls: u64, duration: std::time::Duration) {
+        *self.calls.entry(func_name.to_string()).or_default() += calls;
         *self.total_time.entry(func_name.to_string()).or_default() += duration.as_micros();
     }
 
@@ -3188,6 +3325,7 @@ fn parse_profraw_file(profraw_path: &str) -> ProfileResult<Vec<ProfrawEntry>> {
         }
 
         // Parse line: "stack payload_micros overhead_micros"
+        // Reverse split
         let parts: Vec<&str> = line.rsplitn(3, ' ').collect();
         if parts.len() != 3 {
             debug_log!(
@@ -3233,68 +3371,88 @@ fn parse_profraw_file(profraw_path: &str) -> ProfileResult<Vec<ProfrawEntry>> {
     Ok(entries)
 }
 
-/// Subtracts child overhead from parent payload to get clean inclusive times
+#[derive(Debug)]
 #[cfg(feature = "time_profiling")]
+struct TrieNode<'a> {
+    children: HashMap<&'a str, Self>,
+    calls: u32,
+    payload: u64,
+    subtree_overhead: u64,
+}
+
+#[cfg(feature = "time_profiling")]
+impl TrieNode<'_> {
+    // fn new(seq: usize) -> Self {
+    fn new() -> Self {
+        Self {
+            children: HashMap::new(),
+            calls: 0,
+            payload: 0,
+            subtree_overhead: 0,
+        }
+    }
+}
+
+/// Subtracts child overhead from parent payload to get clean inclusive times,
+/// preserving the exact order of first appearance from the input entries.
+#[cfg(feature = "time_profiling")]
+#[timing]
 fn subtract_child_overhead(entries: &[ProfrawEntry]) -> Vec<(String, u64)> {
     debug_log!("Subtracting child overhead from parent payload");
 
-    let mut result = Vec::new();
-    let mut stack_totals = HashMap::new();
+    // 1. Build the Trie and aggregate metrics in O(N * depth)
+    let mut root = TrieNode::new();
 
-    // First pass: collect all stack -> overhead mapping
-    let mut stack_overhead = HashMap::new();
     for entry in entries {
-        *stack_overhead.entry(entry.stack.clone()).or_insert(0) += entry.overhead_micros;
+        let path: Vec<&str> = entry.stack.split(';').collect();
+        let mut current = &mut root;
+
+        for part in path {
+            current = current.children.entry(part).or_insert_with(TrieNode::new);
+            current.subtree_overhead += entry.overhead_micros;
+        }
+        current.calls += 1;
+        current.payload += entry.payload_micros;
+        current.subtree_overhead -= entry.overhead_micros;
     }
 
-    // Process entries in original order to preserve chronological sequence
+    // 2. Iterate entries 0..N, querying the Trie on first appearance of each stack
+    let mut results = Vec::with_capacity(entries.len());
+    let mut processed_stacks = HashSet::with_capacity(entries.len());
+
     for entry in entries {
-        let stack_parts: Vec<&str> = entry.stack.split(';').collect();
+        // HashSet::insert returns true ONLY the first time it encounters a stack
+        if processed_stacks.insert(entry.stack.as_str()) {
+            let path: Vec<&str> = entry.stack.split(';').collect();
+            let mut current = &root;
 
-        // Calculate child overhead for this stack
-        let mut child_overhead = 0u64;
-        for other_entry in entries {
-            let other_parts: Vec<&str> = other_entry.stack.split(';').collect();
-
-            // Check if other_entry is a child of current entry
-            if other_parts.len() > stack_parts.len() {
-                // Check if the other stack starts with our stack
-                let other_prefix = &other_parts[0..stack_parts.len()];
-                if other_prefix == stack_parts {
-                    child_overhead += other_entry.overhead_micros;
+            // Navigate directly to the aggregated TrieNode in O(depth)
+            for part in &path {
+                if let Some(next) = current.children.get(part) {
+                    current = next;
                 }
             }
-        }
 
-        // Clean payload = original payload - child overhead
-        let clean_payload = entry.payload_micros.saturating_sub(child_overhead);
+            let net_payload = current.payload.saturating_sub(current.subtree_overhead);
 
-        // Track total for this stack (for accumulation)
-        *stack_totals.entry(entry.stack.clone()).or_insert(0) += clean_payload;
+            if net_payload > 0 {
+                // let stack_str = entry.stack.clone();
+                // Format leaf frame with call count: "parent;child 42"
+                let stack_str = {
+                    let mut path_clone = path;
+                    let last_idx = path_clone.len() - 1;
+                    let leaf_with_calls = format!("{} {}", path_clone[last_idx], current.calls);
+                    path_clone[last_idx] = &leaf_with_calls;
+                    path_clone.join(";")
+                };
 
-        debug_log!(
-            "Stack: {} | Original payload: {}μs | Child overhead: {}μs | Clean payload: {}μs",
-            entry.stack,
-            entry.payload_micros,
-            child_overhead,
-            clean_payload
-        );
-    }
-
-    // Add entries in the order they first appeared, with accumulated totals
-    let mut processed_stacks = HashSet::new();
-    for entry in entries {
-        if !processed_stacks.contains(&entry.stack) {
-            let total_time = stack_totals[&entry.stack];
-            if total_time > 0 {
-                result.push((entry.stack.clone(), total_time));
+                results.push((stack_str, net_payload));
             }
-            processed_stacks.insert(entry.stack.clone());
         }
     }
 
-    debug_log!("Generated {} clean inclusive times", result.len());
-    result
+    debug_log!("Generated {} clean inclusive times", results.len());
+    results
 }
 
 /// Converts .profraw file to clean .folded file by subtracting overhead
@@ -3343,13 +3501,14 @@ pub fn process_profraw_to_folded(profraw_path: &str, output_path: &str) -> Profi
 ///
 /// Will bubble up any i/o errors encountered processing the files.
 #[cfg(feature = "time_profiling")]
+#[allow(unused)]
 pub fn process_all_profraw_files() -> ProfileResult<()> {
     debug_log!("Processing all .profraw files in current directory");
 
     let current_dir = std::env::current_dir()
         .map_err(|e| ProfileError::General(format!("Failed to get current directory: {e}")))?;
 
-    let mut _processed_count = 0;
+    let mut processed_count = 0;
 
     for entry in std::fs::read_dir(&current_dir)
         .map_err(|e| ProfileError::General(format!("Failed to read directory: {e}")))?
@@ -3367,7 +3526,7 @@ pub fn process_all_profraw_files() -> ProfileResult<()> {
 
                 match process_profraw_to_folded(&profraw_path, &folded_path) {
                     Ok(()) => {
-                        _processed_count += 1;
+                        processed_count += 1;
                         debug_log!("Successfully processed: {}", profraw_path);
                     }
                     Err(e) => {
@@ -3378,7 +3537,7 @@ pub fn process_all_profraw_files() -> ProfileResult<()> {
         }
     }
 
-    debug_log!("Processed {} .profraw files", _processed_count);
+    debug_log!("Processed {} .profraw files", processed_count);
     Ok(())
 }
 

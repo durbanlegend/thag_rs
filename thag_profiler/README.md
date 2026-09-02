@@ -1,5 +1,11 @@
 # thag_profiler
 
+[![Crates.io](https://img.shields.io/crates/v/thag_profiler.svg)](https://img.shields.io/crates/v/thag_profiler)
+[![Crates.io size](https://img.shields.io/crates/size/thag_profiler.svg)](https://img.shields.io/crates/size/thag_profiler)
+[![Rust](https://img.shields.io/badge/rustc-stable+-green.svg)](https://img.shields.io/badge/rustc-stable+-green)
+[![Documentation](https://docs.rs/thag_profiler/badge.svg)](https://docs.rs/thag_profiler)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
+
 An accurate lightweight cross-platform profiling library and toolkit for Rust applications that aims to lower the barriers to analysing code performance.
 
 `thag_profiler` offers time and/or memory profiling with minimal instrumentation, graphical output with your choice of color schemes, and tabular reports.
@@ -30,13 +36,15 @@ If I had to instrument code, the instrumentation must not slow down the code whe
 
 If profiling tools tended to neglect async functions or memory profiling, a lot of work was going to go into making `thag_profiler` handle them.
 
-If profiling tools tended to produce inaccurate or approximate output, `thag_profiler` was going to be as precise as I could make it (full disclosure: perfect precision is not achievable with memory profiling). I was also going to cater for a selective fully detailed memory profile option to allow drilling down into memory allocation hotspots.
+If profiling tools tended to produce inaccurate or approximate output, `thag_profiler` was going to be as precise as I could make it. I was also going to cater for a selective fully detailed memory profile option to allow drilling down into memory allocation hotspots. 
+
+(Full disclosure: perfect precision is not achievable with memory profiling. Also the time profiling does not currently record wall clock time, so in the case of async time profiling, stripping the setup and teardown time of async child functions out of the parent/calling function is imprecise because we don't know to what extent they are concurrent versus sequential, and this may cause time spent in the parent to be understated to that extent. This can be worked around by profiling the parent and child functions in different runs.)
 
 If profiling tools' output tended to need a lot of interpretation, `thag_profiler` was going to make it as easy as possible to visualise the results as flamegraphs (thanks to `inferno`) or as tabular reports, and keep them organised by program and date-time for as long as needed.
 
 If profiling tools tended to be confined to one platform, `thag_profiler` was going to be cross-platform.
 
-Surprisingly, all this seems to have been possible for a [grug brained developer](https://grugbrain.dev/) such as myself. With a lot of effort, testing and wrangling of Claude Sonnet, I've done about the very best job of it that I could, and I trust you may find it useful.
+I think it's turned out reasonably well, and I hope it may be of benefit to others.
 
 ## Overview
 
@@ -76,7 +84,7 @@ Surprisingly, all this seems to have been possible for a [grug brained developer
 ---
 
 [![Memory flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250624-141421.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250624-141421.svg)<br>
-*Filtered memory profile in <code>inferno</code> "memory" color scheme with `count_words` function profiled in detail. Click on image for interactive version with clickable bars and search.*
+*Filtered memory profile in `inferno` "memory" color scheme with `count_words` function profiled in detail. Click on image for interactive version with clickable bars and search.*
 
 ---
 
@@ -574,7 +582,7 @@ The following optional arguments are available:
 
 - `runtime`: Specifies that a detailed specification is to be provided at runtime via the `THAG_PROFILER` environment variable. This is the only option that allows you to influence profiling at runtime. This includes switching profiling off, thus trading the efficiency of zero-cost abstraction for the flexibility of runtime configuration. That being said, the overhead is still very small, for the reasons stated under the `no` option above.
 
-- `function(...)`: Configures profiling options specific to the current function. Within the parentheses, you can specify any of the arguments that would be accepted by the `#[profiled]` attribute: `time`, `mem_summary`, `mem_detail`, `both`, `global`, `test`
+- `function(...)`: Configures profiling options specific to the current function. Within the parentheses, you can specify any of the arguments that would be accepted by the `#[profiled]` attribute: `time`, `mem_summary`, `mem_detail`, `both`, `global`, and `test`. You can also specify `none` if you don't want to profile the `main` function itself.
 
 Examples:
 
@@ -1145,14 +1153,14 @@ donf@MacBook-Air thag_rs %
 ```
 
 [![Global detailed memory flamechart: syn](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamechart_20250521-100000.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamechart_20250521-100000.svg)<br>
-*Global detailed memory profile in <code>inferno</code> "Rust" color scheme showing `syn` crate functions. Click on image for interactive version with clickable bars and search.*
+*Global detailed memory profile in `inferno` "Rust" color scheme showing `syn` crate functions. Click on image for interactive version with clickable bars and search.*
 
 ##### A project example of detailed memory profiling
 
 Here is `thag` itself in iterative mode, profiled in the same way:
 
 [![Global detailed memory flamechart: thag](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_detail_thag.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_detail_thag.svg)<br>
-*Detailed memory allocation profile in <code>inferno</code> "orange" color scheme showing all dependencies. Click on image for interactive version with clickable bars and search.*
+*Detailed memory allocation profile in `inferno` "orange" color scheme showing all dependencies. Click on image for interactive version with clickable bars and search.*
 
 
 #### Before-and-After (Differential) Memory Profiling
@@ -1165,13 +1173,13 @@ The `thag_profile` tool supports `inferno`'s differential profiling feature for 
 
 #### Memory Profiling Limitations and Considerations
 
-- **Performance Impact**: `thag_profiler` memory profiling introduces significant overhead compared to time profiling. Expect your application to run appreciably more slowly when memory profiling is enabled. It's strongly recommended to use memory profiling selectively for occasional health checks and targeted investigations rather than leave it enabled indefinitely.
+- **Performance impact**: `thag_profiler` memory profiling introduces significant overhead compared to time profiling. Expect your application to run appreciably more slowly when memory profiling is enabled. It's strongly recommended to use memory profiling selectively for occasional health checks and targeted investigations rather than leave it enabled indefinitely.
 
-- **Comparison with Other Memory Profilers**: `thag_profiler` aims to provide comprehensive memory tracking and may show higher allocation counts than some other profiling tools because it captures:
+- **Comparison with other memory profilers**: `thag_profiler` aims to provide comprehensive memory tracking and may show higher allocation counts than some other profiling tools because it captures:
 
- - Allocator metadata and alignment overhead
- - Intermediate allocations during Vec/HashMap growth and  reallocation
- - Function-level aggregation of all allocations within profiled  scopes
+    - Allocator metadata and alignment overhead
+    - Intermediate allocations during Vec/HashMap growth and  reallocation
+    - Function-level aggregation of all allocations within profiled  scopes
 
  This comprehensive approach provides a more accurate picture of actual memory usage that your program experiences in production, including overhead that other tools might filter out.
 
@@ -1316,7 +1324,7 @@ Profiles generate "folded" stack traces in the output directory by default:
 
 - `your_program-<yyyymmdd>-<hhmmss>-memory_detail_dealloc.folded`: Detailed memory deallocation data (if enabled in 4th argument of THAG_PROFILER with #[enable_profiling(runtime)])
 
-These files can be visualized with the included `thag_profile` or with tools like [inferno-flamegraph](https://github.com/jonhoo/inferno) or the beautiful [speedscope](https://www.speedscope.app/).
+These files can be visualized with the included `thag_profile` or with tools like [inferno-flamegraph](https://github.com/jonhoo/inferno) or the beautiful [speedscope](https://www.speedscope.app/). As of v1.2, the time-profiling .folded files now include call counts for reporting purposes, which are supported by `thag_profile` and `speedscope` but not directly by `inferno`.
 
 `thag_profile` is recommended because it offers:
 
@@ -1335,12 +1343,12 @@ These files can be visualized with the included `thag_profile` or with tools lik
 ### Filtering Flamegraphs and Flamecharts
 
 [![Unfiltered memory flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_unfiltered.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_unfiltered.svg)<br>
-*Unfiltered profile showing wasted space.  <code>inferno</code> "yellow" color scheme. Click on image for interactive version with clickable bars and search.*
+*Unfiltered profile showing wasted space.  `inferno` "yellow" color scheme. Click on image for interactive version with clickable bars and search.*
 
 ---
 
 [![Filtered memory flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_filtered.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_filtered.svg)<br>
-*The same .folded file, but with the dead section of `main` filtered out for a clearer view.  <code>inferno</code> "aqua" color scheme. Click on image for interactive version with clickable bars and search.*
+*The same .folded file, but with the dead section of `main` filtered out for a clearer view.  `inferno` "aqua" color scheme. Click on image for interactive version with clickable bars and search.*
 
 ### Profiling Tools
 
@@ -1451,14 +1459,14 @@ The analysis tool allows you to choose which `inferno` color scheme to use and r
 #### Flamegraphs
 
 [![Example flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_time_20250302-080709.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_time_20250302-080709.svg)<br>
-*Example flamegraph in <code>inferno</code> "purple" color scheme. Click on image for interactive version with clickable bars and search.*
+*Example flamegraph in `inferno` "purple" color scheme. Click on image for interactive version with clickable bars and search.*
 
 **Flamegraphs** aggregate all executions of a function into one, making them ideal for identifying which functions consume the most resources overall. Use flamegraphs when you want to identify your application's hottest functions regardless of when they occur. Flamegraphs organize functions alphabetically, so unlike flamecharts there is no significance to the horizontal sequence of items - it is only the width and the parent-child relationships that are important.
 
 #### Flamecharts
 
 [![Example flamechart](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_time_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_time_20250519-155436.svg)<br>
-*Example flamechart of same data in <code>inferno</code> "green" color scheme. Click on image for interactive version with clickable bars and search.*
+*Example flamechart of same data in `inferno` "green" color scheme. Click on image for interactive version with clickable bars and search.*
 
 **Flamecharts** organize functions chronologically, showing the sequence of operations over time. They're particularly valuable for:
 
@@ -1484,7 +1492,7 @@ In general, choose flamegraphs for a high-level view of resource usage and flame
 
 **2. Focus on hot paths**: Look for the widest blocks in your flamechart - these are your performance bottlenecks
 
-**3. Compare before/after**: Always compare profiles before and after optimization
+**3. Compare before/after**: Compare profiles before and after optimization
 
 **4. Watch for memory bloat**: Use memory profiling to identify excessive allocations
 
@@ -1496,7 +1504,9 @@ In general, choose flamegraphs for a high-level view of resource usage and flame
 
 **8. Profiling efficiency**: Every execution of an actively profiled function requires a Profile struct to be set up at the beginning and torn down at the end after logging the captured data for that function execution. The Profile setup and teardown time amount to about 1ms (based on an M1 MacBook). This time is stripped out of the results, but still has an appreciable effect on runtime when profiling very lightweight functions that are called many thousands, millions or billions of times during execution. If such a function is called from a loop, consider profiling the loop as a whole (with a section profile or by factoring it out to a separate profiled function) rather that incurring the extra overhead of profiling the inner function to record each individual function call.
 
-**9. Understand how differential profiling graphs work in `inferno`**: `thag_profiler` delegates these entirely to `inferno`, which does not report straight comparisons but normalises the "before" profile count to match the "after" one in an attempt to compensate for inferred changes in external variables such as machine loading, even though they may in fact be almost entirely due to the changes being compared. This seems to have been optional in the Brendan Gregg's original flamegraph toolkit but not in `inferno`. I don't have strong views on the merits of this implementation, but it may cause small but worthwhile changes to literally pale into insignificance beside the most substantial ones, and not show up as improvements until hovered over.
+**9. Start from the top level and don't profile trivial function**: If time profiling is unacceptably slow, check the generated `.profraw` file manually. Each line in this file consists of a call-stack string, followed by the time spent in the profiled function call in microseconds (aka the `payload`), and finally the number of microseconds spent in setup and teardown of the profile in order to generate that line for the call (aka the overhead). If the payload for a function is consistently tiny compared to the overhead, it is not worth profiling that function. Rather than profile all functions, start with broad-brush profiling of the higher-level functions and progressively drill down into the slow ones by profiling the functions they call, and so on.
+
+**10. Understand how differential profiling graphs work in `inferno`**: `thag_profiler` delegates these entirely to `inferno`, which does not report straight comparisons but normalises the "before" profile count to match the "after" one in an attempt to compensate for inferred changes in external variables such as machine loading, even though they may in fact be almost entirely due to the changes being compared. This seems to have been optional in the Brendan Gregg's original flamegraph toolkit but not in `inferno`. I don't have strong views on the merits of this implementation, but it may cause small but worthwhile changes to literally pale into insignificance beside the most substantial ones, and not show up as improvements until hovered over.
 
 ```rust
 async fn fetch_data() {
@@ -1532,13 +1542,15 @@ Ensure that unbounded section profiles do not go out of scope before the end of 
 
 Ensure that bounded section profiles do not go out of scope before the `end!` macro.
 
-**2. Inaccurate profile output**: Ensure you have no nested or overlapping profile sections. A high degree of contention between threads could also lead to memory allocations not being reported or reported against an ancestor function (that is, one higher up the callstack).
+**2. Time profiling only generates a `.profraw` file**: While the raw time profiling output is periodically saved to a time-stamped `.profraw` file, killing the process being profiled prevents `thag_profiler` from post-processing this file into `.folded` files for analysis and graphing with `thag_profile`. If possible, provide a means of terminating your program gracefully. Alternatively, there is currently a demo script `demo/thag_profiler_fold.rs` that you can use to do the post-processing. The intention is to develop this script into a fully-fledged `thag_profiler` tool.
 
-**3. Test failures**: Profiled tests must use serialization.
+**3. Inaccurate profile output**: Ensure you have no nested or overlapping profile sections. A high degree of contention between threads could also lead to memory allocations not being reported or reported against an ancestor function (that is, one higher up the callstack).
 
-**4. Performance impact**: Memory profiling adds significant overhead. Consider using SIZE_TRACKING_THRESHOLD=n as discussed above to ignore small allocations of integer `n` bytes or smaller.
+**4. Test failures**: Profiled tests must use serialization.
 
-**5. File redirect issues**: Never redirect output from the instrumentation tools back to the input file.
+**5. Performance impact**: Memory profiling adds significant overhead. Consider using SIZE_TRACKING_THRESHOLD=n as discussed above to ignore small allocations of integer `n` bytes or smaller. Unnecessary time profiling of trivial methods can also cause profiling to bog down.
+
+**6. File redirect issues**: Never redirect output from the instrumentation tools back to the input file.
 
 ### Inspecting Profile Files
 
@@ -1547,6 +1559,15 @@ The folded stack files are human-readable:
 ```bash
 head your_executable-<yyyymmdd>-<hhmmss>.folded
 ```
+
+### Debug Logging
+
+Debug logging is output to a file called `$TMPDIR/thag_profiler/<program_stem>-yyyymmdd-HHmmss-debug.log`.
+
+To enable debug logging:
+
+1. Ensure that the `debug_logging` feature of the `thag_profiler` dependency is enabled.
+2. Enable debug logging by setting the third argument of the `THAG_PROFILER` environment variable to `announce` or `quiet`. It's recommended to use `announce`, as this will output the location of the debug log to the terminal at the start of execution.
 
 ## Verification against `dhat` crate
 

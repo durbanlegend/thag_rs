@@ -20,7 +20,7 @@ use std::{
 use syn::{parse_file, File};
 use thag_common::{debug_log, get_verbosity, re, vprtln, V};
 use thag_profiler::{end, profile, profiled};
-use thag_styling::{svprtln, Role, Styleable, StyledPrint};
+use thag_styling::{sveprtln, svprtln, Role, Styleable, StyledPrint};
 
 #[cfg(debug_assertions)]
 use crate::debug_timings;
@@ -552,6 +552,13 @@ fn resolve_thag_dependency(
         );
     } else {
         // Default: use crates.io version
+        sveprtln!(
+            Role::Info,
+            V::Q,
+            r#"`thag-auto` is specified in the script's toml block, but neither `THAG_DEV_PATH` nor `THAG_GIT_REPO` is set as an environment variable.
+    Defaulting to crates.io version of dependency `{}`"#,
+            crate_name.emphasis()
+        );
         if let Some(version) = base_version {
             let query: Query = format!("{crate_name}@={version}")
                 .parse()

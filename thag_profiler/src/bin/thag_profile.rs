@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     fs::{self, File},
-    io::{BufRead, BufReader},
+    io::{self, BufRead, BufReader, Read},
     path::{Path, PathBuf},
     process::Command,
     string::ToString,
@@ -163,7 +163,7 @@ enum AnalysisType {
     Exit,
 }
 
-fn analyze_type(analysis_type: AnalysisType, dir_path: &PathBuf) -> ProfileResult<()> {
+fn analyze_type(analysis_type: AnalysisType, dir_path: &Path) -> ProfileResult<()> {
     let filter = match analysis_type {
         AnalysisType::TimeSingle | AnalysisType::TimeDifferential => {
             |f: &str| -> bool { !f.contains("-memory") }
@@ -189,11 +189,11 @@ fn analyze_type(analysis_type: AnalysisType, dir_path: &PathBuf) -> ProfileResul
         match analysis_type {
             AnalysisType::TimeSingle => analyze_single_time_profile(&profile_group)?,
             AnalysisType::TimeDifferential => {
-                analyze_differential_profiles(&profile_group, &ProfileType::Time)?
+                analyze_differential_profiles(&profile_group, &ProfileType::Time)?;
             }
             AnalysisType::MemorySingle => analyze_single_memory_profile(&profile_group)?,
             AnalysisType::MemoryDifferential => {
-                analyze_differential_profiles(&profile_group, &ProfileType::Memory)?
+                analyze_differential_profiles(&profile_group, &ProfileType::Memory)?;
             }
             AnalysisType::Exit => return Ok(()),
         }
@@ -201,7 +201,7 @@ fn analyze_type(analysis_type: AnalysisType, dir_path: &PathBuf) -> ProfileResul
 }
 
 fn analyze_single_time_profile(profile_group: &FileGroup) -> ProfileResult<()> {
-    match select_profile_file(&profile_group)? {
+    match select_profile_file(profile_group)? {
         None => Ok(()), // User selected "Back"
         Some(file_path) => {
             let processed = read_and_process_profile(&file_path)?;
@@ -229,11 +229,8 @@ fn analyze_single_time_profile(profile_group: &FileGroup) -> ProfileResult<()> {
                 let maybe_action =
                     Select::new("Select action:", options.clone()).prompt_skippable()?;
 
-                let action = match maybe_action {
-                    Some(action) => action,
-                    None => {
-                        return Ok(());
-                    }
+                let Some(action) = maybe_action else {
+                    return Ok(());
                 };
 
                 match action {
@@ -279,7 +276,7 @@ fn analyze_differential_profiles(
 ) -> ProfileResult<()> {
     match select_profile_files(profile_group) {
         Ok(Some((before, after))) => {
-            generate_differential_flamegraph(profile_type, &before, &after)?
+            generate_differential_flamegraph(profile_type, &before, &after)?;
         }
         Ok(None) => {
             eprintln!("No selection made");
@@ -291,7 +288,7 @@ fn analyze_differential_profiles(
 }
 
 fn analyze_single_memory_profile(profile_group: &FileGroup) -> ProfileResult<()> {
-    match select_profile_file(&profile_group)? {
+    match select_profile_file(profile_group)? {
         None => Ok(()), // User selected "Back"
         Some(selected_file) => {
             let processed = read_and_process_profile(&selected_file)?;
@@ -326,9 +323,8 @@ fn analyze_single_memory_profile(profile_group: &FileGroup) -> ProfileResult<()>
                 // Show memory-specific menu and handle selection...
                 let maybe_selection = Select::new("Select action:", options).prompt_skippable()?;
 
-                let selection = match maybe_selection {
-                    Some(selection) => selection,
-                    None => return Ok(()),
+                let Some(selection) = maybe_selection else {
+                    return Ok(());
                 };
 
                 match selection {
@@ -418,12 +414,23 @@ fn generate_time_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Profi
     // opts.color_diffusion = true;
     opts.flame_chart = as_chart;
 
+    let stacks = profile
+        .stacks
+        .iter()
+        .rev()
+        .map(|line| {
+            let mut parts: Vec<String> = line.splitn(3, ' ').map(ToString::to_string).collect();
+            let count = &parts.len();
+            if *count == 3 {
+                // Remove calls
+                parts.remove(1);
+            }
+            parts.join(" ")
+        })
+        .collect::<Vec<String>>();
+
     // Reverse iter in case of flamechart (regular flamegraph will ignore this sort order).
-    flamegraph::from_lines(
-        &mut opts,
-        profile.stacks.iter().rev().map(String::as_str),
-        output,
-    )?;
+    flamegraph::from_lines(&mut opts, stacks.iter().rev().map(String::as_str), output)?;
 
     enhance_svg_accessibility(svg)?;
 
@@ -435,17 +442,104 @@ fn generate_time_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Profi
     Ok(())
 }
 
+struct FilteringReader<R> {
+    inner: R,
+    output: Vec<u8>,
+    pos: usize,
+    done: bool,
+}
+
+impl<R: BufRead> FilteringReader<R> {
+    const fn new(inner: R) -> Self {
+        Self {
+            inner,
+            output: Vec::new(),
+            pos: 0,
+            done: false,
+        }
+    }
+
+    fn refill(&mut self) -> io::Result<()> {
+        self.output.clear();
+        self.pos = 0;
+
+        if self.done {
+            return Ok(());
+        }
+
+        let mut line = String::new();
+        let bytes = self.inner.read_line(&mut line)?;
+
+        if bytes == 0 {
+            self.done = true;
+            return Ok(());
+        }
+
+        let line = line.trim_end_matches(['\r', '\n']);
+
+        let (without_count, count) = line
+            .rsplit_once(char::is_whitespace)
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "missing count"))?;
+
+        let (text, _calls) = without_count
+            .rsplit_once(char::is_whitespace)
+            .unwrap_or_else(|| (without_count, ""));
+
+        self.output.extend_from_slice(text.as_bytes());
+        self.output.push(b' ');
+        self.output.extend_from_slice(count.as_bytes());
+        self.output.push(b'\n');
+
+        Ok(())
+    }
+}
+
+impl<R: BufRead> Read for FilteringReader<R> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if buf.is_empty() {
+            return Ok(0);
+        }
+
+        loop {
+            if self.pos < self.output.len() {
+                let available = &self.output[self.pos..];
+                let n = available.len().min(buf.len());
+
+                buf[..n].copy_from_slice(&available[..n]);
+                self.pos += n;
+
+                return Ok(n);
+            }
+
+            self.refill()?;
+
+            if self.done && self.output.is_empty() {
+                return Ok(0);
+            }
+        }
+    }
+}
+
 fn generate_differential_flamegraph(
     profile_type: &ProfileType,
     before: &PathBuf,
     after: &PathBuf,
 ) -> ProfileResult<()> {
+    // let before_reader = filter_calls(BufReader::new(before))?;
+    // let after_reader = filter_calls(BufReader::new(after))?;
+
+    let before_file = File::open(before)?;
+    let after_file = File::open(after)?;
+
+    let before_reader = BufReader::new(FilteringReader::new(BufReader::new(before_file)));
+    let after_reader = BufReader::new(FilteringReader::new(BufReader::new(after_file)));
+
     // First, generate the differential data
     let mut diff_data = Vec::new();
-    inferno::differential::from_files(
-        inferno::differential::Options::default(), // Options for differential processing
-        before,
-        after,
+    inferno::differential::from_readers(
+        inferno::differential::Options::default(),
+        before_reader,
+        after_reader,
         &mut diff_data,
     )
     .map_err(|e| ProfileError::General(e.to_string()))?;
@@ -603,9 +697,8 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<Proces
     )
     .prompt_skippable()?;
 
-    let filter_mode = match maybe_filter_mode {
-        Some(filter_mode) => filter_mode,
-        None => return Ok(None),
+    let Some(filter_mode) = maybe_filter_mode else {
+        return Ok(None);
     };
 
     let exact_match = filter_mode.starts_with("Exact Match");
@@ -624,9 +717,8 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<Proces
     let maybe_to_filter =
         MultiSelect::new("Select functions to filter out:", function_list).prompt_skippable()?;
 
-    let to_filter = match maybe_to_filter {
-        Some(to_filter) => to_filter,
-        None => return Ok(None),
+    let Some(to_filter) = maybe_to_filter else {
+        return Ok(None);
     };
 
     eprintln!("to_filter={to_filter:#?}");
@@ -639,7 +731,7 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<Proces
             .iter()
             .filter(|line| {
                 let count = line
-                    .split_once(" ")
+                    .split_once(' ')
                     .unwrap_or(("", ""))
                     .0
                     .split(';')
@@ -659,7 +751,7 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<Proces
             .iter()
             .filter(|line| {
                 let found = line
-                    .split_once(" ")
+                    .split_once(' ')
                     .unwrap_or(("", ""))
                     .0
                     .split(';')
@@ -850,9 +942,8 @@ fn select_color_scheme(profile_type: &ProfileType) -> ProfileResult<Option<Palet
     .with_default(true)
     .prompt_skippable()?;
 
-    let use_last = match maybe_use_last {
-        Some(use_last) => use_last,
-        None => return Ok(None),
+    let Some(use_last) = maybe_use_last else {
+        return Ok(None);
     };
 
     if use_last {
@@ -886,16 +977,15 @@ fn select_color_scheme(profile_type: &ProfileType) -> ProfileResult<Option<Palet
     )
     .prompt_skippable()?;
 
-    let selection = match maybe_selection {
-        Some(selection) => selection,
-        None => return Ok(None),
+    let Some(selection) = maybe_selection else {
+        return Ok(None);
     };
 
     // Save the selection
     match profile_type {
         ProfileType::Time => save_time_color_scheme(selection)?,
         ProfileType::Memory => save_memory_color_scheme(selection)?,
-    };
+    }
 
     Ok(Some(
         schemes
@@ -980,9 +1070,8 @@ fn group_profile_files<T: Fn(&str) -> bool>(
         let maybe_selection =
             inquire::Select::new("Select an option:", options).prompt_skippable()?;
 
-        let selection = match maybe_selection {
-            Some(selection) => selection,
-            None => return Ok(None),
+        let Some(selection) = maybe_selection else {
+            return Ok(None);
         };
 
         if selection == "Filter/modify selection" {
@@ -993,9 +1082,8 @@ fn group_profile_files<T: Fn(&str) -> bool>(
             )
             .prompt_skippable()?;
 
-            let filter_action = match maybe_filter_action {
-                Some(filter_action) => filter_action,
-                None => return Ok(None),
+            let Some(filter_action) = maybe_filter_action else {
+                return Ok(None);
             };
 
             match filter_action {
@@ -1090,9 +1178,8 @@ fn select_profile_files(profile_group: &FileGroup) -> ProfileResult<Option<(Path
     let maybe_before =
         Select::new("Select 'before' profile:", file_options.clone()).prompt_skippable()?;
 
-    let before = match maybe_before {
-        Some(before) => before,
-        None => return Ok(None),
+    let Some(before) = maybe_before else {
+        return Ok(None);
     };
 
     // Create new options list excluding the 'before' selection
@@ -1103,9 +1190,8 @@ fn select_profile_files(profile_group: &FileGroup) -> ProfileResult<Option<(Path
 
     let maybe_after = Select::new("Select 'after' profile:", after_options).prompt_skippable()?;
 
-    let after = match maybe_after {
-        Some(after) => after,
-        None => return Ok(None),
+    let Some(after) = maybe_after else {
+        return Ok(None);
     };
 
     Ok(Some((
@@ -1137,9 +1223,8 @@ fn select_profile_file(profile_group: &[(String, Vec<PathBuf>)]) -> ProfileResul
     let maybe_selected =
         Select::new("Select profile to analyze:", file_options).prompt_skippable()?;
 
-    let selected = match maybe_selected {
-        Some(selected) => selected,
-        None => return Ok(None),
+    let Some(selected) = maybe_selected else {
+        return Ok(None);
     };
 
     if selected == "Back" {
@@ -1285,15 +1370,27 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
 fn build_time_stats(processed: &ProcessedProfile) -> ProfileResult<ProfileStats> {
     let mut stats = ProfileStats::default();
     for line in &processed.stacks {
-        if let Some((stack, time)) = line.rsplit_once(' ') {
+        let mut iter = line.rsplitn(3, ' ');
+        let count = iter.clone().count();
+        let time = iter.next();
+        let calls = if count == 3 { iter.next() } else { Some("0") };
+        let stack = iter.next();
+        if let Some(time) = time {
             if let Ok(duration) = time.parse::<u128>() {
-                stats.record(
-                    stack,
-                    Duration::from_micros(
-                        u64::try_from(duration)
-                            .map_err(|e| ProfileError::General(e.to_string()))?,
-                    ),
-                );
+                if let Some(calls) = calls {
+                    if let Ok(calls) = calls.parse::<u64>() {
+                        if let Some(stack) = stack {
+                            stats.record(
+                                stack,
+                                calls,
+                                Duration::from_micros(
+                                    u64::try_from(duration)
+                                        .map_err(|e| ProfileError::General(e.to_string()))?,
+                                ),
+                            );
+                        }
+                    }
+                }
             }
         }
     }
@@ -1390,8 +1487,7 @@ fn analyze_allocation_sites(profile: &ProcessedProfile) -> Vec<(String, usize)> 
     }
 
     let mut total_sites: Vec<_> = total_allocs.into_iter().collect();
-    total_sites.sort_by(|a, b| b.1.cmp(&a.1));
-
+    total_sites.sort_by_key(|a| std::cmp::Reverse(a.1));
     total_sites
 }
 
@@ -1552,9 +1648,8 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
     let maybe_selected_patterns =
         MultiSelect::new("Select memory patterns to filter out:", patterns).prompt_skippable()?;
 
-    let selected_patterns = match maybe_selected_patterns {
-        Some(selected_patterns) => selected_patterns,
-        None => return Ok(None),
+    let Some(selected_patterns) = maybe_selected_patterns else {
+        return Ok(None);
     };
 
     // Handle custom pattern if selected
@@ -1706,9 +1801,8 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
     )
     .prompt_skippable()?;
 
-    let filter_mode = match maybe_filter_mode {
-        Some(filter_mode) => filter_mode,
-        None => return Ok(None),
+    let Some(filter_mode) = maybe_filter_mode else {
+        return Ok(None);
     };
 
     let exact_match = filter_mode.starts_with("Exact Match");
@@ -1726,9 +1820,8 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
     let maybe_to_filter =
         MultiSelect::new("Select functions to filter out:", function_list).prompt_skippable()?;
 
-    let to_filter = match maybe_to_filter {
-        Some(to_filter) => to_filter,
-        None => return Ok(None),
+    let Some(to_filter) = maybe_to_filter else {
+        return Ok(None);
     };
 
     if to_filter.is_empty() {
@@ -1745,7 +1838,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
             .iter()
             .filter(|line| {
                 let count = line
-                    .split_once(" ")
+                    .split_once(' ')
                     .unwrap_or(("", ""))
                     .0
                     .split(';')
@@ -1766,7 +1859,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
             .inspect(|stack| eprintln!("Recursive stack: {stack}"))
             .filter(|line| {
                 let found = line
-                    .split_once(" ")
+                    .split_once(' ')
                     .unwrap_or(("", ""))
                     .0
                     .split(';')
@@ -1803,7 +1896,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
         if parts.len() >= 2 {
             let delta = parts[parts.len() - 1].parse::<u64>().unwrap_or(0_u64);
             memory_data.bytes_allocated += delta;
-            current_memory += delta as u64;
+            current_memory += delta;
             memory_data.peak_memory = memory_data.peak_memory.max(current_memory);
         }
     }
@@ -1819,9 +1912,7 @@ fn matches_memory_pattern(stack: &str, pattern: &str) -> bool {
     match pattern {
         "Large allocations (>1MB)" => {
             if let Some((_stack, size)) = stack.rsplit_once(' ') {
-                size.parse::<usize>()
-                    .map(|s| s > 1_000_000)
-                    .unwrap_or(false)
+                size.parse::<usize>().is_ok_and(|s| s > 1_000_000)
             } else {
                 false
             }

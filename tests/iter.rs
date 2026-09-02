@@ -30,7 +30,7 @@ mod tests {
     }
 
     #[test]
-    fn test_repl_command_print_help() {
+    fn test_iter_command_print_help() {
         set_up();
         let mut output = Vec::new();
         let mut command = thag_rs::iter::IterCommand::command();
@@ -40,7 +40,7 @@ mod tests {
     }
 
     #[test]
-    fn test_repl_parse_line() {
+    fn test_iter_parse_line() {
         set_up();
         let input = r#"command "arg 1" arg2"#;
         let (command, args) = parse_line(input);
@@ -59,7 +59,7 @@ mod tests {
     }
 
     #[test]
-    fn test_repl_delete() {
+    fn test_iter_delete() {
         set_up();
         let build_state = BuildState::default();
 
@@ -69,7 +69,7 @@ mod tests {
 
     #[cfg(not(windows))]
     #[test]
-    fn test_repl_edit_history() {
+    fn test_iter_edit_history() {
         use std::fs::read_to_string;
 
         use mockall::Sequence;
@@ -125,7 +125,7 @@ mod tests {
 
     #[cfg(not(windows))]
     #[test]
-    fn test_repl_edit() {
+    fn test_iter_edit() {
         set_up();
         let build_state = BuildState {
             source_path: PathBuf::from("tests/assets/hello_t.rs"),
@@ -138,7 +138,7 @@ mod tests {
 
     #[cfg(not(windows))]
     #[test]
-    fn test_repl_toml() {
+    fn test_iter_toml() {
         set_up();
         let build_state = BuildState {
             cargo_toml_path: PathBuf::from("tests/assets/Cargo_t.toml"),
@@ -150,7 +150,7 @@ mod tests {
     }
 
     #[test]
-    fn test_repl_process_source() {
+    fn test_iter_process_source() {
         set_up();
         let args = Cli::parse_from(["test", "--iter"]);
         let proc_flags = ProcFlags::default();
@@ -173,21 +173,10 @@ mod tests {
     }
 
     #[test]
-    fn test_repl_list() {
+    fn test_iter_list() {
         set_up();
 
         let result = list(&BuildState::default());
         assert!(result.is_ok());
     }
-
-    // #[test]
-    // fn test_repl_run_repl() {
-    //     set_up();
-    //     let mut options = Cli::parse_from(["test", "iter"]);
-    //     let proc_flags = ProcFlags::default();
-    //     let mut build_state = BuildState::default();
-    //     let start = Instant::now();
-    //     let result = run_repl(&mut options, &proc_flags, &mut build_state, start);
-    //     assert!(result.is_ok());
-    // }
 }

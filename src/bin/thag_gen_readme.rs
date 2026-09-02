@@ -26,7 +26,7 @@ use thag_rs::{
     ast::{infer_deps_from_ast, infer_deps_from_source},
     auto_help, code_utils, find_crates, find_metadata,
     help_system::check_help_and_exit,
-    lazy_static_var, re, set_verbosity_from_env, svprtln, themed_inquire_config, Role, V,
+    lazy_static_var, re, set_verbosity_from_env, sveprtln, themed_inquire_config, Role, V,
 };
 
 file_navigator! {}
@@ -90,7 +90,7 @@ fn parse_metadata(relative_dir: &Path, file_path: &Path) -> Option<ScriptMetadat
                             categories.iter().all(|cat| {
                                 let found = valid_categories.contains(&cat.as_str().to_snake_case());
                                 if !found {
-                                    svprtln!(Role::ERR, V::N, "Unknown or invalid category: `{cat}`");
+                                    sveprtln!(Role::ERR, V::N, "Unknown or invalid category: `{cat}`");
                                 }
                                 found
                             }),
@@ -205,7 +205,15 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
         let path = entry.as_path();
         // println!("Parsing {:#?}", path.display());
 
-        if path.extension().and_then(|s| s.to_str()) == Some("rs") {
+        // exclude thag.rs - intended for src/bin
+        if &path.to_string_lossy() == "thag.rs" {
+            continue;
+        }
+
+        let Some(extension) = path.extension().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        if extension == "rs" {
             if let Some(metadata) = parse_metadata(scripts_dir, path) {
                 all_metadata.push(metadata);
             }

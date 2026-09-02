@@ -15,7 +15,7 @@ use inquire::set_global_render_config; // For optional theming of `inquire`
 use std::error::Error;
 use std::fs;
 use thag_styling::{
-    file_navigator, sprtln, theme_to_toml, themed_inquire_config, ImageThemeConfig,
+    file_navigator, seprtln, theme_to_toml, themed_inquire_config, ImageThemeConfig,
     ImageThemeGenerator, Role, Styleable, StylingError, StylingResult, TermBgLuma, Theme,
 };
 
@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut theme = match generator.generate_from_file(&image_path) {
         Ok(theme) => theme,
         Err(e) => {
-            sprtln!(Role::Error, "❌ Failed to generate theme: {}", e);
+            seprtln!(Role::Error, "❌ Failed to generate theme: {}", e);
             return Err(e.into());
         }
     };

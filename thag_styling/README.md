@@ -1,6 +1,8 @@
 # thag_styling
 
-[![Crates.io](https://img.shields.io/crates/v/thag_styling)](https://crates.io/crates/thag_styling)
+[![Crates.io](https://img.shields.io/crates/v/thag_styling.svg)](https://crates.io/crates/thag_styling)
+[![Crates.io size](https://img.shields.io/crates/size/thag_styling.svg)](https://img.shields.io/crates/size/thag_styling)
+[![Rust](https://img.shields.io/badge/rustc-stable+-green.svg)](https://img.shields.io/badge/rustc-stable+-green)
 [![Documentation](https://docs.rs/thag_styling/badge.svg)](https://docs.rs/thag_styling)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
@@ -17,7 +19,7 @@ Your code doesn't have to deal with colors or styles at all - although there's n
 ### Example: the built-in popular dark theme Catppuccin Mocha
 
 ![catppuccin-mocha](../docs/thag_styling/assets/catppuccin-mocha.png)
-*Built-in theme <code>catppuccin-mocha</code>, converted from base24.*
+*Built-in theme `catppuccin-mocha`, converted from base24.*
 
 `thag_styling` has integrations allowing it to work seamlessly with a variety of popular crates if desired: to date `crossterm`, `console`, `inquire`, `nu-ansi-term` and `reedline`, `owo-colors` and `ratatui`. `thag_rs` has demos of all of these, and uses many of them internally.
 
@@ -74,21 +76,21 @@ Here is a further small sample of the 300+ built-in `thag_styling` themes, with 
 ### Built-in popular light theme: Gruvbox Light Hard
 
 ![gruvbox-light-hard_base16](../docs/thag_styling/assets/gruvbox-light-hard_base16.png)
-*Built-in theme <code>gruvbox-light-hard_base16</code>, converted from base16.*
+*Built-in theme `gruvbox-light-hard_base16`, converted from base16.*
 
 ### Built-in original dark theme: Raphael's School of Athens
 
 ![thag-raphael-school-of-athens-dark](../docs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)
-*Built-in theme <code>thag-raphael-school-of-athens-dark</code>, generated with `thag_image_to_theme` from a PNG of the painting by Raphael.*
+*Built-in theme `thag-raphael-school-of-athens-dark`, generated with `thag_image_to_theme` from a PNG of the painting by Raphael.*
 
 And the painting `thag_styling` generated it from:
 
-![Raphael: The School of Athens](../assets/raphael-school-of-athens.png)
+![Raphael: The School of Athens](https://upload.wikimedia.org/wikipedia/commons/4/49/%22The_School_of_Athens%22_by_Raffaello_Sanzio_da_Urbino.jpg)
 
 ### Built-in original light theme: Morning Coffee Light
 
 ![thag-morning-coffee-light](../docs/thag_styling/assets/thag-morning-coffee-light.png)
-*Built-in theme <code>thag-morning-coffee-light</code>, generated with `thag_image_to_theme` from a PNG of a complementary blue-brown color palette created with the Figma color wheel.*
+*Built-in theme `thag-morning-coffee-light`, generated with `thag_image_to_theme` from a PNG of a complementary blue-brown color palette created with the Figma color wheel.*
 
 ## Features
 
@@ -233,13 +235,13 @@ let success_gauge = Gauge::default()
 
 `thag_url` requires `thag_rs` to be installed with `--features tools`.
 
-#### Running the showcase on a terminal with `dracula-base16` theme
+#### Running the showcase on a terminal with `dracula_base16` theme
 
-![ratatui theming showcase dracula-base16](../docs/thag_styling/assets/ratatui_theming_showcase_dracula_base16.png)
+![ratatui theming showcase dracula_base16](../docs/thag_styling/assets/ratatui_theming_showcase_dracula_base16.png)
 
 #### Running the showcase on a terminal with `atelier-seaside-light_base16` theme
 
-![ratatui theming showcase dracula-base16](../docs/thag_styling/assets/ratatui_theming_showcase_atelier_seaside_light_base16.png)
+![ratatui theming showcase atelier_seaside_light_base16](../docs/thag_styling/assets/ratatui_theming_showcase_atelier_seaside_light_base16.png)
 
 
 ### Multiple API Styles
@@ -654,7 +656,7 @@ See `demo/theme_editor_demo.md` for detailed usage examples.
 
 ## Example: Generating a theme from an image
 
-![Edvard Munch: The Scream](../assets/munch-the-scream.png)
+![Edvard Munch: The Scream](https://upload.wikimedia.org/wikipedia/commons/9/9d/The_Scream_by_Edvard_Munch%2C_1893_-_Nasjonalgalleriet.png)
 *Use `thag_image_to_theme` tool and follow the prompts.*
 
 ![Generated thag theme thag-munch-the-scream-dark](../docs/thag_styling/assets/thag-munch-the-scream-dark.png)

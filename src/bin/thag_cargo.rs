@@ -8,7 +8,7 @@ thag_common = { version = "1, thag-auto" }
 ///
 /// Prompts the user to select a Rust script and a cargo command to run against the
 /// script's generated project, and invokes `thag` with the --cargo option to run it.
-//# Purpose: A user-friendly interface to the `thag` `--cargo` option.
+//# Purpose: A user-friendly interface to the `thag` `--cargo/-A` option.
 //# Categories: technique, thag_front_ends, tools
 #[allow(clippy::single_component_path_imports)]
 use inquire;

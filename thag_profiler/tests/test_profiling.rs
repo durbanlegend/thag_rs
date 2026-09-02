@@ -518,6 +518,7 @@ fn test_stack_extraction() {
 /// Test using a profiled function attribute
 #[cfg(feature = "time_profiling")]
 #[profiled]
+#[allow(unused_assignments)]
 fn test_profiled_function() {
     // This function is marked with the #[profiled] attribute
     // We just need to call it to verify the attribute works

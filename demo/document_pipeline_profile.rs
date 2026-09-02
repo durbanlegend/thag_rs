@@ -11,6 +11,10 @@ strip = false
 /// Test async program (instrumented version) for `thag_profiler` testing.
 /// See also `demo/document_pipeline.rs` and `demo/document_pipeline_profile_minimal.rs`.
 ///
+/// E.g.:
+///
+/// `THAG_PROFILER=both,,announce thag --features=thag_profiler/full_profiling demo/document_pipeline_profile.rs`
+///
 //# Purpose: Test profiling using `thag_profiler`.
 //# Categories: prototype, testing
 use futures::future::join_all;

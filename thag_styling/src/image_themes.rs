@@ -283,7 +283,7 @@ impl ImageThemeGenerator {
 
         // Sort colors by frequency
         let mut colors_by_frequency: Vec<_> = color_counts.into_iter().collect();
-        colors_by_frequency.sort_by(|a, b| b.1.cmp(&a.1));
+        colors_by_frequency.sort_by_key(|b| std::cmp::Reverse(b.1));
 
         let total_pixels = pixels.len() as f32;
         let mut result = Vec::new();
@@ -1614,7 +1614,7 @@ impl ImageThemeGenerator {
             vprtln!(
                 V::V,
                 "Defaulting HD1 to {}",
-                Style::with_rgb(colors[0].rgb).paint(format!("{:?}", &colors[0].rgb))
+                Style::with_rgb(colors[0].rgb).paint(format!("{:?}", colors[0].rgb))
             );
             &colors[0]
         });
@@ -1623,7 +1623,7 @@ impl ImageThemeGenerator {
                 V::V,
                 "Defaulting HD2 to {}",
                 Style::with_rgb(colors[1 % colors.len()].rgb)
-                    .paint(format!("{:?}", &colors[1 % colors.len()].rgb))
+                    .paint(format!("{:?}", colors[1 % colors.len()].rgb))
             );
             &colors[1 % colors.len()]
         });
@@ -1632,7 +1632,7 @@ impl ImageThemeGenerator {
                 V::V,
                 "Defaulting HD3 to {}",
                 Style::with_rgb(colors[2 % colors.len()].rgb)
-                    .paint(format!("{:?}", &colors[2 % colors.len()].rgb))
+                    .paint(format!("{:?}", colors[2 % colors.len()].rgb))
             );
             &colors[2 % colors.len()]
         });

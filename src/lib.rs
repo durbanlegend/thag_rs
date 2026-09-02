@@ -139,15 +139,16 @@ pub use {
     errors::{ThagError, ThagResult},
     log, // re-export log crate for debug_log
     thag_common::{
-        debug_log, debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string,
-        get_verbosity, init_verbosity, lazy_static_var, re, set_global_verbosity, set_verbosity,
-        set_verbosity_from_env, static_lazy, thousands, vprtln, ColorSupport, TermBgLuma,
-        Verbosity, OUTPUT_MANAGER, V,
+        debug_log, debug_timings, eprtln, escape_path_for_windows, get_home_dir,
+        get_home_dir_string, get_verbosity, init_verbosity, lazy_static_var, re,
+        set_global_verbosity, set_verbosity, set_verbosity_from_env, static_lazy, thousands,
+        veprtln, vprtln, ColorSupport, TermBgLuma, Verbosity, OUTPUT_MANAGER, V,
     },
     thag_styling::{
-        display_theme_details, display_theme_roles, find_closest_color, paint_for_role, sprtln,
-        svprtln, AnsiStyleExt, Color, ColorInfo, ColorInitStrategy, ColorValue, HowInitialized,
-        PaletteConfig, Role, Style, Styleable, Styled, StyledPrint, StyledString, Styler, Theme,
+        display_theme_details, display_theme_roles, find_closest_color, paint_for_role, seprtln,
+        sprtln, sveprtln, svprtln, AnsiStyleExt, Color, ColorInfo, ColorInitStrategy, ColorValue,
+        HowInitialized, PaletteConfig, Role, Style, Styleable, Styled, StyledPrint, StyledString,
+        Styler, Theme,
     },
 };
 
@@ -211,9 +212,20 @@ pub const BUILT_IN_CRATES: [&str; 7] = [
 ];
 /// Subdirectory name for dynamic/temporary Rust files
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";
-/// Subdirectory name for shared build target (all scripts share dependencies)
+/// Subdirectory name for shared build target (all scripts share dependencies).
+/// This is set as `CARGO_TARGET_DIR` and is owned by Cargo. All scripts build
+/// here to share compiled dependencies, saving space and build time. Cargo
+/// manages its own incremental build fingerprints, `.d` dep files, and cached
+/// `.rlib`/`.rmeta` artifacts here.
 pub const SHARED_TARGET_SUBDIR: &str = "thag_rs_shared_target";
-/// Subdirectory name for executable cache (stores built script executables)
+/// Subdirectory name for executable cache (stores built script executables).
+/// This is a flat directory of just the final binaries, serving two roles:
+/// 1. Staleness anchor: `determine_build_requirements` and
+///    `modified_since_compiled` both use `target_path` to check whether the
+///    cached exe is older than the source. This needs to be a stable location
+///    that won't be touched by Cargo operations on other scripts.
+/// 2. Direct execution: `run()` executes `target_path` directly — not via
+///    `cargo run`. This bypasses Cargo overhead entirely for already-built scripts.
 pub const EXECUTABLE_CACHE_SUBDIR: &str = "thag_rs_bins";
 /// Length of decorative flower box borders for output formatting
 pub const FLOWER_BOX_LEN: usize = 70;

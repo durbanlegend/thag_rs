@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-strum = { version = "0.27", features = ["derive"] }
-*/
-
 /// Published example from `reedline` crate.
 ///
 /// The latest version of this example is available in the [examples] folder in the `reedline`

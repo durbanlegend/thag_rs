@@ -5,9 +5,8 @@ syn = { version = "2", features = ["extra-traits", "full", "visit"] }
 
 use syn::{parse_str, Expr, Stmt};
 
-/// Guided ChatGPT-generated prototype of using a `syn` abstract syntax tree (AST)
-/// to detect whether a snippet returns a value that we should print out, or whether
-/// it does its own printing.
+/// Prototype of using a `syn` abstract syntax tree (AST) to detect whether a snippet returns a value that we
+/// should print out, or whether it does its own printing.
 ///
 /// Part 1: After some back and forth with ChatGPT suggesting solutions it finally generates essentially this.
 //# Purpose: Demo use of `syn` AST to analyse code and use of AI LLM dialogue to flesh out ideas and provide code.

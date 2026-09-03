@@ -393,7 +393,7 @@ macro_rules! re {
 /// # Examples
 ///
 /// ```ignore
-/// use thag_profiler::static_lazy;
+/// use thag_proc_macros::static_lazy;
 ///
 /// static_lazy! {
 ///     GLOBAL_CONFIG: Option<String> = Some("default".to_string())
@@ -488,6 +488,60 @@ macro_rules! set_verbosity {
     ($level:expr) => {
         $crate::set_global_verbosity($level);
     };
+}
+
+/// Macro for executing code only once with an optimized fast path.
+///
+/// This macro creates a static warning flag pattern that:
+/// 1. Uses a non-atomic static for fast path (minimal overhead after first call)
+/// 2. Uses an atomic boolean for thread-safe initialization
+/// 3. Executes the provided code block only on the first call where condition is true
+///
+/// # Example
+/// ```
+/// use thag_proc_macros::{debug_log, warn_once};
+/// let is_disabled = true;
+/// warn_once!(is_disabled, || {
+///     debug_log!("This feature is disabled");
+/// });
+/// ```
+#[cfg_attr(not(feature = "internal_docs"), doc(hidden))]
+#[macro_export]
+macro_rules! warn_once {
+    ($condition:expr, $warning_fn:expr) => {{
+        // Fast path using non-atomic bool for zero overhead after first warning
+        static mut WARNED: bool = false;
+        // Thread-safe initialization using atomic
+        static WARNED_ABOUT_SKIPPING: std::sync::atomic::AtomicBool =
+            std::sync::atomic::AtomicBool::new(false);
+
+        if $condition {
+            // Fast path check - no synchronization overhead after first warning
+            if unsafe { WARNED } {
+                // Skip - already warned
+            } else {
+                // Slow path with proper synchronization - only hit once
+                if !WARNED_ABOUT_SKIPPING.swap(true, std::sync::atomic::Ordering::Relaxed) {
+                    // Execute the warning function
+                    $warning_fn();
+                    // Update fast path flag for future calls
+                    unsafe {
+                        WARNED = true;
+                    }
+                }
+            }
+            true // Return true if condition was met
+        } else {
+            false // Return false if condition was not met
+        }
+    }};
+
+    // Variant with condition and return expression
+    ($condition:expr, $warning_fn:expr, $return_expr:expr) => {{
+        if warn_once!($condition, $warning_fn) {
+            $return_expr
+        }
+    }};
 }
 
 /// Initialize verbosity with a convenient function that handles common patterns.

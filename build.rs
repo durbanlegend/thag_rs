@@ -34,7 +34,7 @@ fn main() {
     safe_println!("cargo:rerun-if-changed=src/bin");
     // Get the OUT_DIR environment variable
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set");
-    // Note: Cargo suppresses build output. I've tried log and env_logger, ChatGPT, Gemini, Stack Overflow etc.
+    // Note: Cargo suppresses build output.
     // The only way it seems that it will display is looking in a *output file for
     // println! and a *stderr file for eprintln! afterwards. -vv is suggested but
     // doesn't seem to work. `find . -mtime 0 -name "*output" (or "*stderr") -ls`.

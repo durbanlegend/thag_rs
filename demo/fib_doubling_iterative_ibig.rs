@@ -14,7 +14,7 @@
 /// subsequent entry in such a consecutive run, that is, for which Fi-2 and Fi-1 have
 /// already been calculated, compute Fi cheaply as Fi-2 + Fi-1 instead of using the
 /// normal multiplication formula.
-//# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
+//# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization.
 //# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
 use ibig::ubig;

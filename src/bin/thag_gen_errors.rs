@@ -16,7 +16,6 @@ thag_styling = { version = "1, thag-auto", default-features = false, features = 
 /// or simply copied and pasted in sections from the output into an existing error module
 /// in the case of an existing custom error type.
 ///
-/// Strategy and grunt work thanks to `ChatGPT`.
 //# Purpose: Facilitate generation and enhancement of custom error modules.
 //# Categories: technique, tools
 use heck::ToSnakeCase;

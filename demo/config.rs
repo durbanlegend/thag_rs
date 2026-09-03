@@ -15,7 +15,7 @@ debug_logging = []
 simplelog = ["dep:simplelog"]
 */
 
-/// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
+/// Prototype of configuration file implementation.
 //# Purpose: Develop a configuration file implementation for `thag_rs`.
 //# Categories: prototype, technique
 use edit::edit_file;

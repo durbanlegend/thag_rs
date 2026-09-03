@@ -37,7 +37,7 @@
 ///           = Fn+1(2Fn+1 + 2Fn - Fn+1)            // Since Fn+2 = Fn + Fn+1
 ///
 ///           = Fn+1(Fn+1 + 2Fn)                    // i.e. b(b+2a)
-//# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization, and ChatGPT implementation.
+//# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization.
 //# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
 use ibig::{ubig, UBig};

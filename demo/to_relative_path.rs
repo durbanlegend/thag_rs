@@ -1,7 +1,7 @@
 use std::env;
 use std::path::Path;
 
-/// ChatGPT 4.1-generated script expresses an absolute path relative to the current working directory.
+/// Converts an absolute path to a relative one, relative to the current working directory.
 //# Purpose: Use `pathdiff` crate to compute a relative path relative to the CWD.
 //# Categories: crates, technique
 fn main() {

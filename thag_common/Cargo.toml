@@ -43,6 +43,9 @@ default = []
 ## Enable debug logging at compile time
 debug_logging = []
 
+## Enable documentation of internal APIs and implementation details.
+internal_docs = []
+
 ## Documentation features
 document-features = ["dep:document-features"]
 

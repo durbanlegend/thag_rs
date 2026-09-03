@@ -7,7 +7,6 @@ thag_rs = { version = "1, thag-auto", default-features = false, features = ["ast
 /// This is the script used to collect script metadata for the `demo` and `tools` directories and generate
 /// local `README.md` files documenting those directories.
 ///
-/// Strategy and grunt work thanks to `ChatGPT`.
 //# Purpose: Document demo scripts in a demo/README.md as a guide for the user, and the same for tools/ scripts.
 //# Categories: technique, tools
 use heck::ToSnakeCase;

@@ -8,7 +8,6 @@ thag_rs = { version = "1, thag-auto", default-features = false, features = ["ast
 use inquire::set_global_render_config;
 /// Select demo scripts and generate and serve HTML report.
 ///
-/// Strategy and grunt work thanks to `ChatGPT`.
 //# Purpose: Allow user to select scripts by category.
 //# Categories: technique, tools
 use inquire::MultiSelect;

@@ -1,4 +1,4 @@
-/// ChatGPT-generated example of running a single task in the background.
+/// Example of running a single task in the background with `smol`.
 //# Purpose: Demo.
 //# Categories: crates, demo
 use smol::{self, Timer};
@@ -9,11 +9,10 @@ use std::{
     time::Duration,
 };
 
-// Assume AnalysisType is defined somewhere
 #[derive(Debug)]
 struct AnalysisType;
 
-// Your real function
+// The background function
 fn generate_and_show_memory_flamegraph(
     demo_name: &str,
     analysis_type: AnalysisType,

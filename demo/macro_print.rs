@@ -1,8 +1,7 @@
 use std::any::Any;
 
 /// Proof of concept of distinguishing types that implement Display from those that implement
-/// Debug, and printing using the Display or Debug trait accordingly. Worked out with recourse
-/// to ChatGPT for suggestions and macro authoring.
+/// Debug, and printing using the Display or Debug trait accordingly.
 //# Purpose: May be interesting or useful.
 //# Categories: macros, technique, type_identification
 macro_rules! generate_displayable_fn {

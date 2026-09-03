@@ -7,9 +7,8 @@ use quote::ToTokens;
 use std::collections::HashMap;
 use syn::{parse_str, Expr, ReturnType, Stmt};
 
-/// Guided ChatGPT-generated prototype of using a `syn` abstract syntax tree (AST)
-/// to detect whether a snippet returns a value that we should print out, or whether
-/// it does its own printing.
+/// Prototype of using a `syn` abstract syntax tree (AST) to detect whether a snippet returns a value that we
+/// should print out, or whether it does its own printing.
 ///
 /// Part 3: I raise the case of a function call and ChatGPT responds with essentially this.
 /// I've commented out ChatGPT's brute-force parse of &block.stmts and replaced it with a syn::Visit

@@ -2427,6 +2427,14 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
             resolve_frame(frame, |symbol| {
 
                 'process_symbol: {
+                    // Guard: a previous symbol in this same frame may have set `fin`
+                    // (e.g. when `__rust_begin_short_backtrace` and `lang_start` share
+                    // a physical frame on macOS).  Without this, the second symbol
+                    // would still be pushed even though we already hit the end-point.
+                    if fin {
+                        suppress = true;
+                        break 'process_symbol;
+                    }
                     let Some(name) = symbol.name() else {
                         suppress = true;
                         break 'process_symbol;
@@ -2443,6 +2451,16 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
                         fin = true;
                         suppress = true;
                         break 'process_symbol;
+                    }
+                    // In Rust ≥ 1.97 `__rust_begin_short_backtrace` wraps
+                    // `lang_start_internal` and `catch_unwind`, so those frames now
+                    // appear *inside* the end-point and get collected before we stop.
+                    // Filter them explicitly here (raw name, before clean_function_name).
+                    for &s in STARTUP_SCAFFOLDING_PATTERNS {
+                        if name.contains(s) {
+                            suppress = true;
+                            break 'process_symbol;
+                        }
                     }
 
                     let mut name = strip_hex_suffix_slice(&name);
@@ -2915,6 +2933,22 @@ fn extract_fn_only(qualified_name: &str) -> Option<String> {
         |pos| Some(qualified_name[(pos + 2)..].to_string()),
     )
 }
+
+/// Subset of startup-only scaffolding used in detail allocation stack extraction.
+/// Unlike `SCAFFOLDING_PATTERNS` (which also covers `alloc::`, `hashbrown`, etc. that
+/// *are* meaningful in raw allocation traces), this covers only runtime startup boilerplate.
+///
+/// Needed because in Rust ≥ 1.97 `__rust_begin_short_backtrace` was moved to wrap
+/// `lang_start_internal` and `catch_unwind` rather than being inside them, so those
+/// frames now appear *before* the stop-point when walking innermost→outermost.
+#[cfg(feature = "full_profiling")]
+const STARTUP_SCAFFOLDING_PATTERNS: &[&str] = &[
+    "std::panic::catch_unwind",
+    "std::panicking",
+    "std::rt::lang_start",
+    "std::sys::backtrace::__rust_begin_short_backtrace",
+    "_main", // macOS OS-level C entry point
+];
 
 #[cfg(feature = "time_profiling")]
 const SCAFFOLDING_PATTERNS: &[&str] = &[

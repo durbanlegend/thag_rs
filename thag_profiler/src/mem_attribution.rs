@@ -249,14 +249,20 @@ impl ProfileRegistry {
                                         suppress = true;
                                         break 'process_symbol;
                                     }
+
+                                    let mut name = strip_hex_suffix_slice(&name);
+                                    let name = clean_function_name(&mut name);
+
+                                    // end_point is profile.fn_name(), which is already
+                                    // cleaned (no v0 crate-hash).  The raw backtrace name
+                                    // carries the hash so the check must run on the
+                                    // cleaned name to match correctly.
                                     if name.contains(end_point) {
                                         fin = true;
                                         suppress = true;
                                         break 'process_symbol;
                                     }
 
-                                    let mut name = strip_hex_suffix_slice(&name);
-                                    let name = clean_function_name(&mut name);
                                     if already_seen.contains(&name) {
                                         suppress = true;
                                         break 'process_symbol;

@@ -119,28 +119,26 @@ pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
 }
 
 fn fetch_and_validate(url: &str) -> Result<String, UrlError> {
-    let response = tinyget::get(url)
-        .send()
+    let mut response = ureq::get(url)
+        .call()
         .map_err(|e| UrlError::Http(format!("Failed to fetch URL: {e}")))?;
 
     // eprintln!(
-    //     "response={response:#?}, response.status_code={}",
-    //     response.status_code
+    //     "response={response:#?}, status={}",
+    //     response.status()
     // );
 
-    if response.status_code != 200 {
-        return Err(UrlError::Http(format!(
-            "HTTP {} - {}",
-            response.status_code, response.reason_phrase
-        )));
+    if response.status() != 200 {
+        return Err(UrlError::Http(format!("HTTP {}", response.status(),)));
     }
 
     let content = response
-        .as_str()
+        .body_mut()
+        .read_to_string()
         .map_err(|e| UrlError::Http(format!("Failed to read response: {e}")))?;
 
     // Validate content before returning
-    validate_rust_content(content)?;
+    validate_rust_content(&content)?;
 
     Ok(content.to_string())
 }

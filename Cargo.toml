@@ -303,7 +303,6 @@ thag_common = { path = "thag_common", version = "1" }
 thag_proc_macros = { path = "thag_proc_macros", version = "1" }
 thag_profiler = { path = "thag_profiler", version = "1", optional = true }
 thag_styling = { path = "thag_styling", version = "1", default-features = false, optional = true }
-tinyget = { version = "1.0", features = ["https"], optional = true }
 tokio = { version = "1", features = [
   "macros",
   "rt-multi-thread",
@@ -316,6 +315,7 @@ tui-textarea = { version = "0.7", features = [
   "crossterm",
   "search",
 ], optional = true }
+ureq = { version = "3", optional = true }
 url = { version = "2.5", optional = true }
 warp = { version = "0.4", features = ["server"], optional = true }
 
@@ -439,8 +439,8 @@ tools = [
   "dep:simplelog",
   "dep:tempfile",
   "dep:terminal-light",
-  "dep:tinyget",
   "dep:tokio",
+  "dep:ureq",
   "dep:url",
   "dep:warp",
   "thag_styling/full",

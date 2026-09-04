@@ -2309,6 +2309,12 @@ pub fn extract_profile_callstack() -> Vec<String> {
                         }
                     }
 
+                    let mut name = strip_hex_suffix_slice(&name);
+                    let name = clean_function_name(&mut name);
+
+                    // Check scaffolding on the *cleaned* name: v0 mangling can produce
+                    // raw names like `std[HASH]::panicking::catch_unwind` that do not
+                    // match the bare `std::panicking` pattern before hash-stripping.
                     for &s in SCAFFOLDING_PATTERNS {
                         if name.contains(s) {
                             suppress = true;
@@ -2316,8 +2322,6 @@ pub fn extract_profile_callstack() -> Vec<String> {
                         }
                     }
 
-                    let mut name = strip_hex_suffix_slice(&name);
-                    let name = clean_function_name(&mut name);
                     if already_seen.contains(&name) {
                         suppress = true;
                         break 'process_symbol;
@@ -2452,10 +2456,17 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
                         suppress = true;
                         break 'process_symbol;
                     }
-                    // In Rust ≥ 1.97 `__rust_begin_short_backtrace` wraps
-                    // `lang_start_internal` and `catch_unwind`, so those frames now
-                    // appear *inside* the end-point and get collected before we stop.
-                    // Filter them explicitly here (raw name, before clean_function_name).
+
+                    let mut name = strip_hex_suffix_slice(&name);
+                    let name = clean_function_name(&mut name);
+
+                    // Filter runtime startup scaffolding on the *cleaned* name.
+                    // Must run after clean_function_name because the raw v0-mangled
+                    // name may carry a crate-hash disambiguator, e.g.
+                    // `std[abc123]::panicking::catch_unwind`, which would not match
+                    // the bare `std::panicking` pattern on the raw string.
+                    // `__rust_begin_short_backtrace` is still checked above on the raw
+                    // name because it is a literal substring that survives any prefix.
                     for &s in STARTUP_SCAFFOLDING_PATTERNS {
                         if name.contains(s) {
                             suppress = true;
@@ -2463,8 +2474,6 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
                         }
                     }
 
-                    let mut name = strip_hex_suffix_slice(&name);
-                    let name = clean_function_name(&mut name);
                     if already_seen.contains(&name) {
                         suppress = true;
                         break 'process_symbol;
@@ -2938,9 +2947,13 @@ fn extract_fn_only(qualified_name: &str) -> Option<String> {
 /// Unlike `SCAFFOLDING_PATTERNS` (which also covers `alloc::`, `hashbrown`, etc. that
 /// *are* meaningful in raw allocation traces), this covers only runtime startup boilerplate.
 ///
-/// Needed because in Rust ≥ 1.97 `__rust_begin_short_backtrace` was moved to wrap
+/// Needed because in Rust >= 1.97 `__rust_begin_short_backtrace` was moved to wrap
 /// `lang_start_internal` and `catch_unwind` rather than being inside them, so those
 /// frames now appear *before* the stop-point when walking innermost→outermost.
+///
+/// These patterns are matched against the *cleaned* function name (after
+/// `clean_function_name` strips v0 crate-hash disambiguators such as
+/// `std[HASH]::panicking`), NOT the raw symbol name.
 #[cfg(feature = "full_profiling")]
 const STARTUP_SCAFFOLDING_PATTERNS: &[&str] = &[
     "std::panic::catch_unwind",
@@ -2983,7 +2996,12 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
 
 /// Normalises function names by removing closure references and hash suffixes.
 /// Handles both legacy Rust mangling (`::h[hexdigits]` suffix) and v0 mangling
-/// (`[16-hex-digit]` crate disambiguators, e.g. `crate[abc123]::module::fn`).
+/// crate disambiguators (e.g. `crate[abc123]::module::fn`).
+///
+/// v0 crate hashes are formatted with `{:x}` (leading zeros dropped), so they
+/// are **1–16** lowercase hex digits, not always exactly 16.  A `[HASH]` token
+/// is only stripped when it is immediately followed by `::` or end-of-string,
+/// to avoid incorrectly stripping `[T]` slice/array syntax in type parameters.
 #[internal_doc]
 pub fn clean_function_name(name: &mut str) -> String {
     // Trim closure suffixes:
@@ -3010,10 +3028,15 @@ pub fn clean_function_name(name: &mut str) -> String {
     let trimmed_owned: String;
     let trimmed = if trimmed.contains('[') {
         let mut out = String::with_capacity(trimmed.len());
-        let mut chars = trimmed.chars();
-        while let Some(c) = chars.by_ref().next() {
+        let mut chars = trimmed.chars().peekable();
+        while let Some(c) = chars.next() {
             if c == '[' {
-                // Collect until ']', check it's exactly 16 hex digits
+                // Collect until ']', then decide if it is a v0 crate-hash disambiguator.
+                // Crate hashes are formatted with {:x} (leading zeros dropped), so they
+                // can be 1-16 lowercase hex digits, NOT necessarily exactly 16.
+                // To avoid stripping legitimate `[T]` slice/array syntax we require that
+                // the closing `]` is immediately followed by `::` (a path separator) or
+                // end-of-string.
                 let mut hex_buf = String::new();
                 let mut closed = false;
                 for ch in chars.by_ref() {
@@ -3023,11 +3046,15 @@ pub fn clean_function_name(name: &mut str) -> String {
                     }
                     hex_buf.push(ch);
                 }
-                if closed && hex_buf.len() == 16 && hex_buf.chars().all(|ch| ch.is_ascii_hexdigit())
-                {
+                let is_crate_hash = closed
+                    && !hex_buf.is_empty()
+                    && hex_buf.len() <= 16
+                    && hex_buf.chars().all(|ch| ch.is_ascii_hexdigit())
+                    && matches!(chars.peek(), Some(&':') | None);
+                if is_crate_hash {
                     // Drop the [HASH] — skip it
                 } else {
-                    // Not a v0 disambiguator; put it back literally
+                    // Not a v0 crate-hash disambiguator; put it back literally
                     out.push('[');
                     out.push_str(&hex_buf);
                     if closed {
@@ -3697,6 +3724,31 @@ mod tests_internal {
         // Test with multiple colons
         let mut name = "module::::func".to_string();
         assert_eq!(clean_function_name(&mut name), "module::func");
+
+        // Test v0 crate-hash disambiguation: exactly 16 hex digits
+        let mut name = "std[1234567890abcdef]::panicking::catch_unwind".to_string();
+        assert_eq!(
+            clean_function_name(&mut name),
+            "std::panicking::catch_unwind"
+        );
+
+        // Test v0 crate-hash with leading zero dropped (15 digits) — the real-world case
+        let mut name = "std[318a34b566a36fe]::panicking::catch_unwind".to_string();
+        assert_eq!(
+            clean_function_name(&mut name),
+            "std::panicking::catch_unwind"
+        );
+
+        // Test that [T] slice syntax is NOT stripped (not followed by ::)
+        let mut name = "<[u8]>::as_ptr".to_string();
+        assert_eq!(clean_function_name(&mut name), "<[u8]>::as_ptr");
+
+        // Test that [u8] inside angle brackets is NOT stripped
+        let mut name = "core::slice::<impl [u8]>::len".to_string();
+        assert_eq!(
+            clean_function_name(&mut name),
+            "core::slice::<impl [u8]>::len"
+        );
     }
 
     #[test]

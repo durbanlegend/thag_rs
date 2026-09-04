@@ -499,7 +499,7 @@ macro_rules! set_verbosity {
 ///
 /// # Example
 /// ```
-/// use thag_proc_macros::{debug_log, warn_once};
+/// use thag_common::{debug_log, warn_once};
 /// let is_disabled = true;
 /// warn_once!(is_disabled, || {
 ///     debug_log!("This feature is disabled");

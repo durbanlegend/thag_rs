@@ -1931,6 +1931,7 @@ dependencies = [
  "egui_commonmark_backend",
  "egui_extras",
  "pulldown-cmark",
+ "resvg",
 ]
 
 [[package]]

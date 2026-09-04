@@ -34,19 +34,18 @@ debug = true
 /// near-white in dark mode, warm paper background, higher-contrast code block backgrounds, and
 /// GitHub-style syntax highlighting for code blocks.
 /// On Unix systems, launching from a terminal automatically detaches the process so the terminal
-/// is returned immediately (use --no-detach / --foreground to suppress this).
+/// is returned immediately (use --foreground to suppress this).
 ///
 /// Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
 /// an image produces an invisible zero-size hyperlink. If you want a clickable link alongside an image,
 /// add an explicit text link in the markdown below it. You may also notice that it does not handle banners
 /// well.
-/// The MSRV of this program is 1.92.
-//# Purpose: GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature
-//  in addition to `tools` when built as a tool, on account of its significant additional dependencies.
+/// The MSRV of this program is 1.95 as dictated by `egui_commonmark`.
+//# Purpose: GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature when built as a tool, on account of its significant additional dependencies.
 //# Categories: crates, gui, tools
 //# Usage: thag_md_view [OPTIONS] [PATH]
 //# Option: PATH: Markdown file to open; launches an interactive file-picker if omitted
-//# Option: --no-detach, --foreground: Stay attached to the launching terminal (Unix only)
+//# Option: --foreground: Stay attached to the launching terminal (Unix only)
 use eframe::egui;
 use egui::{
     load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint},
@@ -523,10 +522,10 @@ fn fence_error_content(path: &Path, err: &FenceError) -> String {
     }
 }
 
-/// On Unix systems: if any stdio stream is a real terminal and `--no-detach`/`--foreground`
-/// is not present, spawn a detached child with a new session and exit the parent immediately,
-/// freeing the terminal. Errors (e.g. can't find the current exe) fall through silently so
-/// the viewer still runs in the foreground.
+/// On Unix systems: if any stdio stream is a real terminal and `--foreground` is not
+/// present, spawn a detached child with a new session and exit the parent immediately,
+/// freeing the terminal. Errors (e.g. can't find the current exe) fall through silently
+/// so that the viewer still runs in the foreground.
 #[cfg(unix)]
 fn detach_if_tty() {
     use std::io::IsTerminal;
@@ -540,9 +539,7 @@ fn detach_if_tty() {
         return;
     }
     let args_os: Vec<_> = env::args_os().collect();
-    let already_detached = args_os
-        .iter()
-        .any(|a| a == "--no-detach" || a == "--foreground");
+    let already_detached = args_os.iter().any(|a| a == "--foreground");
     if already_detached {
         return;
     }
@@ -551,7 +548,7 @@ fn detach_if_tty() {
 
     // Build child args: skip argv[0] (exe), append marker so the child skips this block.
     let mut child_args: Vec<std::ffi::OsString> = args_os.into_iter().skip(1).collect();
-    child_args.push("--no-detach".into());
+    child_args.push("--foreground".into());
 
     let result = unsafe {
         std::process::Command::new(&exe)
@@ -615,9 +612,7 @@ fn main() -> eframe::Result<()> {
     // dbg!(&locale);
 
     // Strip internal markers before processing positional arguments.
-    let args: Vec<String> = env::args()
-        .filter(|a| a != "--no-detach" && a != "--foreground")
-        .collect();
+    let args: Vec<String> = env::args().filter(|a| a != "--foreground").collect();
 
     let selected_file: PathBuf = if args.len() > 1 {
         let input_path = Path::new(&args[1]);

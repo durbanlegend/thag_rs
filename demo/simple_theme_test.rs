@@ -9,7 +9,7 @@ thag_styling = { version = "1, thag-auto" }
 /// Simple test to debug theme loading issues
 use std::env;
 use std::fs;
-use thag_styling::{set_verbosity, Theme};
+use thag_styling::{Theme, set_verbosity};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     set_verbosity!(debug);
@@ -96,7 +96,9 @@ rgb = [69, 183, 209]
 
     // Test runtime loading with THAG_THEME_DIR
     println!("\n🧪 Test 2: Runtime loading with THAG_THEME_DIR");
-    env::set_var("THAG_THEME_DIR", temp_dir);
+    unsafe {
+        env::set_var("THAG_THEME_DIR", temp_dir);
+    }
 
     match Theme::get_theme_runtime_or_builtin("simple-test") {
         Ok(theme) => {

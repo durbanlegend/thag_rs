@@ -15,9 +15,9 @@ use std::ffi::OsStr;
 
 
 #[cfg(target_os = "windows")]
-env::set_var("VISUAL", "cmd.exe /C type");
+unsafe { env::set_var("VISUAL", "cmd.exe /C type"); }
 #[cfg(target_os = "windows")]
-env::set_var("EDITOR", "cmd.exe /C type");
+unsafe { env::set_var("EDITOR", "cmd.exe /C type"); }
 
 fn get_full_editor_cmd(s: String) -> Result<(PathBuf, Vec<String>)> {
     let (path, args) = string_to_cmd(s);

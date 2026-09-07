@@ -10,14 +10,14 @@ thag_styling = { version = "1, thag-auto" }
 //# Categories: cli, interactive, thag_front_ends, tools
 use arboard::Clipboard;
 use clap::{self, CommandFactory};
-use inquire::{set_global_render_config, MultiSelect};
+use inquire::{MultiSelect, set_global_render_config};
 use std::collections::HashMap;
 use std::fmt::Write as _; // import without risk of name clashing
 use std::process::Command;
 use std::string::ToString;
 use thag_styling::{
-    auto_help, file_navigator, help_system::check_help_and_exit, sprtln, themed_inquire_config,
-    Role, Style, Styleable, StyledPrint,
+    Role, Style, Styleable, StyledPrint, auto_help, file_navigator,
+    help_system::check_help_and_exit, sprtln, themed_inquire_config,
 };
 
 // Import the Cli struct from the main crate
@@ -991,7 +991,9 @@ regex = "1.11""#,
         }
         "test_env_expansion" => {
             // Test environment variable expansion like $PWD
-            std::env::set_var("TEST_EXPAND", "expanded_value");
+            unsafe {
+                std::env::set_var("TEST_EXPAND", "expanded_value");
+            }
             cmd.arg("--expr")
                 .arg("println!(\"Environment variable resolved\")")
                 .env("SIMPLE_VAR", expand_env_vars("$PWD"))

@@ -36,7 +36,7 @@ use log::debug;
 use mockall::{automock, predicate::str};
 use serde::de;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 use std::any::type_name_of_val;
 use std::str::FromStr;
 use std::{
@@ -50,8 +50,8 @@ use std::{
 };
 use strum::{Display, EnumString};
 use thag_rs::{
-    lazy_static_var, logging, sprtln, svprtln, ColorSupport, Role, TermBgLuma, ThagError,
-    ThagResult, Verbosity, V,
+    ColorSupport, Role, TermBgLuma, ThagError, ThagResult, V, Verbosity, lazy_static_var, logging,
+    sprtln, svprtln,
 };
 use toml_edit::DocumentMut;
 
@@ -800,8 +800,8 @@ macro_rules! debug_log {
 #[cfg(test)]
 mod tests {
     use super::{
-        load, open, validate_config_format, Config, Context, Dependencies, FeatureOverride,
-        MockContext, RealContext,
+        Config, Context, Dependencies, FeatureOverride, MockContext, RealContext, load, open,
+        validate_config_format,
     };
     use simplelog::{
         ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode, WriteLogger,
@@ -812,7 +812,7 @@ mod tests {
         sync::{Arc, OnceLock},
     };
     use tempfile::TempDir;
-    use thag_rs::{debug_log, svprtln, ColorSupport, Role, TermBgLuma, ThagResult, Verbosity, V};
+    use thag_rs::{ColorSupport, Role, TermBgLuma, ThagResult, V, Verbosity, debug_log, svprtln};
 
     static LOGGER: OnceLock<()> = OnceLock::new();
 
@@ -839,9 +839,11 @@ mod tests {
 
     // Set environment variables before running tests
     fn set_up() {
-        std::env::set_var("TEST_ENV", "1");
-        std::env::set_var("VISUAL", "cat");
-        std::env::set_var("EDITOR", "cat");
+        unsafe {
+            std::env::set_var("TEST_ENV", "1");
+            std::env::set_var("VISUAL", "cat");
+            std::env::set_var("EDITOR", "cat");
+        }
     }
 
     #[test]

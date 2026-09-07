@@ -637,7 +637,7 @@ mod config_tests {
         eprintln!("orig_global_profile_type={orig_global_profile_type:?}");
 
         // First set to "time"
-        env::set_var("THAG_PROFILER", "time,.,none,false");
+        unsafe { env::set_var("THAG_PROFILER", "time,.,none,false") };
 
         // Clear the cache to force reloading from environment
         profiling::clear_profile_config_cache();
@@ -650,7 +650,7 @@ mod config_tests {
         assert_eq!(get_config_profile_type(), profiling::ProfileType::Time);
 
         // Now change to "both"
-        env::set_var("THAG_PROFILER", "both,.,none,false");
+        unsafe { env::set_var("THAG_PROFILER", "both,.,none,false") };
 
         // Clear the cache again to force reloading
         profiling::clear_profile_config_cache();
@@ -660,9 +660,9 @@ mod config_tests {
 
         // Restore original env var or remove it
         if let Some(val) = original {
-            env::set_var("THAG_PROFILER", val);
+            unsafe { env::set_var("THAG_PROFILER", val) };
         } else {
-            env::remove_var("THAG_PROFILER");
+            unsafe { env::remove_var("THAG_PROFILER") };
         }
 
         // Clear the cache once more to restore state

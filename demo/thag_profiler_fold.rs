@@ -21,7 +21,7 @@ default = ["time_profiling", "debug_logging"]
 use std::error::Error;
 use std::io::Write;
 // use std::path::PathBuf;
-use thag_profiler::{profiling, DebugLogger};
+use thag_profiler::{DebugLogger, profiling};
 use thag_styling::{
     auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config,
 };
@@ -33,7 +33,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     check_help_and_exit(&help);
 
     // Switch on `thag_profiler` debug logging
-    std::env::set_var("THAG_PROFILER", ",,announce");
+    unsafe {
+        std::env::set_var("THAG_PROFILER", ",,announce");
+    }
 
     let logger = DebugLogger::get();
     assert!(logger.is_some(), "Logger should be available");

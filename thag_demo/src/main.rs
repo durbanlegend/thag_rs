@@ -610,12 +610,12 @@ fn run_selected_demo(
     // Set THAG_DEV_PATH for local development - point to thag_rs root
     let thag_rs_root = find_thag_rs_root()
         .unwrap_or_else(|_| env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
-    env::set_var("THAG_DEV_PATH", &thag_rs_root);
+    unsafe { env::set_var("THAG_DEV_PATH", &thag_rs_root) };
 
     // Set any custom environment variables
     for env_var in &options.env_vars {
         if let Some((key, value)) = env_var.split_once('=') {
-            env::set_var(key, value);
+            unsafe { env::set_var(key, value) };
             if verbose {
                 println!("🌍 Set environment variable: {}={}", key, value);
             }
@@ -967,7 +967,7 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
     // Set THAG_DEV_PATH for local development - point to thag_rs root
     let thag_rs_root = find_thag_rs_root()
         .unwrap_or_else(|_| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
-    std::env::set_var("THAG_DEV_PATH", &thag_rs_root);
+    unsafe { std::env::set_var("THAG_DEV_PATH", &thag_rs_root) };
 
     // Configure CLI args for thag_rs
     let mut cli = create_demo_cli(&script_path, verbose);

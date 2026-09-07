@@ -555,8 +555,7 @@ fn resolve_thag_dependency(
         sveprtln!(
             Role::Info,
             V::Q,
-            r#"`thag-auto` is specified in the script's toml block, but neither `THAG_DEV_PATH` nor `THAG_GIT_REPO` is set as an environment variable.
-    Defaulting to crates.io version of dependency `{}`"#,
+            "`thag-auto` is specified in the script\'s toml block, but neither `THAG_DEV_PATH` nor `THAG_GIT_REPO` is set as an environment variable.\n    Defaulting to crates.io version of dependency `{}`",
             crate_name.emphasis()
         );
         if let Some(version) = base_version {

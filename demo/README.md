@@ -2145,28 +2145,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/edit_profile.rs
 
 ---
 
-### Script: egui_code_editor.rs
-
-**Description:**  A prototype GUI editor with saved state and syntax highlighting.
-
-**Purpose:** Prototype a native-mode editor using the `egui` crate.
-
-**Crates:** `eframe`, `egui`, `egui_extras`, `env_logger`
-
-**Type:** Program
-
-**Categories:** crates, gui, prototype
-
-**Link:** [egui_code_editor.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_code_editor.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_code_editor.rs
-```
-
----
-
 ### Script: egui_markdown_viewer.rs
 
 **Description:**  A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
@@ -2935,7 +2913,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_
 
 ### Script: fib_doubling_recursive_ibig_cached.rs
 
-**Description:** / Very fast recursive calculation of an individual Fibonacci number using the
+**Description:**  Very fast recursive calculation of an individual Fibonacci number using the
  Fibonacci doubling identity. See also `demo/fib_doubling_iterative.rs` and
  `demo/fib_doubling_iterative_purge.rs` for non-recursive variations.
 
@@ -3735,7 +3713,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/image_to_multi_f
 
 **Description:**  Interactively test dependency inferency. This script was arbitrarily copied from
  `demo/iterf_partial_match.rs`.
- Experiment with matching repid iteration mode commands with a partial match of any length.
+ Experiment with matching rapid iteration mode commands with a partial match of any length.
 
 **Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
 

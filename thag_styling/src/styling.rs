@@ -2864,7 +2864,7 @@ macro_rules! svprtln {
 ///
 /// # Arguments
 /// * `$style` - A [`Role`] or [`Style`] that determines the styling to apply
-/// * `$verbosity` - The [`Verbosity`] level required for this message
+/// * `$verbosity` - The [`crate::Verbosity`] level required for this message
 /// * `$($arg:tt)*` - Format string and arguments, same as `eprintln!`
 ///
 /// # Examples
@@ -4164,6 +4164,7 @@ mod tests {
     use std::path::Path;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Mutex;
+    use thag_common::Verbosity;
 
     static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
     static BLACK_BG: &[u8; 3] = &[0, 0, 0];
@@ -4221,7 +4222,7 @@ mod tests {
         if let Ok(guard) = TEST_OUTPUT.lock() {
             let mut stdout = std::io::stdout();
             for line in guard.iter() {
-                writeln!(stdout, "{}", line).expect("Failed to write to stdout");
+                writeln!(stdout, "{line}").expect("Failed to write to stdout");
             }
         }
     }
@@ -4526,17 +4527,14 @@ mod tests {
 
         // Test vprtln with Role and different verbosity levels
         Role::Debug.vprtln(
-            thag_common::Verbosity::Verbose,
+            Verbosity::Verbose,
             format_args!("Debug message: {}", "debug"),
         );
-        Role::Info.vprtln(
-            thag_common::Verbosity::Normal,
-            format_args!("Info message: {}", "info"),
-        );
+        Role::Info.vprtln(Verbosity::Normal, format_args!("Info message: {}", "info"));
 
         // Test that lower verbosity messages are filtered out
         Role::Link.vprtln(
-            thag_common::Verbosity::Debug,
+            Verbosity::Debug,
             format_args!("This should be filtered: {}", "link"),
         );
 

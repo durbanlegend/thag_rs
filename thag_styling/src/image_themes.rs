@@ -2144,8 +2144,7 @@ mod tests {
         let lightness_diff = (adjusted.lightness - background.lightness).abs();
         assert!(
             lightness_diff >= 0.6,
-            "Lightness difference should be at least 0.6, got {}",
-            lightness_diff
+            "Lightness difference should be at least 0.6, got {lightness_diff}"
         );
     }
 
@@ -2170,8 +2169,7 @@ mod tests {
         let lightness_diff = (adjusted.lightness - background.lightness).abs();
         assert!(
             lightness_diff >= 0.7,
-            "Lightness difference should be at least 0.7, got {}",
-            lightness_diff
+            "Lightness difference should be at least 0.7, got {lightness_diff}"
         );
     }
 

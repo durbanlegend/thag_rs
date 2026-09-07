@@ -296,7 +296,7 @@ impl<'a> Visit<'a> for CratesFinder {
     #[profiled]
     fn visit_item_impl(&mut self, item: &'a syn::ItemImpl) {
         // Check the trait being implemented (if any)
-        if let Some((_, path, _)) = &item.trait_ {
+        if let Some((path, _)) = &item.trait_ {
             if let Some(first_seg) = path.segments.first() {
                 let name = first_seg.ident.to_string();
                 if !should_filter_dependency(&name) && !self.crates.contains(&name) {

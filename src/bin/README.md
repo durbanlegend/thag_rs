@@ -458,7 +458,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_expand.r
 
 **Description:**  Select demo scripts and generate and serve HTML report.
 
- Strategy and grunt work thanks to `ChatGPT`.
 
 **Purpose:** Allow user to select scripts by category.
 
@@ -542,7 +541,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_conf
  or simply copied and pasted in sections from the output into an existing error module
  in the case of an existing custom error type.
 
- Strategy and grunt work thanks to `ChatGPT`.
 
 **Purpose:** Facilitate generation and enhancement of custom error modules.
 
@@ -593,7 +591,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_proc
 **Description:**  This is the script used to collect script metadata for the `demo` and `tools` directories and generate
  local `README.md` files documenting those directories.
 
- Strategy and grunt work thanks to `ChatGPT`.
 
 **Purpose:** Document demo scripts in a demo/README.md as a guide for the user, and the same for tools/ scripts.
 
@@ -650,7 +647,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_term
 ### Script: thag_get_demo_dir.rs
 
 **Description:**  Fast download of `thag_rs` demo directory (starter kit) with subdirectories.
- Git `sparse-checkout` approach suggested and written by `ChatGPT`, local directory handling assisted by `Claude`.
 
  `thag_styling` included
 
@@ -1124,7 +1120,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_to_rust_
 
 **Purpose:** A front-end to allow `thag` to run scripts from URLs while keeping `thag` itself free of network dependencies.
 
-**Crates:** `syn`, `tempfile`, `thag_common`, `tinyget`, `url`
+**Crates:** `syn`, `tempfile`, `thag_common`, `ureq`, `url`
 
 **Type:** Program
 
@@ -1195,4 +1191,3 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_winterm_
 ```
 
 ---
-

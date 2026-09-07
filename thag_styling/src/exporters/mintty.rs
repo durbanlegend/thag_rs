@@ -212,7 +212,7 @@ mod tests {
         let result = MinttyExporter::export_theme(&theme);
         assert!(result.is_ok());
         let content = result.unwrap();
-        println!("Debug mintty output:\n{}", content);
+        println!("Debug mintty output:\n{content}");
 
         // More lenient test - just check that basic structure exists
         assert!(content.contains("# Mintty Color Scheme"));

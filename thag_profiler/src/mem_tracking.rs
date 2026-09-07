@@ -497,6 +497,7 @@ fn record_alloc(address: usize, size: usize) {
 type FrameSummary = (String, u32, String, String, ProfileRef);
 
 #[fn_name]
+/// Extract the callstack, returning `None` if recursion detected.
 pub fn extract_callstack_with_recursion_check(file_names: &[String]) -> Option<Vec<FrameSummary>> {
     safe_alloc! {
         // Pre-allocate with fixed capacity to avoid reallocations

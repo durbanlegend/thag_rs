@@ -85,8 +85,6 @@ Whether you're:
 
   - Over 30 other independently installable [command-line tools](src/bin/README.md) promoted from `thag` scripts
   
-    - fast (WGPU) competitive markdown viewer
-  
     - AST display tool
   
     - cargo runner for scripts
@@ -243,7 +241,7 @@ Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit t
 ## Installation
 
 ### Minimum supported Rust version
-The minimum supported Rust version (MSRV) for the current version of `thag_rs` is 1.82.
+The minimum supported Rust version (MSRV) for the current version of `thag_rs` is 1.95.
 
 ### Installation options
 

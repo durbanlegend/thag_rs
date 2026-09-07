@@ -388,7 +388,7 @@ For terminals that do not support OSC 17 or OSC 19, the dynamic change may work 
 
 The `thag` tool `thag_terminal_theme_help` will display specific instructions for installing a terminal theme file in each supported environment on request. The `thag_gen_terminal_themes` tool optionally displays the same instructions after generating a terminal theme or themes.
 
-An alternative technique for any environment that suppports OSC 17 and OSC 19 as described in this Readme, you can use shell integration to automatically sync palettes dynamically on startup as per the previous paragraph:
+An alternative technique for any environment that supports OSC 17 and OSC 19 as described in this Readme, you can use shell integration to automatically sync palettes dynamically on startup as per the previous paragraph:
 
 **Unix shells (~/.bashrc or ~/.zshrc):**
 

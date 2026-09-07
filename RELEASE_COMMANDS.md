@@ -5,6 +5,8 @@ For detailed checklist, see RELEASE_CHECKLIST_v1.0.0.md
 
 ## Pre-Release
 
+NB: See checklist in TODO.md
+
 ```bash
 # Create release branch
 git checkout -b release-v1.0.0
@@ -18,7 +20,7 @@ cargo run --bin thag_version_bump --features tools -- --version 1.0.0
 # Test everything locally
 export THAG_DEV_PATH=$PWD
 cargo test --all-features
-cargo clippy --all-targets --all-features
+cargo clippy --all-targets --all-features # and do same with -p [subcrate] for all subcrates - thag_common etc.
 cargo fmt --all
 
 # Commit changes

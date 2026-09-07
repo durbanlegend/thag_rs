@@ -323,7 +323,7 @@ fn main() {
             .with_description("Does testing things")
             .with_version("1.0.0");
 
-        let output = format!("{}", help);
+        let output = format!("{help}");
         eprintln!("output=[{output}");
         assert!(output.contains("1.0.0"));
         assert!(output.contains("A test tool"));

@@ -10,8 +10,8 @@ inline_colorization = "0.1.6"
 prettyplease = "0.2"
 proc-macro2 = "1.0"
 quote = "1.0"
-serde = { version = "=1.0.228", features = ["derive"] }
-syn = { version = "2.0", default-features = false, features = [
+serde = { version = "1.0.229", features = ["derive"] }
+syn = { version = "3", default-features = false, features = [
     "full",
     "parsing",
     "proc-macro",

@@ -2,9 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.1.0 (2026-07-17)
+# v1.1.0 (2026-09-07)
 
-## Minor Release — Pipeline-Friendly Output & API Additions
+## Minor Release — Profiling Fix for Rust 1.97, Pipeline-Friendly Output & API Additions
 
 v1.1.0 establishes a clean separation between thag's own diagnostic output and the
 stdout stream of the script being run, following the convention established by `cargo`,
@@ -20,9 +20,12 @@ pipeline use (`thag myscript.rs | grep foo`) work naturally without needing `-qq
   instead (e.g. `thag script.rs 2>thag.log` rather than `thag script.rs >thag.log`).
   Script output itself is unaffected — it continues to go to stdout as before.
 
-- **`cprtln!` and `cvprtln!` removed** from `thag_styling`: these macros were already
-  marked `#[deprecated]` (superseded by `sprtln!` and `svprtln!` respectively). Any
+- **`cprtln!` and `cvprtln!` removed** from `thag_styling`: these macros were already marked `#[deprecated]` (superseded by `sprtln!` and `svprtln!` respectively). Any
   remaining uses should be updated to the non-deprecated equivalents.
+
+- `thag_profiler` fixes:
+  - Cater for Rust 1.97 stable demangling change (issue #295)
+  - Fix `thag_profile` missing call counts
 
 - All workspace crates bumped to v1.1.0:
 
@@ -94,6 +97,31 @@ simply appear on stderr as before, just routed correctly. Specific cases to revi
 - **Debug output cleaned up**: Stray `eprintln!("raw_url=...")` debug calls
   removed from `thag_url`, and leftover debug prints removed from ITER's
   `review_history` function.
+
+- **Hidden dependency on `openssl` removed**: `tinyget` dependency replaced by `ureq` which uses `rustls`.
+
+- **Macro enhancements**:
+  - Declarative macro `warn_once` relocated from `thag_profiler` to `thag_common`.
+  - New proc macro `copy_resource_dir` added to `thag_proc_macros`.
+
+- **Profiling enhancements**:
+  - New demo script `demo/thag_profiler_fold.rs` added to post-process `.profraw` files into `.folded` files, where this was not run at the end of profiling due to abnormal termination.
+  - Post-processing of inclusive time-profiling .folded files to exclusive made drastically more efficient.
+  - Numerous enhancements to `thag_profiler` README.md, notably guidance and clarifications.
+
+- **CI enhancements**:
+  - Test suites added for subcrates `thag_common`, `thag_proc_macros`, `thag_profiler` and `thag_styling`.
+
+- **Script runner enhancements**:
+  - Potential corruption of cached executables fixed.
+  - Clearly states location of built executable.
+  - Script runner emits warning if `THAG_DEV_PATH` missing.
+  - Skipped-step messages downgraded from `Emphasis` to `Info`.
+  - Exit message improved.
+
+- **Auto-help now caters for options**.
+
+- **Clean-ups and Clippy fixes**.
 
 ### Notes
 

@@ -483,7 +483,7 @@ impl<R: BufRead> FilteringReader<R> {
 
         let (text, _calls) = without_count
             .rsplit_once(char::is_whitespace)
-            .unwrap_or_else(|| (without_count, ""));
+            .unwrap_or((without_count, ""));
 
         self.output.extend_from_slice(text.as_bytes());
         self.output.push(b' ');

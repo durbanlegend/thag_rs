@@ -370,14 +370,6 @@ pub fn copy_resource_dir(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "copy_resource_dir", &input, copy_resource_dir_impl)
 }
 
-/// Define common errors for `thag` tools.
-///
-/// Syntax:
-///
-/// ```Rust
-///     tool_errors! {}
-/// ```
-///
 /// Attribute macro to give a function access to its own name by inserting the statement `let fn_name = <function name>;`.
 ///
 /// Syntax:

@@ -188,6 +188,7 @@ macro_rules! debug_log {
 /// 3. **Minimal side effects**: Tests avoid disrupting the global state in ways that could affect other tests
 /// 4. **Feature compatibility**: Tests work with both `time_profiling` and `full_profiling` feature flags
 #[cfg(test)]
+#[allow(unused_imports)]
 mod tests {
     use super::*;
     #[cfg(feature = "debug_logging")]

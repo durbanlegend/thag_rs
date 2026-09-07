@@ -29,13 +29,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("{file:#?}");
             eprintln!("[{}]", quote!(#file));
         }
-        Err(_) => match syn::parse_str::<syn::Expr>(&format!("{{ {content} }}")) {
-            Ok(expr) => {
-                println!("{expr:#?}");
-                eprintln!("[{}]", quote!(#expr));
-            }
-            Err(err) => return Err(err.into()),
-        },
+        Err(_) => {
+            let expr = syn::parse_str::<syn::Expr>(&format!("{{ {content} }}"))?;
+            println!("{expr:#?}");
+            eprintln!("[{}]", quote!(#expr));
+        }
     }
     Ok(())
 }

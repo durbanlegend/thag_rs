@@ -48,7 +48,7 @@ fn main() {
         r##"// Some comments
 /*[{}]
 [dependencies]
-syn = {{ version = "2.0.90", features = ["extra-traits"] }}
+syn = {{ version = "3", features = ["extra-traits"] }}
 */
 // More comments or start of Rust code
 

@@ -1,9 +1,4 @@
-/*[toml]
-[dependencies]
-serde = "=1.0.228"
-syn = "2"
-*/
-//// Very fast recursive calculation of an individual Fibonacci number using the
+/// Very fast recursive calculation of an individual Fibonacci number using the
 /// Fibonacci doubling identity. See also `demo/fib_doubling_iterative.rs` and
 /// `demo/fib_doubling_iterative_purge.rs` for non-recursive variations.
 ///

@@ -2,7 +2,7 @@
 /// `demo/iterf_partial_match.rs`.
 //# Purpose: Test thag manifest module's dependency inference.
 //# Categories: crates, technique, testing
-/// Experiment with matching repid iteration mode commands with a partial match of any length.
+/// Experiment with matching rapid iteration mode commands with a partial match of any length.
 //# Purpose: Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
 //# Categories: crates, technique
 use clap::{CommandFactory, Parser};

@@ -451,6 +451,7 @@ pub fn run_iter(
                 let _ = line_editor.sync_history();
                 break;
             }
+            _ => continue,
         };
 
         // Process user input (line)
@@ -913,11 +914,11 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
                         })
                         .max()
                         .unwrap_or(0)
-                } else if !format!("{reedline_event}").starts_with("UntilFound") {
+                } else if matches!(reedline_event, ReedlineEvent::UntilFound(_)) {
+                    0
+                } else {
                     let event_desc = style.paint(format!("{reedline_event:?}"));
                     event_desc.len()
-                } else {
-                    0
                 }
             })
             .max()
@@ -1118,7 +1119,7 @@ fn format_cmd_desc(
         | EditCommand::CutRightBefore(_)
         | EditCommand::CutLeftUntil(_)
         | EditCommand::CutLeftBefore(_)
-        | EditCommand::CutSelection
+        | EditCommand::CutSelection { granularity: _ }
         | EditCommand::CopySelection
         | EditCommand::Paste
         | EditCommand::SelectAll

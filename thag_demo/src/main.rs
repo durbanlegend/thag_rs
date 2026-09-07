@@ -762,7 +762,7 @@ fn manage_demo_directory() -> Result<()> {
                         if !categories.is_empty() {
                             println!("\nCategories:");
                             let mut cat_list: Vec<_> = categories.into_iter().collect();
-                            cat_list.sort_by(|a, b| b.1.cmp(&a.1));
+                            cat_list.sort_by_key(|b| std::cmp::Reverse(b.1));
                             for (cat, count) in cat_list {
                                 println!("  {} ({})", cat, count);
                             }

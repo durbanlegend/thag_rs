@@ -183,7 +183,7 @@ fn compute_stack_diff(
     }
 
     // Sort by absolute difference (largest changes first)
-    diff_stacks.sort_by(|a, b| b.1.abs().cmp(&a.1.abs()));
+    diff_stacks.sort_by_key(|b| std::cmp::Reverse(b.1.abs()));
 
     diff_stacks
 }

@@ -23,7 +23,7 @@ readme = "README.md"
 repository = "https://github.com/durbanlegend/thag_rs"
 categories = ["command-line-utilities", "development-tools::build-utils"]
 keywords = ["command_line", "eval", "playground", "runner", "script"]
-rust-version = "1.82"
+rust-version = "1.95"
 
 [package.metadata.wix]
 upgrade-guid = "FA5CCD40-AB09-488D-817D-867B69E10F7B"

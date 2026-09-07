@@ -25,7 +25,6 @@
 //# Sample arguments: `-- 100`
 use ibig::{ubig, UBig};
 use std::time::Instant;
-use syn;
 use thag_demo_proc_macros::cached;
 
 #[cached]

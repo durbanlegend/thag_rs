@@ -4999,12 +4999,12 @@ version = "1.1.0"
 dependencies = [
  "crossterm 0.29.0",
  "inline_colorization",
- "prettyplease 0.2.37",
+ "prettyplease 0.3.0",
  "proc-macro2 1.0.106",
  "quote 1.0.45",
  "strict",
  "strum",
- "syn 2.0.117",
+ "syn 3.0.5",
  "toml",
 ]
 

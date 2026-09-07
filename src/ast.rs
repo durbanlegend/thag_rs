@@ -1,7 +1,7 @@
 //!
 //! AST analysis and dependency inference capability for `thag_rs`.
 //!
-use crate::{ThagResult, BUILT_IN_CRATES};
+use crate::{BUILT_IN_CRATES, ThagResult};
 use phf::phf_set;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
@@ -16,19 +16,19 @@ use std::{
 };
 use strum::Display;
 use syn::{
-    self, parse_file,
-    visit::Visit,
+    self,
     BinOp::{
         AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, DivAssign, MulAssign, RemAssign,
         ShlAssign, ShrAssign, SubAssign,
     },
     Expr, File, Item, ItemMod, ItemUse, ReturnType, Stmt,
     Type::Tuple,
-    TypePath, UseRename, UseTree,
+    TypePath, UseRename, UseTree, parse_file,
+    visit::Visit,
 };
-use thag_common::{debug_log, re, V};
+use thag_common::{V, debug_log, re};
 use thag_profiler::profiled;
-use thag_styling::{sveprtln, Role};
+use thag_styling::{Role, sveprtln};
 
 #[cfg(debug_assertions)]
 use {crate::debug_timings, std::time::Instant};
@@ -756,7 +756,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
 
             false
         }
-        Expr::Closure(ref expr_closure) => match &expr_closure.output {
+        Expr::Closure(expr_closure) => match &expr_closure.output {
             ReturnType::Default => is_last_stmt_unit_type(&expr_closure.body, function_map),
             ReturnType::Type(_, ty) => {
                 if let Tuple(tuple) = &**ty {
@@ -810,7 +810,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
         | Expr::Unsafe(_)
         | Expr::Verbatim(_)
         | Expr::Yield(_) => false,
-        Expr::Macro(ref expr_macro) => {
+        Expr::Macro(expr_macro) => {
             if let Some(segment) = expr_macro.mac.path.segments.last() {
                 let ident = &segment.ident.to_string();
                 return ident.starts_with("print")
@@ -819,13 +819,13 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
             }
             false // default - because no intrinsic way of knowing?
         }
-        Expr::Path(ref path) => {
+        Expr::Path(path) => {
             if let Some(value) = is_path_unit_type(path, function_map) {
                 return value;
             }
             false
         }
-        Expr::Return(ref expr_return) => {
+        Expr::Return(expr_return) => {
             // debug_log!("%%%%%%%% expr_return={expr_return:#?}");
             expr_return.expr.is_none()
         }

@@ -1,5 +1,5 @@
 #![allow(unused_variables)]
-use crate::{debug_log, internal_doc, safe_alloc, ProfileError, ProfileResult};
+use crate::{ProfileError, ProfileResult, debug_log, internal_doc, safe_alloc};
 use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use parking_lot::{Mutex, RwLock};
 use std::{
@@ -26,7 +26,7 @@ use crate::{
     fn_name,
     mem_attribution::{deregister_profile, get_next_profile_id, register_profile},
     mem_tracking::{
-        activate_task, create_memory_task, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
+        TASK_PATH_REGISTRY, TaskGuard, TaskMemoryContext, activate_task, create_memory_task,
     },
 };
 
@@ -46,8 +46,8 @@ use std::{
     io::{BufRead, BufReader, Write},
     path::Path,
     sync::{
-        atomic::{AtomicBool, AtomicU64},
         OnceLock,
+        atomic::{AtomicBool, AtomicU64},
     },
     time::SystemTime,
 };
@@ -56,7 +56,7 @@ use std::{
 use regex::Regex;
 
 #[cfg(feature = "full_profiling")]
-use std::sync::{atomic::AtomicUsize, Arc};
+use std::sync::{Arc, atomic::AtomicUsize};
 
 // Single atomic for runtime profiling state
 #[cfg(feature = "time_profiling")]
@@ -1467,7 +1467,10 @@ impl Profile {
             self.registered_name,
             self.profile_type,
             self.detailed_memory,
-            self.memory_task.as_ref().map_or_else(|| "N/A".to_string(), |context| format!("{}", context.task_id))
+            self.memory_task.as_ref().map_or_else(
+                || "N/A".to_string(),
+                |context| format!("{}", context.task_id)
+            )
         );
 
         if size == 0 {
@@ -1551,7 +1554,9 @@ impl Profile {
 
         // Try allowing overrides
         let profile_type = if matches!(requested_type, ProfileType::Memory | ProfileType::Both) {
-            debug_log!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
+            debug_log!(
+                "Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled."
+            );
             ProfileType::Time
         } else {
             requested_type
@@ -1630,7 +1635,9 @@ impl Profile {
 
         // Create a basic profile structure that works for all configurations
         if profile_type == ProfileType::Memory {
-            debug_log!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
+            debug_log!(
+                "Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled."
+            );
         }
 
         debug_log!(
@@ -2750,11 +2757,11 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
 
     // Process from bottom (deepest stacks) to top to adjust parent times
     for i in (0..parsed_stacks.len()).rev() {
-        let (ref current_parts, _, _, _) = &parsed_stacks[i];
+        let (current_parts, _, _, _) = &parsed_stacks[i];
 
         // Look forward (upward in file) for direct children
         for stack in parsed_stacks.iter().take(i) {
-            let (ref child_parts, _, child_time, _) = &stack;
+            let (child_parts, _, child_time, _) = &stack;
             // eprintln!("child_parts={child_parts:#?},child_time={child_time}");
 
             // Check if this is a direct child (exactly one level deeper)
@@ -3621,7 +3628,7 @@ pub(crate) mod test_utils {
     /// * `profile_type` - The type of profiling to enable
     #[cfg(feature = "full_profiling")]
     pub fn initialize_profiling_for_test(profile_type: ProfileType) -> crate::ProfileResult<()> {
-        use crate::profiling::{enable_profiling, TEST_MODE_ACTIVE};
+        use crate::profiling::{TEST_MODE_ACTIVE, enable_profiling};
         use std::sync::atomic::Ordering;
 
         // Set test mode active to prevent #[profiled] from creating duplicate entries

@@ -254,12 +254,6 @@ Full `thag` binary install with additional tools (recommended):
 cargo install thag_rs --features tools
 ```
 
-To include the markdown viewer tool `thag_md_view`:
-
-```bash
-cargo install thag_rs --features tools,gui_viewer
-```
-
 [The additional tools](src/bin/README.md)
 
 `thag` binary install without tools:

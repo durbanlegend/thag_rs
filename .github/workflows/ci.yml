@@ -57,6 +57,18 @@ jobs:
       - name: Build with tools feature
         run: cargo build --features tools
 
+      - name: Build thag_common with all features
+        run: cargo build -p thag_common --all-features
+
+      - name: Build thag_proc_macros with all features
+        run: cargo build -p thag_proc_macros --all-features
+
+      - name: Build thag_profiler with tools feature
+        run: cargo build -p thag_profiler --features tools
+
+      - name: Build thag_styling with full feature
+        run: cargo build -p thag_styling --features full
+
       - name: Run tests
         run: cargo test --no-fail-fast -- --test-threads=1
 
@@ -81,3 +93,6 @@ jobs:
 
       - name: Test thag_styling
         run: cargo test -p thag_styling --no-fail-fast -- --test-threads=1
+
+      - name: Test thag_demo
+        run: cargo test -p thag_demo --no-fail-fast -- --test-threads=1

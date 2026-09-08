@@ -18,7 +18,7 @@ fn main() {
     println!("1. Environment Check:");
     if env::var("TEST_ENV").is_ok() {
         println!("   ⚠️ TEST_ENV is set - this forces fallback!");
-        env::remove_var("TEST_ENV");
+        unsafe { env::remove_var("TEST_ENV") };
         println!("   Removed TEST_ENV for clean test");
     } else {
         println!("   ✅ TEST_ENV not set");
@@ -28,7 +28,7 @@ fn main() {
     println!("\n2. Direct supports_color test:");
     #[cfg(feature = "color_detect")]
     {
-        use supports_color::{on, Stream};
+        use supports_color::{Stream, on};
 
         match on(Stream::Stdout) {
             Some(level) => {

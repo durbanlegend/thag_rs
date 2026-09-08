@@ -2,13 +2,13 @@
 name = "thag_styling"
 version = "1.1.0"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "Cross-platform terminal output that blends with the user's active theme as if by magic"
 repository = "https://github.com/durbanlegend/thag_rs"
 categories = ["command-line-utilities", "development-tools"]
 keywords = ["styling", "terminal", "themes", "colors", "ansi"]
-rust-version = "1.82"
+rust-version = "1.95"
 exclude = [".DS_Store"]
 
 [dependencies]

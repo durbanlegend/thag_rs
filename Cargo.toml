@@ -238,15 +238,6 @@ name = "thag_version_bump"
 path = "src/bin/thag_version_bump.rs"
 required-features = ["tools"]
 
-# [[bin]]
-# name = "thag_profile_benchmark"
-# path = "src/bin/thag_profile_benchmark.rs"
-# required-features = ["tools"]
-
-[[bench]]
-harness = false
-name = "filter_bench"
-
 [dependencies]
 anyhow = { version = "1.0", optional = true }
 arboard = { version = "3.4", optional = true }

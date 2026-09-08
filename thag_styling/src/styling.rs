@@ -1,6 +1,6 @@
 use crate::{
-    preload_themes, vprtln, ColorSupport, PaletteMethods, StylingError, StylingResult, TermBgLuma,
-    ThemeError, V,
+    ColorSupport, PaletteMethods, StylingError, StylingResult, TermBgLuma, ThemeError, V,
+    preload_themes, vprtln,
 };
 
 // Type alias for compatibility with PaletteMethods proc macro
@@ -12,8 +12,8 @@ use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
+use std::sync::atomic::AtomicBool;
 use strum::{Display, EnumIter, IntoEnumIterator};
 
 #[cfg(feature = "color_detect")]
@@ -1665,7 +1665,10 @@ impl Theme {
                 }
             }
 
-            vprtln!(V::VV, "2. Look for any theme exactly matching colour support and terminal background colour, in hopes of matching existing theme colours.");
+            vprtln!(
+                V::VV,
+                "2. Look for any theme exactly matching colour support and terminal background colour, in hopes of matching existing theme colours."
+            );
             vprtln!(V::VV, "a. Try exact match on fallback names");
             let fallback_styling = get_fallback_styling(term_bg_luma, &config);
             for fallback_name in fallback_styling {
@@ -1699,7 +1702,10 @@ impl Theme {
                 }
             }
             if let Some(theme) = best_match {
-                vprtln!(V::VV, "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}");
+                vprtln!(
+                    V::VV,
+                    "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}"
+                );
                 return Self::get_theme_with_color_support(theme, color_support);
             }
 
@@ -1723,7 +1729,10 @@ impl Theme {
                 }
             }
             if let Some(theme) = best_match {
-                vprtln!(V::VV, "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}");
+                vprtln!(
+                    V::VV,
+                    "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}"
+                );
                 return Self::get_theme_with_color_support(theme, color_support);
             }
 
@@ -2346,12 +2355,18 @@ impl Theme {
         format!(
             "Theme: {}\nType: {}\nFile: {}\nDescription: {}\nBackground: {} = ({}, {}, {})\nMinimum Color Support: {:?}\nBackground Luminance: {:?}",
             self.name,
-            if self.is_builtin { "Built-in" } else { "Custom" },
+            if self.is_builtin {
+                "Built-in"
+            } else {
+                "Custom"
+            },
             self.filename.display(),
             self.description,
             rgb_to_hex(&self.bg_rgbs[0]),
             // format!("#{:02x}{:02x}{:02x}", self.bg_rgbs[0].0, self.bg_rgbs[0].1, self.bg_rgbs[0].2),
-            self.bg_rgbs[0][0], self.bg_rgbs[0][1], self.bg_rgbs[0][2],
+            self.bg_rgbs[0][0],
+            self.bg_rgbs[0][1],
+            self.bg_rgbs[0][2],
             self.min_color_support,
             self.term_bg_luma,
         )
@@ -2951,7 +2966,7 @@ pub fn find_closest_color(rgb: [u8; 3]) -> u8 {
             STEPS
                 .iter()
                 .enumerate()
-                .min_by_key(|(_i, &s)| (i16::from(s) - i16::from(v)).abs())
+                .min_by_key(|&(ref _i, &s)| (i16::from(s) - i16::from(v)).abs())
                 .map_or(0, |(i, _)| i),
         )
         .map_or(0, |v| v)
@@ -3091,7 +3106,9 @@ pub fn main() -> StylingResult<()> {
     println!();
 
     // Section 3: ANSI-16 palette using u8 colors
-    let header = format!("ANSI-16 color palette in use for {theme_name} theme (converted via u8 and missing bold/dimmed/italic):\n");
+    let header = format!(
+        "ANSI-16 color palette in use for {theme_name} theme (converted via u8 and missing bold/dimmed/italic):\n"
+    );
     print_header(&header);
     for role in Role::iter() {
         let style = theme.style_for(role);
@@ -4162,8 +4179,8 @@ mod tests {
     use serial_test::serial;
     use std::io::Write;
     use std::path::Path;
-    use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Mutex;
+    use std::sync::atomic::{AtomicBool, Ordering};
     use thag_common::Verbosity;
 
     static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
@@ -4380,19 +4397,25 @@ mod tests {
         let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
 
         // Should succeed with TrueColor support and dark background
-        assert!(theme
-            .validate(&ColorSupport::TrueColor, &TermBgLuma::Dark)
-            .is_ok());
+        assert!(
+            theme
+                .validate(&ColorSupport::TrueColor, &TermBgLuma::Dark)
+                .is_ok()
+        );
 
         // Should fail with insufficient color support
-        assert!(theme
-            .validate(&ColorSupport::Color256, &TermBgLuma::Dark)
-            .is_err());
+        assert!(
+            theme
+                .validate(&ColorSupport::Color256, &TermBgLuma::Dark)
+                .is_err()
+        );
 
         // Should fail with wrong background
-        assert!(theme
-            .validate(&ColorSupport::TrueColor, &TermBgLuma::Light)
-            .is_err());
+        assert!(
+            theme
+                .validate(&ColorSupport::TrueColor, &TermBgLuma::Light)
+                .is_err()
+        );
 
         let output = get_test_output();
         flush_test_output(); // Write captured output to stdout
@@ -4504,7 +4527,7 @@ mod tests {
 
         let _output = get_test_output();
         flush_test_output(); // Write captured output to stdout
-                             // Output might be empty for paint tests, but should not crash
+        // Output might be empty for paint tests, but should not crash
     }
 
     #[test]

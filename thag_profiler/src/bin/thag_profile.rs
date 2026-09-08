@@ -6,12 +6,11 @@ thag_styling = { version = "1, thag-auto", default-features = false, features = 
 */
 use chrono::{DateTime, Local};
 use inferno::flamegraph::{
-    self,
+    self, Options, Palette,
     color::{BasicPalette, MultiPalette},
-    Options, Palette,
 };
 use inline_colorization::{color_cyan, color_reset};
-use inquire::{set_global_render_config, InquireError, MultiSelect, Select};
+use inquire::{InquireError, MultiSelect, Select, set_global_render_config};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
@@ -25,8 +24,8 @@ use std::{
 use strum::Display;
 use thag_proc_macros::timing;
 use thag_profiler::{
-    enhance_svg_accessibility, extract_filename_timestamp, profiling::ProfileStats, thousands,
-    ProfileError, ProfileResult,
+    ProfileError, ProfileResult, enhance_svg_accessibility, extract_filename_timestamp,
+    profiling::ProfileStats, thousands,
 };
 use thag_styling::themed_inquire_config;
 
@@ -630,7 +629,7 @@ fn show_statistics(
 
     if by_total_time {
         let mut entries: Vec<_> = stats.total_time.iter().collect();
-        entries.sort_by_key(|(_, &total_time)| std::cmp::Reverse(total_time));
+        entries.sort_by_key(|&(_, total_time)| std::cmp::Reverse(total_time));
 
         for (func, &total_time) in entries {
             let calls = *stats.calls.get(func).unwrap_or(&0);
@@ -638,7 +637,7 @@ fn show_statistics(
         }
     } else {
         let mut entries: Vec<_> = stats.calls.iter().collect();
-        entries.sort_by_key(|(_, &calls)| std::cmp::Reverse(calls));
+        entries.sort_by_key(|&(_, calls)| std::cmp::Reverse(calls));
 
         for (func, &calls) in entries {
             let total_time = *stats.total_time.get(func).unwrap_or(&0);
@@ -683,8 +682,12 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<Proces
     println!(
         "     For example, filtering out 'main' will remove main and everything called by main"
     );
-    println!("  2. Exact Match: Removes functions ONLY as standalone entries but preserves them when they have children");
-    println!("     For example, filtering out 'process_data' will remove standalone 'process_data' entries");
+    println!(
+        "  2. Exact Match: Removes functions ONLY as standalone entries but preserves them when they have children"
+    );
+    println!(
+        "     For example, filtering out 'process_data' will remove standalone 'process_data' entries"
+    );
     println!("     but will keep 'process_data;parse_json' and 'process_data;validate' entries\n");
 
     // Ask user to select filtering mode
@@ -1301,11 +1304,7 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
                     if let Some(op_size) = parts.last() {
                         // Parse operation and size
                         let (operation, size) = if let Ok(size) = op_size.parse::<i64>() {
-                            if size >= 0 {
-                                ('+', size)
-                            } else {
-                                ('-', size)
-                            }
+                            if size >= 0 { ('+', size) } else { ('-', size) }
                         } else {
                             return None;
                         };
@@ -1787,8 +1786,12 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
     println!(
         "     For example, filtering out 'main' will remove main and everything called by main"
     );
-    println!("  2. Exact Match: Removes functions ONLY as standalone entries but preserves them when they have children");
-    println!("     For example, filtering out 'allocate_buffer' will remove standalone 'allocate_buffer' entries");
+    println!(
+        "  2. Exact Match: Removes functions ONLY as standalone entries but preserves them when they have children"
+    );
+    println!(
+        "     For example, filtering out 'allocate_buffer' will remove standalone 'allocate_buffer' entries"
+    );
     println!("     but will keep 'allocate_buffer;copy_data' entries\n");
 
     // Ask user to select filtering mode

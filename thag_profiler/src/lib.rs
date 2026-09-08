@@ -91,12 +91,12 @@ use std::sync::OnceLock;
 pub use {
     errors::{ProfileError, ProfileResult},
     profiling::{
-        disable_profiling, extract_filename_timestamp, is_profiling_enabled, Profile,
-        ProfileConfiguration, ProfileType,
+        Profile, ProfileConfiguration, ProfileType, disable_profiling, extract_filename_timestamp,
+        is_profiling_enabled,
     },
     thag_common::{
-        init_verbosity, lazy_static_var, re, set_global_verbosity, set_verbosity, static_lazy,
-        warn_once, V,
+        V, init_verbosity, lazy_static_var, re, set_global_verbosity, set_verbosity, static_lazy,
+        warn_once,
     },
     thag_proc_macros::{fn_name, internal_doc},
 };
@@ -114,7 +114,7 @@ pub use profiling::{
 ///
 /// These are primarily for internal debugging and development.
 #[internal_doc]
-pub use logging::{flush_debug_log, get_debug_log_path, DebugLogger};
+pub use logging::{DebugLogger, flush_debug_log, get_debug_log_path};
 
 /// Private module for internal macro implementations.
 ///
@@ -129,10 +129,10 @@ pub mod __private {
 /// Memory profiling functionality (available with `full_profiling` feature).
 #[cfg(feature = "full_profiling")]
 pub use {
-    mem_attribution::{find_profile, register_profile, ProfileRef},
+    mem_attribution::{ProfileRef, find_profile, register_profile},
     mem_tracking::{
-        create_memory_task, current_allocator, get_last_active_task, record_allocation, Allocator,
-        Dispatcher, TaskGuard, TaskMemoryContext, TrackingAllocator,
+        Allocator, Dispatcher, TaskGuard, TaskMemoryContext, TrackingAllocator, create_memory_task,
+        current_allocator, get_last_active_task, record_allocation,
     },
 };
 
@@ -145,7 +145,7 @@ pub use profiling::extract_path;
 #[cfg(feature = "demo")]
 pub use {
     thag_proc_macros::timing,
-    visualization::{prompted_analysis, AnalysisType},
+    visualization::{AnalysisType, prompted_analysis},
 };
 
 // ============================================================================
@@ -470,7 +470,7 @@ pub fn init_profiling(root_module: &'static str, profile_type: Option<ProfileTyp
         unsafe extern "C" fn finalize_atexit() {
             crate::finalize_profiling();
         }
-        extern "C" {
+        unsafe extern "C" {
             fn atexit(func: unsafe extern "C" fn()) -> i32;
         }
         unsafe {
@@ -589,8 +589,10 @@ mod feature_tests {
         {
             // When compiled with the "time_profiling" feature but profiling is disabled at runtime,
             // is_profiling_enabled() should return false in test mode due to our special handling
-            assert!(!is_profiling_enabled(),
-                "With profiling feature enabled but disabled at runtime, is_profiling_enabled() should return false in test mode");
+            assert!(
+                !is_profiling_enabled(),
+                "With profiling feature enabled but disabled at runtime, is_profiling_enabled() should return false in test mode"
+            );
 
             // We can enable profiling and it should work
             // Force set the state directly rather than using enable_profiling which might have side effects

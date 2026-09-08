@@ -44,11 +44,10 @@ use std::env;
 
 #[cfg(feature = "time_profiling")]
 use thag_profiler::{
-    end, profile,
+    ProfileConfiguration, ProfileType, end, profile,
     profiling::{
         disable_profiling, is_profiling_enabled, is_profiling_state_enabled, set_profile_config,
     },
-    ProfileConfiguration, ProfileType,
 };
 
 // ---------------------------------------------------------------------------
@@ -277,7 +276,7 @@ fn test_enable_profiling_full_sequence() {
     };
 
     // Ensure clean state to start
-    env::remove_var("THAG_PROFILER");
+    unsafe { env::remove_var("THAG_PROFILER") };
     disable_profiling();
     assert!(
         !is_profiling_state_enabled(),
@@ -373,7 +372,7 @@ fn test_enable_profiling_full_sequence() {
     // -------------------------------------------------------------------
 
     eprintln!("Testing runtime with no env var...");
-    env::remove_var("THAG_PROFILER");
+    unsafe { env::remove_var("THAG_PROFILER") };
     disable_profiling();
     clear_profile_config_cache();
     runtime_controlled_function();
@@ -491,7 +490,7 @@ fn test_enable_profiling_full_sequence() {
     }
 
     // Clean up at the end
-    env::remove_var("THAG_PROFILER");
+    unsafe { env::remove_var("THAG_PROFILER") };
     disable_profiling();
 
     println!("All enable_profiling tests completed successfully!");

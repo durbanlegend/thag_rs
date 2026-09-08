@@ -34,10 +34,10 @@ use std::{str::FromStr, time::Duration};
 use thag_profiler::{
     clear_profile_config_cache, debug_log, disable_profiling, fn_name, profiled,
     profiling::{
-        build_stack, clean_function_name, extract_path, get_profile_config, get_reg_desc_name,
-        get_time_path, is_profiled_function, register_profiled_function, set_profile_config,
         DebugLevel, ProfileCapability, ProfileConfiguration, ProfilePaths, ProfileStats,
-        ProfileType,
+        ProfileType, build_stack, clean_function_name, extract_path, get_profile_config,
+        get_reg_desc_name, get_time_path, is_profiled_function, register_profiled_function,
+        set_profile_config,
     },
 };
 
@@ -210,7 +210,7 @@ fn test_env_config_parsing() {
     let original_var = env::var("THAG_PROFILER").ok();
 
     // Test with no env var set
-    env::remove_var("THAG_PROFILER");
+    unsafe { env::remove_var("THAG_PROFILER") };
     clear_profile_config_cache();
     let config1 = get_profile_config();
     assert!(!config1.is_enabled());
@@ -254,7 +254,7 @@ fn test_env_config_parsing() {
     if let Some(value) = original_var {
         unsafe { env::set_var("THAG_PROFILER", value) };
     } else {
-        env::remove_var("THAG_PROFILER");
+        unsafe { env::remove_var("THAG_PROFILER") };
     }
     clear_profile_config_cache();
 }

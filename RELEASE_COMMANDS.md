@@ -82,10 +82,10 @@ git push origin v1.0.0
 
 ```bash
 # In a clean directory
-mkdir /tmp/test-thag-v1 && cd /tmp/test-thag-v1
-cargo install thag_rs --version 1.0.0
-thag --version
-echo 'println!("Hello v1.0.0!");' | thag -s
+mkdir $TMPDIR/test-thag-v1 && cd $TMPDIR/test-thag-v1
+cargo install thag_rs --version 1.0.0 --root .
+./thag --version
+echo 'println!("Hello v1.0.0!");' | ./thag -s
 ```
 
 ## Rollback (if needed)

@@ -1,9 +1,4 @@
-/*[toml]
-[dependencies]
-serde = "=1.0.228"
-syn = "2"
-*/
-//// Very fast recursive calculation of an individual Fibonacci number using the
+/// Very fast recursive calculation of an individual Fibonacci number using the
 /// Fibonacci doubling identity. See also `demo/fib_doubling_iterative.rs` and
 /// `demo/fib_doubling_iterative_purge.rs` for non-recursive variations.
 ///
@@ -30,7 +25,6 @@ syn = "2"
 //# Sample arguments: `-- 100`
 use ibig::{ubig, UBig};
 use std::time::Instant;
-use syn;
 use thag_demo_proc_macros::cached;
 
 #[cached]

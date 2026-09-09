@@ -443,7 +443,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let theme = select_theme(&mut navigator)?;
 
     theme.with_context(|| {
-        format!("📋 Selected theme: {}", &theme.name.heading3())
+        format!("📋 Selected theme: {}", theme.name.heading3())
             .normal()
             .println();
         println!("📝 Description: {}", theme.description);
@@ -482,7 +482,7 @@ fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> 
 
             format!(
                 "📄 Loading theme from: {}",
-                &theme_file.display().to_string().debug()
+                theme_file.display().to_string().debug()
             )
             .normal()
             .println();

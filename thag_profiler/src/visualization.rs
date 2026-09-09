@@ -203,7 +203,7 @@ pub fn analyze_profile(
     }
 
     let mut function_value_pairs: Vec<_> = function_value_map.into_iter().collect();
-    function_value_pairs.sort_by(|a, b| b.1.cmp(&a.1));
+    function_value_pairs.sort_by_key(|b| std::cmp::Reverse(b.1));
 
     let top_functions: Vec<_> = function_value_pairs
         .iter()

@@ -1,8 +1,6 @@
 /*[toml]
 [dependencies]
 thag_styling = { version = "1, thag-auto", features = ["ratatui_support"] }
-ratatui = "0.29"
-crossterm = "0.28"
 */
 /// Comprehensive Ratatui Theming Showcase
 ///
@@ -151,7 +149,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
+fn run_app<B: Backend>(
+    terminal: &mut Terminal<B>,
+    mut app: App,
+) -> Result<(), Box<dyn std::error::Error>>
+where
+    <B as Backend>::Error: 'static,
+{
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
 

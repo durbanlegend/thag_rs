@@ -4,8 +4,7 @@ thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] } # Fo
 */
 
 /// Prototype script for `thag_get_demo_dir` - fast replacement for `thag_get_demo`
-/// with subdirectory support. Git `sparse-checkout` approach suggested and written
-/// by ChatGPT, local directory handling assisted by Claude.
+/// with subdirectory support.
 ///
 /// `thag_styling` included
 //# Purpose: Prototype for `thag_get_demo_dir`.

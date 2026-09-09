@@ -3,10 +3,10 @@
 # Specifying these in the toml block to ensure compatibility with thag_rs's Cargo.toml.
 clap = { version = "4.6", features = ["cargo", "derive"] }
 nu-ansi-term = { version = "0.50", features = ["derive_serde_style"] }
-ratatui = { version = "0.29", features = ["crossterm"] }
-reedline = "0.43"
-strum = { version = "0.27", features = ["derive"] }
-tui-textarea = { version = "0.7", features = ["crossterm", "search"] }
+ratatui = { version = "0.30", features = ["crossterm"] }
+reedline = "0.51"
+strum = { version = "0.28", features = ["derive"] }
+tui-textarea = { package = "tui-textarea-2", version = "0.13", features = ["crossterm", "search"] }
 
 thag_profiler = { version = "1, thag-auto", default-features = false }
 thag_rs = { version = "1, thag-auto", features = ["iter", "reedline", "simplelog"] }
@@ -70,13 +70,6 @@ use thag_styling::{
     Role, Style, TermAttributes, ThemedStyle,
 };
 use tui_textarea::{Input, TextArea};
-
-// impl From<&ColorInfo> for NuColor {
-//     #[profiled]
-//     fn from(color_info: &ColorInfo) -> Self {
-//         Self::Fixed(color_info.index)
-//     }
-// }
 
 // Custom get_args function that automatically sets iter=true for the bank ITER
 fn get_args() -> Cli {
@@ -331,22 +324,22 @@ impl IterCommand {
 pub struct ReplPrompt(pub &'static str);
 impl Prompt for ReplPrompt {
     #[profiled]
-    fn render_prompt_left(&self) -> Cow<str> {
+    fn render_prompt_left(&self) -> Cow<'_, str> {
         Cow::Owned(self.0.to_string())
     }
 
     #[profiled]
-    fn render_prompt_right(&self) -> Cow<str> {
+    fn render_prompt_right(&self) -> Cow<'_, str> {
         Cow::Owned(String::new())
     }
 
     #[profiled]
-    fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<str> {
+    fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<'_, str> {
         Cow::Owned("> ".to_string())
     }
 
     #[profiled]
-    fn render_prompt_multiline_indicator(&self) -> Cow<str> {
+    fn render_prompt_multiline_indicator(&self) -> Cow<'_, str> {
         Cow::Borrowed(DEFAULT_MULTILINE_INDICATOR)
     }
 
@@ -354,7 +347,7 @@ impl Prompt for ReplPrompt {
     fn render_prompt_history_search_indicator(
         &self,
         history_search: PromptHistorySearch,
-    ) -> Cow<str> {
+    ) -> Cow<'_, str> {
         let prefix = match history_search.status {
             PromptHistorySearchStatus::Passing => "",
             PromptHistorySearchStatus::Failing => "failing ",
@@ -541,6 +534,7 @@ pub fn run_repl(
             Signal::CtrlD | Signal::CtrlC => {
                 break;
             }
+            _ => continue,
         };
 
         // Process user input (line)
@@ -1009,11 +1003,11 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
                         })
                         .max()
                         .unwrap_or(0)
-                } else if !format!("{reedline_event}").starts_with("UntilFound") {
+                } else if matches!(reedline_event, ReedlineEvent::UntilFound(_)) {
+                    0
+                } else {
                     let event_desc = style.paint(format!("{reedline_event:?}"));
                     event_desc.len()
-                } else {
-                    0
                 }
             })
             .max()
@@ -1215,7 +1209,7 @@ fn format_cmd_desc(
         | EditCommand::CutRightBefore(_)
         | EditCommand::CutLeftUntil(_)
         | EditCommand::CutLeftBefore(_)
-        | EditCommand::CutSelection
+        | EditCommand::CutSelection { granularity: _ }
         | EditCommand::CopySelection
         | EditCommand::Paste
         | EditCommand::SelectAll

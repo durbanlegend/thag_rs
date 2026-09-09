@@ -22,7 +22,7 @@ use ratatui::prelude::{CrosstermBackend, Rect};
 pub use ratatui::style::Style as RataStyle;
 use ratatui::style::{Color, Modifier, Styled, Stylize};
 use ratatui::text::Line;
-use ratatui::widgets::{block::Block, Borders, Clear, Paragraph};
+use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::{CompletedFrame, Frame, Terminal};
 use regex::Regex;
 use scopeguard::{guard, ScopeGuard};

@@ -483,7 +483,7 @@ impl<R: BufRead> FilteringReader<R> {
 
         let (text, _calls) = without_count
             .rsplit_once(char::is_whitespace)
-            .unwrap_or_else(|| (without_count, ""));
+            .unwrap_or((without_count, ""));
 
         self.output.extend_from_slice(text.as_bytes());
         self.output.push(b' ');
@@ -630,7 +630,7 @@ fn show_statistics(
 
     if by_total_time {
         let mut entries: Vec<_> = stats.total_time.iter().collect();
-        entries.sort_by_key(|(_, &total_time)| std::cmp::Reverse(total_time));
+        entries.sort_by_key(|&(_, total_time)| std::cmp::Reverse(total_time));
 
         for (func, &total_time) in entries {
             let calls = *stats.calls.get(func).unwrap_or(&0);
@@ -638,7 +638,7 @@ fn show_statistics(
         }
     } else {
         let mut entries: Vec<_> = stats.calls.iter().collect();
-        entries.sort_by_key(|(_, &calls)| std::cmp::Reverse(calls));
+        entries.sort_by_key(|&(_, calls)| std::cmp::Reverse(calls));
 
         for (func, &calls) in entries {
             let total_time = *stats.total_time.get(func).unwrap_or(&0);
@@ -683,8 +683,12 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<Proces
     println!(
         "     For example, filtering out 'main' will remove main and everything called by main"
     );
-    println!("  2. Exact Match: Removes functions ONLY as standalone entries but preserves them when they have children");
-    println!("     For example, filtering out 'process_data' will remove standalone 'process_data' entries");
+    println!(
+        "  2. Exact Match: Removes functions ONLY as standalone entries but preserves them when they have children"
+    );
+    println!(
+        "     For example, filtering out 'process_data' will remove standalone 'process_data' entries"
+    );
     println!("     but will keep 'process_data;parse_json' and 'process_data;validate' entries\n");
 
     // Ask user to select filtering mode
@@ -1787,8 +1791,12 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
     println!(
         "     For example, filtering out 'main' will remove main and everything called by main"
     );
-    println!("  2. Exact Match: Removes functions ONLY as standalone entries but preserves them when they have children");
-    println!("     For example, filtering out 'allocate_buffer' will remove standalone 'allocate_buffer' entries");
+    println!(
+        "  2. Exact Match: Removes functions ONLY as standalone entries but preserves them when they have children"
+    );
+    println!(
+        "     For example, filtering out 'allocate_buffer' will remove standalone 'allocate_buffer' entries"
+    );
     println!("     but will keep 'allocate_buffer;copy_data' entries\n");
 
     // Ask user to select filtering mode

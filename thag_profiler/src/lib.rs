@@ -95,7 +95,8 @@ pub use {
         ProfileConfiguration, ProfileType,
     },
     thag_common::{
-        init_verbosity, lazy_static_var, re, set_global_verbosity, set_verbosity, static_lazy, V,
+        init_verbosity, lazy_static_var, re, set_global_verbosity, set_verbosity, static_lazy,
+        warn_once, V,
     },
     thag_proc_macros::{fn_name, internal_doc},
 };
@@ -350,60 +351,6 @@ macro_rules! safe_alloc {
     };
 }
 
-/// Macro for executing code only once with an optimized fast path.
-///
-/// This macro creates a static warning flag pattern that:
-/// 1. Uses a non-atomic static for fast path (minimal overhead after first call)
-/// 2. Uses an atomic boolean for thread-safe initialization
-/// 3. Executes the provided code block only on the first call where condition is true
-///
-/// # Example
-/// ```
-/// use thag_profiler::{debug_log, warn_once};
-/// let is_disabled = true;
-/// warn_once!(is_disabled, || {
-///     debug_log!("This feature is disabled");
-/// });
-/// ```
-#[cfg_attr(not(feature = "internal_docs"), doc(hidden))]
-#[macro_export]
-macro_rules! warn_once {
-    ($condition:expr, $warning_fn:expr) => {{
-        // Fast path using non-atomic bool for zero overhead after first warning
-        static mut WARNED: bool = false;
-        // Thread-safe initialization using atomic
-        static WARNED_ABOUT_SKIPPING: std::sync::atomic::AtomicBool =
-            std::sync::atomic::AtomicBool::new(false);
-
-        if $condition {
-            // Fast path check - no synchronization overhead after first warning
-            if unsafe { WARNED } {
-                // Skip - already warned
-            } else {
-                // Slow path with proper synchronization - only hit once
-                if !WARNED_ABOUT_SKIPPING.swap(true, std::sync::atomic::Ordering::Relaxed) {
-                    // Execute the warning function
-                    $warning_fn();
-                    // Update fast path flag for future calls
-                    unsafe {
-                        WARNED = true;
-                    }
-                }
-            }
-            true // Return true if condition was met
-        } else {
-            false // Return false if condition was not met
-        }
-    }};
-
-    // Variant with condition and return expression
-    ($condition:expr, $warning_fn:expr, $return_expr:expr) => {{
-        if warn_once!($condition, $warning_fn) {
-            $return_expr
-        }
-    }};
-}
-
 /// Formats a given positive integer with thousands separators (commas).
 ///
 /// This function takes any unsigned integer type (`u8`, `u16`, `u32`, `u64`, `u128`, `usize`)
@@ -523,7 +470,7 @@ pub fn init_profiling(root_module: &'static str, profile_type: Option<ProfileTyp
         unsafe extern "C" fn finalize_atexit() {
             crate::finalize_profiling();
         }
-        extern "C" {
+        unsafe extern "C" {
             fn atexit(func: unsafe extern "C" fn()) -> i32;
         }
         unsafe {
@@ -642,8 +589,10 @@ mod feature_tests {
         {
             // When compiled with the "time_profiling" feature but profiling is disabled at runtime,
             // is_profiling_enabled() should return false in test mode due to our special handling
-            assert!(!is_profiling_enabled(),
-                "With profiling feature enabled but disabled at runtime, is_profiling_enabled() should return false in test mode");
+            assert!(
+                !is_profiling_enabled(),
+                "With profiling feature enabled but disabled at runtime, is_profiling_enabled() should return false in test mode"
+            );
 
             // We can enable profiling and it should work
             // Force set the state directly rather than using enable_profiling which might have side effects
@@ -690,7 +639,7 @@ mod config_tests {
         eprintln!("orig_global_profile_type={orig_global_profile_type:?}");
 
         // First set to "time"
-        env::set_var("THAG_PROFILER", "time,.,none,false");
+        unsafe { env::set_var("THAG_PROFILER", "time,.,none,false") };
 
         // Clear the cache to force reloading from environment
         profiling::clear_profile_config_cache();
@@ -703,7 +652,7 @@ mod config_tests {
         assert_eq!(get_config_profile_type(), profiling::ProfileType::Time);
 
         // Now change to "both"
-        env::set_var("THAG_PROFILER", "both,.,none,false");
+        unsafe { env::set_var("THAG_PROFILER", "both,.,none,false") };
 
         // Clear the cache again to force reloading
         profiling::clear_profile_config_cache();
@@ -713,9 +662,9 @@ mod config_tests {
 
         // Restore original env var or remove it
         if let Some(val) = original {
-            env::set_var("THAG_PROFILER", val);
+            unsafe { env::set_var("THAG_PROFILER", val) };
         } else {
-            env::remove_var("THAG_PROFILER");
+            unsafe { env::remove_var("THAG_PROFILER") };
         }
 
         // Clear the cache once more to restore state

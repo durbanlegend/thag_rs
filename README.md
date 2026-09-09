@@ -243,7 +243,7 @@ Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit t
 ## Installation
 
 ### Minimum supported Rust version
-The minimum supported Rust version (MSRV) for the current version of `thag_rs` is 1.82.
+The minimum supported Rust version (MSRV) for the current version of `thag_rs` is 1.95.
 
 ### Installation options
 

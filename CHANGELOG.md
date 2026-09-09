@@ -2,15 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.1.0 (2026-07-17)
+# v1.1.0 (2026-09-07)
 
-## Minor Release — Pipeline-Friendly Output & API Additions
+## Minor Release: Profiling Fix for Rust 1.97, Pipeline-Friendly Output, Sundry Enhancements
+
+`thag_profiler` resolves the Rust 1.97 breaking change to the symbol mangling scheme.
 
 v1.1.0 establishes a clean separation between thag's own diagnostic output and the
-stdout stream of the script being run, following the convention established by `cargo`,
-`git`, `make`, and other established tools. All thag operational messages now go to
+stdout stream of the script being run, following the precedent of `cargo`, `git`,
+`make`, and other established tools. All thag operational messages now go to
 **stderr**, leaving **stdout** exclusively for the user's script output. This makes
-pipeline use (`thag myscript.rs | grep foo`) work naturally without needing `-qq`.
+pipeline use (`thag myscript.rs | grep foo`) work naturally without needing `-qq`,
+although `-qq` may still be desirable to reduce noise.
+
+The Rust edition has been upgraded from 2021 to 2024, and various `TUI` dependency
+upgrades have been unlocked by replacing `tui-textarea` with the maintained fork
+`tui-textarea-2`.
+
+Numerous minor robustness and usability enhancements have been made along the way.
 
 ### Breaking Changes
 
@@ -18,11 +27,15 @@ pipeline use (`thag myscript.rs | grep foo`) work naturally without needing `-qq
   error messages now write to stderr instead of stdout. Any shell automation that
   captured thag's own messages via stdout redirection will need to redirect stderr
   instead (e.g. `thag script.rs 2>thag.log` rather than `thag script.rs >thag.log`).
-  Script output itself is unaffected — it continues to go to stdout as before.
+  Script output itself is unaffected: it continues to go to stdout as before.
 
-- **`cprtln!` and `cvprtln!` removed** from `thag_styling`: these macros were already
-  marked `#[deprecated]` (superseded by `sprtln!` and `svprtln!` respectively). Any
-  remaining uses should be updated to the non-deprecated equivalents.
+- **`cprtln!` and `cvprtln!` removed** from `thag_styling`: these macros were
+- already marked `#[deprecated]` (superseded by `sprtln!` and `svprtln!`
+  respectively). Any remaining uses should be updated to the `s-` equivalents.
+
+- `thag_profiler` fixes:
+  - Cater for Rust 1.97 stable demangling change (issue #295)
+  - Fix `thag_profile` missing call counts
 
 - All workspace crates bumped to v1.1.0:
 
@@ -35,7 +48,7 @@ pipeline use (`thag myscript.rs | grep foo`) work naturally without needing `-qq
 
 ### Migration Guide
 
-For most interactive users, no action is required — thag's diagnostic messages will
+For most interactive users, no action is required: thag's diagnostic messages will
 simply appear on stderr as before, just routed correctly. Specific cases to review:
 
 - **Pipeline scripts**: `thag myscript.rs | next_command` now works without `-qq`.
@@ -77,29 +90,63 @@ simply appear on stderr as before, just routed correctly. Specific cases to revi
 
 ### Improvements
 
-- **ITER: history flushed on exit**: Pressing Ctrl-D or Ctrl-C in ITER now calls
-  `sync_history()` before exiting, ensuring the session's history is written to
-  disk even if the process is interrupted.
+- **Iterative mode improvements**:
+   This refers to the rapid iteration mode invoked by `--rapid` / `--iter` / `-r`.
+   - History flushed on exit:  Pressing Ctrl-D or Ctrl-C in ITER now calls
+    `sync_history()` before exiting, ensuring the session's history is written to disk
+     even if the process is interrupted.
 
-- **ITER: history file naming**: The staging and backup files used by the history
-  review feature are renamed from the generic `hist_staging.txt`/`hist_backup.txt`
-  to `thag_iter_hist_staging.txt`/`thag_iter_hist_backup.txt`, consistent with
-  the main history file and avoiding collisions with other tools in `$CARGO_HOME`.
+  - History file naming: The staging and backup files used by the history
+    review feature are renamed from the generic `hist_staging.txt`/`hist_backup.txt`
+    to `thag_iter_hist_staging.txt`/`thag_iter_hist_backup.txt`, consistent with
+    the main history file and avoiding collisions with other tools in `$CARGO_HOME`.
 
 - **CI: Linux musl target restored**: `x86_64-unknown-linux-musl` is re-added to
   the release build matrix. The previous blocker (`native-tls` / OpenSSL under
-  musl) is resolved — `reqwest` was already switched to `rustls-tls` and no
+  musl) is resolved: `reqwest` was already switched to `rustls-tls` and no
   remaining crates pull in a C TLS dependency.
 
 - **Debug output cleaned up**: Stray `eprintln!("raw_url=...")` debug calls
   removed from `thag_url`, and leftover debug prints removed from ITER's
   `review_history` function.
 
-### Notes
+- **Hidden dependency on `openssl` removed**: `tinyget` dependency replaced
+   by `ureq` which uses `rustls`.
 
-- ITER stdin TUI history review (replacing the raw-JSON-in-`$EDITOR` fallback
-  with a proper in-TUI interface) is tracked for v2.1. The existing F7/F8
-  history navigation and the `$EDITOR` fallback on F6 continue to work as before.
+- **Macro enhancements**:
+  - Declarative macro `warn_once` relocated from `thag_profiler` to `thag_common`.
+  - New proc macro `copy_resource_dir` added to `thag_proc_macros`.
+
+- **Profiling enhancements**:
+  - New demo script `demo/thag_profiler_fold.rs` added to post-process `.profraw`
+     files into `.folded` files, where this was not run at the end of profiling due to
+     abnormal termination.
+  - Post-processing of inclusive time-profiling .folded files to exclusive made
+    drastically more efficient.
+  - Numerous enhancements to `thag_profiler` README.md, notably guidance
+    and clarifications.
+
+- **CI enhancements**:
+  - Test runs added for subcrates `thag_common`, `thag_proc_macros`,
+    `thag_profiler` and `thag_styling`.
+
+- **Script runner enhancements**:
+  - Potential corruption of cached executables fixed.
+  - Clearly states location of built executable.
+  - Script runner emits warning if `THAG_DEV_PATH` missing.
+  - Skipped-step messages downgraded from `Emphasis` to `Info`.
+  - Exit message improved.
+
+- **Auto-help now caters for options**.
+
+- **New tools**: `thag_clean` for `thag` script cleanups and `thag_terminal_theme_help`
+   for terminal theme installation instructions.
+
+- **Clean-ups and Clippy fixes**.
+
+- **New demo scripts**: include a markdown viewer using `egui_commonmark`, a
+  `rayon` demo,  a `thag_profiling` time-profiling post-processor and a demo of
+  `thag_styling` styled string nesting. A few redundant demo scripts have been dropped.
 
 # v1.0.1 (2026-05-12)
 

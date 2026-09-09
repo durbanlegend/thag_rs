@@ -1,14 +1,14 @@
 /*[toml]
 [dependencies]
 thag_styling = { version = "1, thag-auto", features = ["ratatui_support"] }
-ratatui = "0.29"
-crossterm = "0.28"
+ratatui = "0.30"
+crossterm = "0.29"
 */
 
-/// Simple Ratatui + thag_styling Integration Demo
+/// Simple Ratatui + `thag_styling` Integration Demo
 ///
 /// This demo shows how to create a basic themed TUI application using ratatui
-/// and thag_styling's semantic role system.
+/// and `thag_styling`'s semantic role system.
 ///
 /// E.g.:
 /// ```
@@ -23,9 +23,9 @@ use crossterm::{
 };
 
 use ratatui::{
-    backend::CrosstermBackend,
+    backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout},
-    style::{Style, Stylize},
+    style::Style,
     text::{Line, Span, Text},
     widgets::{Block, Borders, Gauge, List, ListItem, Paragraph},
     Frame, Terminal,
@@ -68,7 +68,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn run_demo<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
+fn run_demo<B: Backend>(terminal: &mut Terminal<B>) -> Result<(), Box<dyn std::error::Error>>
+where
+    <B as Backend>::Error: 'static,
+{
     let mut counter = 0;
 
     loop {
@@ -86,6 +89,12 @@ fn run_demo<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>) -> io::Res
     Ok(())
 }
 
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines
+)]
 fn draw_demo(frame: &mut Frame, counter: usize) {
     let area = frame.area();
 
@@ -112,7 +121,7 @@ fn draw_demo(frame: &mut Frame, counter: usize) {
     frame.render_widget(title, chunks[0]);
 
     // Progress bar demonstrating themed gauge
-    let progress = (counter as f64 / 100.0 * 100.0) as u16;
+    let progress = (counter as f64) as u16;
     let gauge = Gauge::default()
         .block(
             Block::default()
@@ -123,7 +132,7 @@ fn draw_demo(frame: &mut Frame, counter: usize) {
         )
         .gauge_style(Style::themed(Role::Success))
         .percent(progress)
-        .label(format!("{}%", progress));
+        .label(format!("{progress}%"));
     frame.render_widget(gauge, chunks[1]);
 
     // Status messages demonstrating different roles

@@ -256,7 +256,7 @@ mod tests {
     fn test_themed_style_creation() {
         let style = ConsoleStyle::themed(Role::Error);
         // Should have some styling applied
-        assert_ne!(format!("{:?}", style), format!("{:?}", ConsoleStyle::new()));
+        assert_ne!(format!("{style:?}"), format!("{:?}", ConsoleStyle::new()));
     }
 
     #[test]
@@ -284,7 +284,7 @@ mod tests {
 
         // Test passes if style creation succeeds without panic
         // Note: console 0.16 doesn't expose getters for style properties
-        let _ = format!("{:?}", themed_style);
+        let _ = format!("{themed_style:?}");
     }
 
     #[test]
@@ -307,9 +307,9 @@ mod tests {
 
         // Test that helper functions successfully create styles without panicking
         // Note: console 0.16 doesn't expose getters for style properties
-        let _ = format!("{:?}", success);
-        let _ = format!("{:?}", error);
-        let _ = format!("{:?}", warning);
+        let _ = format!("{success:?}");
+        let _ = format!("{error:?}");
+        let _ = format!("{warning:?}");
     }
 
     #[test]

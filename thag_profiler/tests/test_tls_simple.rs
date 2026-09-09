@@ -176,5 +176,4 @@ fn test_debug_log_with_feature() {
 
     // When debug_logging feature is enabled, these should write to the debug log
     // We can't easily test the output here, but we can verify it compiles and runs
-    assert!(true);
 }

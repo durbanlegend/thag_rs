@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-ratatui = "0.29"
+ratatui = "0.30"
 thag_rs = { version = "1, thag-auto", default-features = false, features = ["tui", "simplelog"] }
 */
 

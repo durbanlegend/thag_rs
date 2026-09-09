@@ -34,10 +34,10 @@ use std::{str::FromStr, time::Duration};
 use thag_profiler::{
     clear_profile_config_cache, debug_log, disable_profiling, fn_name, profiled,
     profiling::{
-        build_stack, clean_function_name, extract_path, get_profile_config, get_reg_desc_name,
-        get_time_path, is_profiled_function, register_profiled_function, set_profile_config,
         DebugLevel, ProfileCapability, ProfileConfiguration, ProfilePaths, ProfileStats,
-        ProfileType,
+        ProfileType, build_stack, clean_function_name, extract_path, get_profile_config,
+        get_reg_desc_name, get_time_path, is_profiled_function, register_profiled_function,
+        set_profile_config,
     },
 };
 
@@ -210,13 +210,13 @@ fn test_env_config_parsing() {
     let original_var = env::var("THAG_PROFILER").ok();
 
     // Test with no env var set
-    env::remove_var("THAG_PROFILER");
+    unsafe { env::remove_var("THAG_PROFILER") };
     clear_profile_config_cache();
     let config1 = get_profile_config();
     assert!(!config1.is_enabled());
 
     // Test with time profiling
-    env::set_var("THAG_PROFILER", "time,,quiet");
+    unsafe { env::set_var("THAG_PROFILER", "time,,quiet") };
     clear_profile_config_cache();
     let config2 = get_profile_config();
     assert!(config2.is_enabled());
@@ -224,7 +224,7 @@ fn test_env_config_parsing() {
     assert_eq!(config2.debug_level(), Some(DebugLevel::Quiet));
 
     // Test with full config
-    env::set_var("THAG_PROFILER", "both,./output,announce,true");
+    unsafe { env::set_var("THAG_PROFILER", "both,./output,announce,true") };
     clear_profile_config_cache();
     let config3 = get_profile_config();
     assert!(config3.is_enabled());
@@ -233,7 +233,7 @@ fn test_env_config_parsing() {
     assert!(config3.is_detailed_memory());
 
     // Test caching behavior
-    env::set_var("THAG_PROFILER", "time,,none");
+    unsafe { env::set_var("THAG_PROFILER", "time,,none") };
     // Without clearing cache, should get previous config
     let config4 = get_profile_config();
     assert_eq!(config4.profile_type(), Some(ProfileType::Both)); // Still using cached value
@@ -252,9 +252,9 @@ fn test_env_config_parsing() {
 
     // Restore original env var
     if let Some(value) = original_var {
-        env::set_var("THAG_PROFILER", value);
+        unsafe { env::set_var("THAG_PROFILER", value) };
     } else {
-        env::remove_var("THAG_PROFILER");
+        unsafe { env::remove_var("THAG_PROFILER") };
     }
     clear_profile_config_cache();
 }
@@ -480,13 +480,13 @@ fn test_profile_stats() {
     let mut stats = ProfileStats::default();
 
     // Record some measurements
-    stats.record("function1", Duration::from_micros(100));
-    stats.record("function1", Duration::from_micros(200));
-    stats.record("function2", Duration::from_micros(150));
+    stats.record("function1", 2, Duration::from_micros(100));
+    stats.record("function1", 4, Duration::from_micros(200));
+    stats.record("function2", 5, Duration::from_micros(150));
 
     // Verify stats
-    assert_eq!(*stats.calls.get("function1").unwrap(), 2);
-    assert_eq!(*stats.calls.get("function2").unwrap(), 1);
+    assert_eq!(*stats.calls.get("function1").unwrap(), 6);
+    assert_eq!(*stats.calls.get("function2").unwrap(), 5);
 
     assert_eq!(*stats.total_time.get("function1").unwrap(), 300);
     assert_eq!(*stats.total_time.get("function2").unwrap(), 150);
@@ -558,7 +558,7 @@ fn test_profiling_full_sequence() {
     let original_var = env::var("THAG_PROFILER").ok();
 
     // Set a known environment for testing
-    env::set_var("THAG_PROFILER", "time,,announce");
+    unsafe { env::set_var("THAG_PROFILER", "time,,announce") };
     clear_profile_config_cache();
 
     // Run all test functions in sequence
@@ -622,9 +622,9 @@ fn test_profiling_full_sequence() {
 
     // Restore original env var
     if let Some(value) = original_var {
-        env::set_var("THAG_PROFILER", value);
+        unsafe { env::set_var("THAG_PROFILER", value) };
     } else {
-        env::remove_var("THAG_PROFILER");
+        unsafe { env::remove_var("THAG_PROFILER") };
     }
     clear_profile_config_cache();
 

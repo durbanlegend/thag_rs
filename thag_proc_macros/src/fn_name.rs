@@ -3,6 +3,17 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, ItemFn};
 
+/// Attribute macro to give a function access to its own name by inserting the statement `let fn_name = <function name>;`.
+///
+/// Syntax:
+///
+/// ```Rust
+/// #[fn_name]
+/// fn my_function() {
+///     ...
+/// }
+/// ```
+///
 pub fn fn_name_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
 

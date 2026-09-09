@@ -3,7 +3,7 @@ description = "A versatile cross-platform playground for Rust snippets, expressi
 name = "thag_rs"
 version = "1.1.0"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 # Include the demo directory in the crate packagename = "thag_rs"
 include = [
@@ -23,7 +23,7 @@ readme = "README.md"
 repository = "https://github.com/durbanlegend/thag_rs"
 categories = ["command-line-utilities", "development-tools::build-utils"]
 keywords = ["command_line", "eval", "playground", "runner", "script"]
-rust-version = "1.82"
+rust-version = "1.95"
 
 [package.metadata.wix]
 upgrade-guid = "FA5CCD40-AB09-488D-817D-867B69E10F7B"
@@ -253,10 +253,6 @@ name = "thag_md_view"
 path = "src/bin/thag_md_view.rs"
 required-features = ["gui_viewer"]
 
-[[bench]]
-harness = false
-name = "filter_bench"
-
 [dependencies]
 anyhow = { version = "1.0", optional = true }
 arboard = { version = "3.4", optional = true }
@@ -265,14 +261,14 @@ backtrace = "0.3"
 bitflags = { version = "2", optional = true }
 cargo-lookup = { version = "0.1", optional = true }
 cargo_toml = { version = "1", optional = true }
-chrono = "0.4"
+chrono = "0.4.25"
 clap = { version = "4.6", features = ["cargo", "derive"], optional = true }
 colored = { version = "3", optional = true }
-convert_case = { version = "0.11", optional = true }
+convert_case = { version = "0.12", optional = true }
 # NB: Required for stdin -d. Must align version with ratatui::crossterm
-crossterm = { version = "0.28", features = ["use-dev-tty"] }
+crossterm = { version = "0.29", features = ["use-dev-tty"] }
 dhat = { version = "0.3", optional = true }
-dirs = "6.0"
+dirs = "7.0"
 document-features = { version = "0.2", optional = true }
 documented = "0.10"
 edit = { version = "0.1", optional = true }
@@ -289,22 +285,23 @@ mockall = { version = "0.15", optional = true }
 notify = { version = "8", optional = true }
 nu-ansi-term = { version = "0.50", optional = true }
 pathdiff = { version = "0.2", optional = true }
-phf = { version = "0.12", features = ["macros"] }
-prettyplease = { version = "0.2", optional = true }
+phf = { version = "0.14", features = ["macros"] }
+prettyplease = { version = "0.3", optional = true }
 proc-macro2 = "1.0"
 pulldown-cmark = { version = "0.13", optional = true }
 quote = { version = "1.0", optional = true }
-ratatui = { version = "0.29", optional = true }
-reedline = { version = "0.43", optional = true }
+ratatui = { version = "0.30", optional = true }
+reedline = { version = "0.51", optional = true }
 regex = "1.11"
-reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"], default-features = false, optional = true }
+reqwest = { version = "0.13", features = ["blocking", "json", "rustls-tls"], default-features = false, optional = true }
 resvg = { version = "0.45", features = ["text"], optional = true }
 rfd = { version = "0.15", optional = true }
 rust-i18n = { version = "4", optional = true }
 sys-locale = { version = "0.3", optional = true }
+reqwest = { version = "0.13", features = ["blocking", "json", "rustls"], default-features = false, optional = true }
 scopeguard = { version = "1.2", optional = true }
 semver = "1.0"
-serde = { version = "=1.0.228", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1.0", optional = true }
 serde_merge = { version = "0.1", optional = true }
 serde_yaml_ok = { version = "0.9", optional = true }
@@ -312,7 +309,7 @@ side-by-side-diff = { version = "0.1", optional = true }
 simplelog = { version = "0.12", optional = true }
 strict = "0.2"
 strum = { version = "0.28", features = ["derive", "phf"] }
-syn = { version = "2", features = [
+syn = { version = "3", features = [
   "extra-traits",
   "full",
   "visit",
@@ -325,8 +322,7 @@ thag_common = { path = "thag_common", version = "1" }
 thag_proc_macros = { path = "thag_proc_macros", version = "1" }
 thag_profiler = { path = "thag_profiler", version = "1", optional = true }
 thag_styling = { path = "thag_styling", version = "1", default-features = false, optional = true }
-tinyget = { version = "1.0", features = ["https"], optional = true }
-tokio = { version = "1", features = [
+tokio = { version = "1.53", features = [
   "macros",
   "rt-multi-thread",
   "time",
@@ -334,10 +330,11 @@ tokio = { version = "1", features = [
 toml = "1"
 toml_edit = { version = "0.25", optional = true }
 # `tui-textarea` is used for the `tui` feature`.
-tui-textarea = { version = "0.7", features = [
+tui-textarea = { package = "tui-textarea-2", version = "0.13", features = [
   "crossterm",
   "search",
 ], optional = true }
+ureq = { version = "3", optional = true }
 url = { version = "2.5", optional = true }
 warp = { version = "0.4", features = ["server"], optional = true }
 
@@ -477,8 +474,8 @@ tools = [
   "dep:simplelog",
   "dep:tempfile",
   "dep:terminal-light",
-  "dep:tinyget",
   "dep:tokio",
+  "dep:ureq",
   "dep:url",
   "dep:warp",
   "thag_styling/full",

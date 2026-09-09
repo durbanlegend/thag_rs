@@ -1,10 +1,11 @@
 /*[toml]
 [dependencies]
 crossterm = "0.28" # Specific version
-thag_rs = { version = "1, thag-auto", default-features = false, features = ["tui", "simplelog"] }
+thag_rs = { version = "=1.0.1", default-features = false, features = ["tui", "simplelog"] }
 */
 
 /// Used to debug a doctest.
+/// Stuck on `thag_rs` v1.0.1 due to `mockall` dependency on `syn` v2.
 //# Purpose: Debugging script.
 //# Categories: crates, technique, testing
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};

@@ -18,7 +18,7 @@ use std::env;
 use std::fs;
 
 use thag_common::ColorSupport;
-use thag_styling::{set_verbosity, ColorInitStrategy, TermAttributes, Theme};
+use thag_styling::{ColorInitStrategy, TermAttributes, Theme, set_verbosity};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     set_verbosity!(verbose);
@@ -109,7 +109,9 @@ rgb = [98, 114, 164]
             println!("📁 Created test theme at: {}", theme_file);
 
             // Set THAG_THEME_DIR and test loading
-            env::set_var("THAG_THEME_DIR", temp_dir);
+            unsafe {
+                env::set_var("THAG_THEME_DIR", temp_dir);
+            }
             println!("🔧 Set THAG_THEME_DIR to: {}", temp_dir);
 
             match Theme::get_theme_runtime_or_builtin("test-custom-theme") {
@@ -145,7 +147,9 @@ rgb = [98, 114, 164]
 
     // Test 3: Test fallback to built-in when custom theme not found
     println!("Test 3: Testing fallback to built-in themes");
-    env::set_var("THAG_THEME_DIR", "/nonexistent/directory");
+    unsafe {
+        env::set_var("THAG_THEME_DIR", "/nonexistent/directory");
+    }
 
     match Theme::get_theme_runtime_or_builtin("dracula") {
         Ok(theme) => {
@@ -231,7 +235,9 @@ rgb = [69, 183, 209]
             ("thag-with-variant-dark.toml", "with-variant"),
         ];
 
-        env::set_var("THAG_THEME_DIR", temp_dir);
+        unsafe {
+            env::set_var("THAG_THEME_DIR", temp_dir);
+        }
 
         for (filename, theme_name) in patterns {
             let theme_path = format!("{}/{}", temp_dir, filename);
@@ -324,8 +330,10 @@ rgb = [131, 165, 152]
 
         let theme_file = format!("{}/integration-test.toml", temp_dir);
         if fs::write(&theme_file, theme_content).is_ok() {
-            env::set_var("THAG_THEME_DIR", temp_dir);
-            env::set_var("THAG_THEME", "integration-test");
+            unsafe {
+                env::set_var("THAG_THEME_DIR", temp_dir);
+                env::set_var("THAG_THEME", "integration-test");
+            }
 
             // This should use our custom theme through the normal initialization flow
             let attrs = TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
@@ -407,8 +415,10 @@ rgb = [120, 120, 255]
 
         let theme_file = format!("{}/env-test-theme.toml", temp_dir);
         if fs::write(&theme_file, theme_content).is_ok() {
-            env::set_var("THAG_THEME_DIR", temp_dir);
-            env::set_var("THAG_THEME", "env-test-theme");
+            unsafe {
+                env::set_var("THAG_THEME_DIR", temp_dir);
+                env::set_var("THAG_THEME", "env-test-theme");
+            }
             println!(
                 "🔧 Set THAG_THEME_DIR={} and THAG_THEME=env-test-theme",
                 temp_dir

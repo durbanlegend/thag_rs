@@ -1,22 +1,20 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "1, thag-auto" }
+thag_common = { version = "1, thag-auto" }
 */
 
 /// This script demonstrates the usage of the `warn_once` pattern for suppressing repeated
 /// log messages with minimal runtime overhead.
+/// Explained, demo'd and benchmarked here in exhaustive detail by Claude.
 ///
-/// The dependency is `thag_profiler` because that's the only place it's used at time of writing, even though this is
-/// not in any way a profiling-specific function.
-///
-/// Disclosure: the `thag_profiler` `warn_once` macro uses unsafe code.
-//# Purpose: Demo a macro I found useful, explained and benchmarked here in great detail by Claude.
+/// Disclosure: the `warn_once` macro uses unsafe code.
+//# Purpose: Demo a macro to prevent flooding output with repetitions of the same warning.
 //# Categories: demo, macros, technique
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 // Import the warn_once macro from thag_profiler
-use thag_profiler::warn_once;
+use thag_common::warn_once;
 
 // Counter for tracking warning calls
 static WARNING_COUNTER: Mutex<u32> = Mutex::new(0);
@@ -179,7 +177,7 @@ fn demo_performance() {
     );
 }
 
-/// Real-world example based on the record_dealloc function
+/// Real-world example based on the `thag_profiler` record_dealloc function
 fn demo_record_dealloc_conversion() {
     println!("\n=== Real-world Example: record_dealloc ===\n");
 
@@ -257,36 +255,4 @@ fn main() {
     demo_multiple_conditions();
     demo_performance();
     demo_record_dealloc_conversion();
-
-    // Show the implementation
-    println!("\n=== warn_once Implementation ===\n");
-    println!("```rust");
-    println!("macro_rules! warn_once {{");
-    println!("    ($condition:expr, $warning_fn:expr) => {{{{");
-    println!("        // Fast path using non-atomic bool for zero overhead after first warning");
-    println!("        static mut WARNED: bool = false;");
-    println!("        // Thread-safe initialization using atomic");
-    println!("        static WARNED_ABOUT_SKIPPING: std::sync::atomic::AtomicBool =");
-    println!("            std::sync::atomic::AtomicBool::new(false);");
-
-    println!("        if $condition {{");
-    println!("            // Fast path check - no synchronization overhead after first warning");
-    println!("            if unsafe {{ WARNED }} {{");
-    println!("                // Skip - already warned");
-    println!("            }} else {{");
-    println!("                // Slow path with proper synchronization - only hit once");
-    println!("                if !WARNED_ABOUT_SKIPPING.swap(true, std::sync::atomic::Ordering::Relaxed) {{");
-    println!("                    // Execute the warning function");
-    println!("                    $warning_fn();");
-    println!("                    // Update fast path flag for future calls");
-    println!("                    unsafe {{ WARNED = true; }}");
-    println!("                }}");
-    println!("            }}");
-    println!("            true // Return true if condition was met");
-    println!("        }} else {{");
-    println!("            false // Return false if condition was not met");
-    println!("        }}");
-    println!("    }}}};");
-    println!("}}");
-    println!("```");
 }

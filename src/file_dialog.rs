@@ -13,7 +13,7 @@ use ratatui::crossterm::{
 };
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    style::{Color, Style, Stylize},
+    style::{Color, Style},
     text::Line,
     widgets::{Block, Borders, List, ListItem, ListState},
     Frame,

@@ -85,7 +85,7 @@ Here is a further small sample of the 300+ built-in `thag_styling` themes, with 
 
 And the painting `thag_styling` generated it from:
 
-![Raphael: The School of Athens](../assets/raphael-school-of-athens.png)
+![Raphael: The School of Athens](https://upload.wikimedia.org/wikipedia/commons/4/49/%22The_School_of_Athens%22_by_Raffaello_Sanzio_da_Urbino.jpg)
 
 ### Built-in original light theme: Morning Coffee Light
 
@@ -388,7 +388,7 @@ For terminals that do not support OSC 17 or OSC 19, the dynamic change may work 
 
 The `thag` tool `thag_terminal_theme_help` will display specific instructions for installing a terminal theme file in each supported environment on request. The `thag_gen_terminal_themes` tool optionally displays the same instructions after generating a terminal theme or themes.
 
-An alternative technique for any environment that suppports OSC 17 and OSC 19 as described in this Readme, you can use shell integration to automatically sync palettes dynamically on startup as per the previous paragraph:
+An alternative technique for any environment that supports OSC 17 and OSC 19 as described in this Readme, you can use shell integration to automatically sync palettes dynamically on startup as per the previous paragraph:
 
 **Unix shells (~/.bashrc or ~/.zshrc):**
 
@@ -656,7 +656,7 @@ See `demo/theme_editor_demo.md` for detailed usage examples.
 
 ## Example: Generating a theme from an image
 
-![Edvard Munch: The Scream](../assets/munch-the-scream.png)
+![Edvard Munch: The Scream](https://upload.wikimedia.org/wikipedia/commons/9/9d/The_Scream_by_Edvard_Munch%2C_1893_-_Nasjonalgalleriet.png)
 *Use `thag_image_to_theme` tool and follow the prompts.*
 
 ![Generated thag theme thag-munch-the-scream-dark](../docs/thag_styling/assets/thag-munch-the-scream-dark.png)

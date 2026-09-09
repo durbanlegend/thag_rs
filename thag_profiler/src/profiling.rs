@@ -1467,7 +1467,10 @@ impl Profile {
             self.registered_name,
             self.profile_type,
             self.detailed_memory,
-            self.memory_task.as_ref().map_or_else(|| "N/A".to_string(), |context| format!("{}", context.task_id))
+            self.memory_task.as_ref().map_or_else(
+                || "N/A".to_string(),
+                |context| format!("{}", context.task_id)
+            )
         );
 
         if size == 0 {
@@ -1551,7 +1554,9 @@ impl Profile {
 
         // Try allowing overrides
         let profile_type = if matches!(requested_type, ProfileType::Memory | ProfileType::Both) {
-            debug_log!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
+            debug_log!(
+                "Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled."
+            );
             ProfileType::Time
         } else {
             requested_type
@@ -1630,7 +1635,9 @@ impl Profile {
 
         // Create a basic profile structure that works for all configurations
         if profile_type == ProfileType::Memory {
-            debug_log!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
+            debug_log!(
+                "Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled."
+            );
         }
 
         debug_log!(
@@ -2750,11 +2757,11 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
 
     // Process from bottom (deepest stacks) to top to adjust parent times
     for i in (0..parsed_stacks.len()).rev() {
-        let (ref current_parts, _, _, _) = &parsed_stacks[i];
+        let (current_parts, _, _, _) = &parsed_stacks[i];
 
         // Look forward (upward in file) for direct children
         for stack in parsed_stacks.iter().take(i) {
-            let (ref child_parts, _, child_time, _) = &stack;
+            let (child_parts, _, child_time, _) = &stack;
             // eprintln!("child_parts={child_parts:#?},child_time={child_time}");
 
             // Check if this is a direct child (exactly one level deeper)
@@ -3130,7 +3137,8 @@ impl ProfileStats {
     ///
     /// # Arguments
     /// * `func_name` - The name of the function being profiled
-    /// * `duration` - The duration of this particular call
+    /// * `calls` - The count of calls
+    /// * `duration` - The cumulative duration of this particular function call
     pub fn record(&mut self, func_name: &str, calls: u64, duration: std::time::Duration) {
         *self.calls.entry(func_name.to_string()).or_default() += calls;
         *self.total_time.entry(func_name.to_string()).or_default() += duration.as_micros();
@@ -3687,13 +3695,13 @@ mod tests_internal {
         let mut stats = ProfileStats::default();
 
         // Record some calls
-        stats.record("func1", Duration::from_micros(100));
-        stats.record("func1", Duration::from_micros(200));
-        stats.record("func2", Duration::from_micros(150));
+        stats.record("func1", 2, Duration::from_micros(100));
+        stats.record("func1", 5, Duration::from_micros(200));
+        stats.record("func2", 3, Duration::from_micros(150));
 
         // Check call counts
-        assert_eq!(*stats.calls.get("func1").unwrap(), 2);
-        assert_eq!(*stats.calls.get("func2").unwrap(), 1);
+        assert_eq!(*stats.calls.get("func1").unwrap(), 7);
+        assert_eq!(*stats.calls.get("func2").unwrap(), 3);
 
         // Check total times
         assert_eq!(*stats.total_time.get("func1").unwrap(), 300);

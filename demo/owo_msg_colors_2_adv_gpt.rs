@@ -5,9 +5,9 @@ default = ["strum/phf"]     # Because `strum` omits to publish "phf" feature for
 
 /// More fully worked-out prototype of colouring and styling messages based on the level of
 /// colour support of the current terminal and whether a light or dark theme is currently
-/// selected. This was the result of good deal of exploration and dialog with ChatGPT.  Try it on dark vs light
-/// backgrounds to see how some of the same colours "pop" when shown against a light or dark theme
-/// and how some virtually or literally disappear when not well matched to the theme.
+/// selected. Try it on dark vs light backgrounds to see how some of the same colours "pop"
+/// when shown against a light or dark theme and how some virtually or literally disappear
+/// when not well matched to the theme.
 //# Purpose: Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, use of `strum` crate to get enum variant from string, and AI-generated code.
 //# Categories: crates, prototype, technique
 use enum_assoc::Assoc;

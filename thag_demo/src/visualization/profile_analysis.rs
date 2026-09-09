@@ -64,7 +64,7 @@ pub fn analyze_profile(file_path: &PathBuf) -> Result<ProfileAnalysis, Box<dyn s
 
     // Create sorted list of functions by execution time
     let mut functions: Vec<_> = function_times.into_iter().collect();
-    functions.sort_by(|a, b| b.1.cmp(&a.1));
+    functions.sort_by_key(|b| std::cmp::Reverse(b.1));
 
     // Create top functions with percentages
     let top_functions: Vec<_> = functions
@@ -155,10 +155,10 @@ pub fn analyze_differential(
     }
 
     // Sort by magnitude of change
-    improvements.sort_by(|a, b| a.1.cmp(&b.1)); // Most improved first (most negative)
-    regressions.sort_by(|a, b| b.1.cmp(&a.1)); // Most regressed first (most positive)
-    new_functions.sort_by(|a, b| b.1.cmp(&a.1)); // Highest time first
-    removed_functions.sort_by(|a, b| b.1.cmp(&a.1)); // Highest time first
+    improvements.sort_by_key(|a| a.1); // Most improved first (most negative)
+    regressions.sort_by_key(|b| std::cmp::Reverse(b.1)); // Most regressed first (most positive)
+    new_functions.sort_by_key(|b| std::cmp::Reverse(b.1)); // Highest time first
+    removed_functions.sort_by_key(|b| std::cmp::Reverse(b.1)); // Highest time first
 
     let summary = generate_differential_summary(
         &before_analysis,

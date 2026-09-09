@@ -7,10 +7,10 @@ mod tests {
     use std::sync::Once;
     use thag_rs::terminal::TerminalStateGuard;
     use thag_rs::{
+        ColorSupport, TermBgLuma,
         terminal::{
             detect_term_capabilities, get_term_bg_luma, is_light_color, restore_raw_status,
         },
-        ColorSupport, TermBgLuma,
     };
 
     #[cfg(feature = "simplelog")]
@@ -93,7 +93,7 @@ mod tests {
         }
         let (support, _) = detect_term_capabilities();
         assert_eq!(*support, ColorSupport::Basic);
-        env::remove_var("TEST_ENV");
+        unsafe { env::remove_var("TEST_ENV") };
     }
 
     #[test]

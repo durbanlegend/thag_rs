@@ -6,8 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// This is a standalone implementation that doesn't require any external dependencies.
 /// The function uses unsafe code for maximum performance with a fast path after the first warning.
 ///
-/// Credit to `Claude Sonnet 4` for the implementation and comprehensive demo.
-//# Purpose: Standalone demo of warn_once_with_id function with embedded implementation
+//# Purpose: Standalone AI-generated demo of warn_once_with_id function with embedded implementation
 //# Categories: demo, macros, technique, unsafe, performance
 use std::sync::{Arc, Mutex};
 use std::time::Instant;

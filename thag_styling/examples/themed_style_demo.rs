@@ -144,7 +144,7 @@ fn demonstrate_console() {
 
 #[cfg(feature = "ratatui_support")]
 fn demonstrate_ratatui() {
-    use ratatui::style::{Color, Style, Stylize};
+    use ratatui::style::{Color, Style};
     use thag_styling::{integrations::ratatui_integration::RatatuiStyleExt, ThemedStyle};
 
     println!("📊 Ratatui Integration:\n");

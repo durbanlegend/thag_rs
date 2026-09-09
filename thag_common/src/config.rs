@@ -1,10 +1,10 @@
-use crate::{debug_log, lazy_static_var, ColorSupport, TermBgLuma, ThagCommonError, Verbosity};
+use crate::{ColorSupport, TermBgLuma, ThagCommonError, Verbosity, debug_log, lazy_static_var};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
 use mockall::{automock, predicate::str};
 use serde::{
-    de::{self, Error as DeError},
     Deserialize, Deserializer, Serialize,
+    de::{self, Error as DeError},
 };
 #[cfg(target_os = "windows")]
 use std::env;
@@ -302,7 +302,7 @@ impl Dependencies {
                     });
 
                     // Add required features
-                    if let Some(ref required_features) = &override_config.required_features {
+                    if let Some(required_features) = &override_config.required_features {
                         for f in required_features {
                             if f.is_empty() {
                                 continue;
@@ -379,7 +379,7 @@ impl Dependencies {
                 .cloned()
                 .collect();
 
-            if let Some(ref required_features) = &override_config.required_features {
+            if let Some(required_features) = &override_config.required_features {
                 for feature in required_features {
                     if feature.is_empty() {
                         continue;

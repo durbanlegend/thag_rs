@@ -296,7 +296,7 @@ impl<'a> Visit<'a> for CratesFinder {
     #[profiled]
     fn visit_item_impl(&mut self, item: &'a syn::ItemImpl) {
         // Check the trait being implemented (if any)
-        if let Some((_, path, _)) = &item.trait_ {
+        if let Some((path, _)) = &item.trait_ {
             if let Some(first_seg) = path.segments.first() {
                 let name = first_seg.ident.to_string();
                 if !should_filter_dependency(&name) && !self.crates.contains(&name) {
@@ -756,7 +756,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
 
             false
         }
-        Expr::Closure(ref expr_closure) => match &expr_closure.output {
+        Expr::Closure(expr_closure) => match &expr_closure.output {
             ReturnType::Default => is_last_stmt_unit_type(&expr_closure.body, function_map),
             ReturnType::Type(_, ty) => {
                 if let Tuple(tuple) = &**ty {
@@ -810,7 +810,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
         | Expr::Unsafe(_)
         | Expr::Verbatim(_)
         | Expr::Yield(_) => false,
-        Expr::Macro(ref expr_macro) => {
+        Expr::Macro(expr_macro) => {
             if let Some(segment) = expr_macro.mac.path.segments.last() {
                 let ident = &segment.ident.to_string();
                 return ident.starts_with("print")
@@ -819,13 +819,13 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
             }
             false // default - because no intrinsic way of knowing?
         }
-        Expr::Path(ref path) => {
+        Expr::Path(path) => {
             if let Some(value) = is_path_unit_type(path, function_map) {
                 return value;
             }
             false
         }
-        Expr::Return(ref expr_return) => {
+        Expr::Return(expr_return) => {
             // debug_log!("%%%%%%%% expr_return={expr_return:#?}");
             expr_return.expr.is_none()
         }

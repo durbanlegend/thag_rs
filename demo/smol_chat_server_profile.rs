@@ -6,7 +6,7 @@ thag_profiler = { version = "1, thag-auto", features = ["full_profiling"] }
 /// Published example from `smol crate`, instrumented for testing of `thag_profiler`, with clean shutdown
 /// added.
 ///
-/// Instrumented with that sub-crate's `thag-instrument` command, and shutdown logic added by Claude Sonnet 3.7.
+/// Instrumented with that sub-crate's `thag-instrument` command.
 ///
 /// See also `demo/smol_chat_server.rs` and
 /// `demo/smol_chat_client.rs`.

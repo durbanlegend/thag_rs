@@ -1665,7 +1665,10 @@ impl Theme {
                 }
             }
 
-            vprtln!(V::VV, "2. Look for any theme exactly matching colour support and terminal background colour, in hopes of matching existing theme colours.");
+            vprtln!(
+                V::VV,
+                "2. Look for any theme exactly matching colour support and terminal background colour, in hopes of matching existing theme colours."
+            );
             vprtln!(V::VV, "a. Try exact match on fallback names");
             let fallback_styling = get_fallback_styling(term_bg_luma, &config);
             for fallback_name in fallback_styling {
@@ -1699,7 +1702,10 @@ impl Theme {
                 }
             }
             if let Some(theme) = best_match {
-                vprtln!(V::VV, "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}");
+                vprtln!(
+                    V::VV,
+                    "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}"
+                );
                 return Self::get_theme_with_color_support(theme, color_support);
             }
 
@@ -1723,7 +1729,10 @@ impl Theme {
                 }
             }
             if let Some(theme) = best_match {
-                vprtln!(V::VV, "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}");
+                vprtln!(
+                    V::VV,
+                    "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}"
+                );
                 return Self::get_theme_with_color_support(theme, color_support);
             }
 
@@ -2346,12 +2355,18 @@ impl Theme {
         format!(
             "Theme: {}\nType: {}\nFile: {}\nDescription: {}\nBackground: {} = ({}, {}, {})\nMinimum Color Support: {:?}\nBackground Luminance: {:?}",
             self.name,
-            if self.is_builtin { "Built-in" } else { "Custom" },
+            if self.is_builtin {
+                "Built-in"
+            } else {
+                "Custom"
+            },
             self.filename.display(),
             self.description,
             rgb_to_hex(&self.bg_rgbs[0]),
             // format!("#{:02x}{:02x}{:02x}", self.bg_rgbs[0].0, self.bg_rgbs[0].1, self.bg_rgbs[0].2),
-            self.bg_rgbs[0][0], self.bg_rgbs[0][1], self.bg_rgbs[0][2],
+            self.bg_rgbs[0][0],
+            self.bg_rgbs[0][1],
+            self.bg_rgbs[0][2],
             self.min_color_support,
             self.term_bg_luma,
         )
@@ -2864,7 +2879,7 @@ macro_rules! svprtln {
 ///
 /// # Arguments
 /// * `$style` - A [`Role`] or [`Style`] that determines the styling to apply
-/// * `$verbosity` - The [`Verbosity`] level required for this message
+/// * `$verbosity` - The [`crate::Verbosity`] level required for this message
 /// * `$($arg:tt)*` - Format string and arguments, same as `eprintln!`
 ///
 /// # Examples
@@ -2951,7 +2966,7 @@ pub fn find_closest_color(rgb: [u8; 3]) -> u8 {
             STEPS
                 .iter()
                 .enumerate()
-                .min_by_key(|(_i, &s)| (i16::from(s) - i16::from(v)).abs())
+                .min_by_key(|&(ref _i, &s)| (i16::from(s) - i16::from(v)).abs())
                 .map_or(0, |(i, _)| i),
         )
         .map_or(0, |v| v)
@@ -3091,7 +3106,9 @@ pub fn main() -> StylingResult<()> {
     println!();
 
     // Section 3: ANSI-16 palette using u8 colors
-    let header = format!("ANSI-16 color palette in use for {theme_name} theme (converted via u8 and missing bold/dimmed/italic):\n");
+    let header = format!(
+        "ANSI-16 color palette in use for {theme_name} theme (converted via u8 and missing bold/dimmed/italic):\n"
+    );
     print_header(&header);
     for role in Role::iter() {
         let style = theme.style_for(role);
@@ -4164,6 +4181,7 @@ mod tests {
     use std::path::Path;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Mutex;
+    use thag_common::Verbosity;
 
     static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
     static BLACK_BG: &[u8; 3] = &[0, 0, 0];
@@ -4221,7 +4239,7 @@ mod tests {
         if let Ok(guard) = TEST_OUTPUT.lock() {
             let mut stdout = std::io::stdout();
             for line in guard.iter() {
-                writeln!(stdout, "{}", line).expect("Failed to write to stdout");
+                writeln!(stdout, "{line}").expect("Failed to write to stdout");
             }
         }
     }
@@ -4526,17 +4544,14 @@ mod tests {
 
         // Test vprtln with Role and different verbosity levels
         Role::Debug.vprtln(
-            thag_common::Verbosity::Verbose,
+            Verbosity::Verbose,
             format_args!("Debug message: {}", "debug"),
         );
-        Role::Info.vprtln(
-            thag_common::Verbosity::Normal,
-            format_args!("Info message: {}", "info"),
-        );
+        Role::Info.vprtln(Verbosity::Normal, format_args!("Info message: {}", "info"));
 
         // Test that lower verbosity messages are filtered out
         Role::Link.vprtln(
-            thag_common::Verbosity::Debug,
+            Verbosity::Debug,
             format_args!("This should be filtered: {}", "link"),
         );
 

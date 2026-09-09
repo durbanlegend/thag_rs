@@ -26,7 +26,7 @@ thag_common = { version = "1, thag-auto" }
 //# Purpose: A front-end to allow `thag` to run scripts from URLs while keeping `thag` itself free of network dependencies.
 //# Categories: technique, thag_front_ends, tools
 use std::{error::Error, process::Command, string::ToString};
-use syn::{parse_file, Expr};
+use syn::{Expr, parse_file};
 use thag_common::{auto_help, help_system::check_help_and_exit, set_verbosity_from_env};
 use url::Url;
 
@@ -129,7 +129,7 @@ fn fetch_and_validate(url: &str) -> Result<String, UrlError> {
     // );
 
     if response.status() != 200 {
-        return Err(UrlError::Http(format!("HTTP {}", response.status(),)));
+        return Err(UrlError::Http(format!("HTTP {}", response.status())));
     }
 
     let content = response
@@ -140,7 +140,7 @@ fn fetch_and_validate(url: &str) -> Result<String, UrlError> {
     // Validate content before returning
     validate_rust_content(&content)?;
 
-    Ok(content.to_string())
+    Ok(content)
 }
 
 fn detect_source_type(url: &Url) -> SourceType {
@@ -155,6 +155,7 @@ fn detect_source_type(url: &Url) -> SourceType {
     })
 }
 
+#[allow(clippy::too_many_lines)]
 fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
     let url = Url::parse(url_str).map_err(|e| UrlError::ParseError(format!("Invalid URL: {e}")))?;
 

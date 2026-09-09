@@ -1,15 +1,15 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::{
+    BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
+    KeyDisplayLine, ProcFlags, ThagError, ThagResult,
     builder::process_expr,
     code_utils::{self, clean_up, display_dir_contents, extract_ast_expr},
     key, lazy_static_var,
     manifest::extract,
     tui_editor::{
-        script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
-        ManagedTerminal, RataStyle,
+        EditData, Entry, History, KeyAction, KeyDisplay, ManagedTerminal, RataStyle,
+        script_key_handler, tui_edit,
     },
-    BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
-    KeyDisplayLine, ProcFlags, ThagError, ThagResult,
 };
 use clap::{CommandFactory, Parser};
 // use crossterm::style::types::color::Color as ReedlineColor;
@@ -17,17 +17,18 @@ use edit::edit_file;
 use nu_ansi_term::{Color as NuColor, Style as NuStyle};
 use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
 use reedline::{
-    default_emacs_keybindings, Color as ReedLineColor, ColumnarMenu, DefaultCompleter,
-    DefaultHinter, DefaultValidator, EditCommand, Emacs, ExampleHighlighter, FileBackedHistory,
-    HistoryItem, KeyCode, KeyModifiers, Keybindings, MenuBuilder, Prompt, PromptEditMode,
-    PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
+    Color as ReedLineColor, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
+    EditCommand, Emacs, ExampleHighlighter, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers,
+    Keybindings, MenuBuilder, Prompt, PromptEditMode, PromptHistorySearch,
+    PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
+    default_emacs_keybindings,
 };
 use regex::Regex;
 use std::{
     borrow::Cow,
     collections::HashMap,
     fmt::{Debug, Write as _},
-    fs::{self, read_to_string, OpenOptions},
+    fs::{self, OpenOptions, read_to_string},
     io::{BufWriter, Write},
     path::{Path, PathBuf},
     str::FromStr,
@@ -36,8 +37,8 @@ use std::{
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 use thag_profiler::profiled;
 use thag_styling::{
-    display_terminal_attributes, display_theme_details, display_theme_roles, re, seprtln, sprtln,
-    vprtln, Role, Style, TermAttributes, ThemedStyle, V,
+    Role, Style, TermAttributes, ThemedStyle, V, display_terminal_attributes,
+    display_theme_details, display_theme_roles, re, seprtln, sprtln, vprtln,
 };
 use tui_textarea::{Input, TextArea};
 
@@ -126,42 +127,111 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
     ["MoveWordLeft", "Move one word to the left"],
     ["MoveBigWordLeft", "Move one WORD to the left"],
     ["MoveWordRight", "Move one word to the right"],
-    ["MoveWordRightStart", "Move one word to the right, stop at start of word"],
-    ["MoveBigWordRightStart", "Move one WORD to the right, stop at start of WORD"],
-    ["MoveWordRightEnd", "Move one word to the right, stop at end of word"],
-    ["MoveBigWordRightEnd", "Move one WORD to the right, stop at end of WORD"],
+    [
+        "MoveWordRightStart",
+        "Move one word to the right, stop at start of word",
+    ],
+    [
+        "MoveBigWordRightStart",
+        "Move one WORD to the right, stop at start of WORD",
+    ],
+    [
+        "MoveWordRightEnd",
+        "Move one word to the right, stop at end of word",
+    ],
+    [
+        "MoveBigWordRightEnd",
+        "Move one WORD to the right, stop at end of WORD",
+    ],
     ["MoveToPosition", "Move to position"],
-    ["InsertChar", "Insert a character at the current insertion point"],
-    ["InsertString", "Insert a string at the current insertion point"],
-    ["InsertNewline", "Insert the system specific new line character"],
+    [
+        "InsertChar",
+        "Insert a character at the current insertion point",
+    ],
+    [
+        "InsertString",
+        "Insert a string at the current insertion point",
+    ],
+    [
+        "InsertNewline",
+        "Insert the system specific new line character",
+    ],
     ["ReplaceChars", "Replace characters with string"],
-    ["Backspace", "Backspace delete from the current insertion point"],
+    [
+        "Backspace",
+        "Backspace delete from the current insertion point",
+    ],
     ["Delete", "Delete in-place from the current insertion point"],
-    ["CutChar", "Cut the grapheme right from the current insertion point"],
-    ["BackspaceWord", "Backspace delete a word from the current insertion point"],
-    ["DeleteWord", "Delete in-place a word from the current insertion point"],
+    [
+        "CutChar",
+        "Cut the grapheme right from the current insertion point",
+    ],
+    [
+        "BackspaceWord",
+        "Backspace delete a word from the current insertion point",
+    ],
+    [
+        "DeleteWord",
+        "Delete in-place a word from the current insertion point",
+    ],
     ["Clear", "Clear the current buffer"],
     ["ClearToLineEnd", "Clear to the end of the current line"],
-    ["Complete", "Insert completion: entire completion if there is only one possibility, or else up to shared prefix."],
+    [
+        "Complete",
+        "Insert completion: entire completion if there is only one possibility, or else up to shared prefix.",
+    ],
     ["CutCurrentLine", "Cut the current line"],
-    ["CutFromStart", "Cut from the start of the buffer to the insertion point"],
-    ["CutFromLineStart", "Cut from the start of the current line to the insertion point"],
-    ["CutToEnd", "Cut from the insertion point to the end of the buffer"],
-    ["CutToLineEnd", "Cut from the insertion point to the end of the current line"],
+    [
+        "CutFromStart",
+        "Cut from the start of the buffer to the insertion point",
+    ],
+    [
+        "CutFromLineStart",
+        "Cut from the start of the current line to the insertion point",
+    ],
+    [
+        "CutToEnd",
+        "Cut from the insertion point to the end of the buffer",
+    ],
+    [
+        "CutToLineEnd",
+        "Cut from the insertion point to the end of the current line",
+    ],
     ["CutWordLeft", "Cut the word left of the insertion point"],
     ["CutBigWordLeft", "Cut the WORD left of the insertion point"],
     ["CutWordRight", "Cut the word right of the insertion point"],
-    ["CutBigWordRight", "Cut the WORD right of the insertion point"],
-    ["CutWordRightToNext", "Cut the word right of the insertion point and any following space"],
-    ["CutBigWordRightToNext", "Cut the WORD right of the insertion point and any following space"],
-    ["PasteCutBufferBefore", "Paste the cut buffer in front of the insertion point (Emacs, vi P)"],
-    ["PasteCutBufferAfter", "Paste the cut buffer in front of the insertion point (vi p)"],
+    [
+        "CutBigWordRight",
+        "Cut the WORD right of the insertion point",
+    ],
+    [
+        "CutWordRightToNext",
+        "Cut the word right of the insertion point and any following space",
+    ],
+    [
+        "CutBigWordRightToNext",
+        "Cut the WORD right of the insertion point and any following space",
+    ],
+    [
+        "PasteCutBufferBefore",
+        "Paste the cut buffer in front of the insertion point (Emacs, vi P)",
+    ],
+    [
+        "PasteCutBufferAfter",
+        "Paste the cut buffer in front of the insertion point (vi p)",
+    ],
     ["UppercaseWord", "Upper case the current word"],
     ["LowercaseWord", "Lower case the current word"],
     ["CapitalizeChar", "Capitalize the current character"],
     ["SwitchcaseChar", "Switch the case of the current character"],
-    ["SwapWords", "Swap the current word with the word to the right"],
-    ["SwapGraphemes", "Swap the current grapheme/character with the one to the right"],
+    [
+        "SwapWords",
+        "Swap the current word with the word to the right",
+    ],
+    [
+        "SwapGraphemes",
+        "Swap the current grapheme/character with the one to the right",
+    ],
     ["Undo", "Undo the previous edit command"],
     ["Redo", "Redo an edit command from the undo history"],
     ["CutRightUntil", "CutUntil right until char"],
@@ -175,7 +245,10 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
     ["SelectAll", "Select whole input buffer"],
     ["CutSelection", "Cut selection to local buffer"],
     ["CopySelection", "Copy selection to local buffer"],
-    ["Paste", "Paste content from local buffer at the current cursor position"],
+    [
+        "Paste",
+        "Paste content from local buffer at the current cursor position",
+    ],
 ];
 
 /// Iterator mode lets you type or paste a Rust expression to be evaluated.
@@ -495,75 +568,75 @@ pub fn run_iter(
             None
         };
 
-        if let Some(cmd) = maybe_cmd {
-            if let Ok(iter_command) = IterCommand::from_str(&cmd) {
-                match iter_command {
-                    IterCommand::Banner => disp_banner(cmd_list),
-                    IterCommand::Help => {
-                        IterCommand::print_help();
-                    }
-                    IterCommand::Quit => {
-                        break;
-                    }
-                    IterCommand::Tui => {
-                        if TermAttributes::get_or_init().color_support == ColorSupport::None {
-                            println!("Sorry, TUI features require terminal color support");
-                            continue;
-                        }
-                        let source_path = &build_state.source_path;
-                        let save_path: PathBuf = build_state.cargo_home.join("repl_tui_save.rs");
-
-                        let rs_source = read_to_string(source_path)?;
-                        tui(
-                            rs_source.as_str(),
-                            &save_path,
-                            build_state,
-                            args,
-                            proc_flags,
-                        )?;
-                    }
-                    IterCommand::Edit => {
-                        edit(&build_state.source_path)?;
-                    }
-                    IterCommand::Toml => {
-                        toml(build_state)?;
-                    }
-                    IterCommand::Run => {
-                        let rs_source = code_utils::read_file_contents(&build_state.source_path)?;
-                        process_source(&rs_source, build_state, args, proc_flags, start)?;
-                    }
-                    IterCommand::Delete => {
-                        delete(build_state)?;
-                    }
-                    IterCommand::List => {
-                        list(build_state)?;
-                    }
-                    IterCommand::History => {
-                        if TermAttributes::get_or_init().color_support == ColorSupport::None {
-                            println!("Sorry, TUI features require terminal color support");
-                            continue;
-                        }
-                        review_history(
-                            &mut line_editor,
-                            &history_path,
-                            &hist_backup_path,
-                            &hist_staging_path,
-                        )?;
-                    }
-                    IterCommand::Keys => {
-                        show_key_bindings(formatted_bindings, max_key_len);
-                    }
-                    IterCommand::Theme => {
-                        let term_attrs = TermAttributes::get_or_init();
-                        let theme = &term_attrs.theme;
-
-                        display_theme_roles(theme);
-                        display_theme_details(theme);
-                        display_terminal_attributes(theme);
-                    }
+        if let Some(cmd) = maybe_cmd
+            && let Ok(iter_command) = IterCommand::from_str(&cmd)
+        {
+            match iter_command {
+                IterCommand::Banner => disp_banner(cmd_list),
+                IterCommand::Help => {
+                    IterCommand::print_help();
                 }
-                continue;
+                IterCommand::Quit => {
+                    break;
+                }
+                IterCommand::Tui => {
+                    if TermAttributes::get_or_init().color_support == ColorSupport::None {
+                        println!("Sorry, TUI features require terminal color support");
+                        continue;
+                    }
+                    let source_path = &build_state.source_path;
+                    let save_path: PathBuf = build_state.cargo_home.join("repl_tui_save.rs");
+
+                    let rs_source = read_to_string(source_path)?;
+                    tui(
+                        rs_source.as_str(),
+                        &save_path,
+                        build_state,
+                        args,
+                        proc_flags,
+                    )?;
+                }
+                IterCommand::Edit => {
+                    edit(&build_state.source_path)?;
+                }
+                IterCommand::Toml => {
+                    toml(build_state)?;
+                }
+                IterCommand::Run => {
+                    let rs_source = code_utils::read_file_contents(&build_state.source_path)?;
+                    process_source(&rs_source, build_state, args, proc_flags, start)?;
+                }
+                IterCommand::Delete => {
+                    delete(build_state)?;
+                }
+                IterCommand::List => {
+                    list(build_state)?;
+                }
+                IterCommand::History => {
+                    if TermAttributes::get_or_init().color_support == ColorSupport::None {
+                        println!("Sorry, TUI features require terminal color support");
+                        continue;
+                    }
+                    review_history(
+                        &mut line_editor,
+                        &history_path,
+                        &hist_backup_path,
+                        &hist_staging_path,
+                    )?;
+                }
+                IterCommand::Keys => {
+                    show_key_bindings(formatted_bindings, max_key_len);
+                }
+                IterCommand::Theme => {
+                    let term_attrs = TermAttributes::get_or_init();
+                    let theme = &term_attrs.theme;
+
+                    display_theme_roles(theme);
+                    display_theme_details(theme);
+                    display_terminal_attributes(theme);
+                }
             }
+            continue;
         }
 
         process_source(rs_source, build_state, args, proc_flags, start)?;
@@ -665,7 +738,7 @@ fn tui(
         | KeyAction::TogglePopup => {
             return Err(
                 format!("Logic error: {key_action:?} should not return from tui_edit").into(),
-            )
+            );
         }
         // KeyAction::SaveAndExit => false,
         KeyAction::Submit => {

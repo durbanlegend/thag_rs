@@ -17,9 +17,9 @@ use std::{
     io::Write as OtherWrite,
     path::Path,
 };
-use syn::{parse_file, Attribute, Item, ItemFn, Lit, Meta, MetaNameValue};
+use syn::{Attribute, Item, ItemFn, Lit, Meta, MetaNameValue, parse_file};
 use thag_styling::{
-    auto_help, help_system::check_help_and_exit, set_verbosity_from_env, sveprtln, Role, V,
+    Role, V, auto_help, help_system::check_help_and_exit, set_verbosity_from_env, sveprtln,
 };
 
 #[derive(Debug, Clone)]
@@ -44,8 +44,8 @@ fn extract_doc_comments(attrs: &[Attribute]) -> String {
     let mut doc_lines = Vec::new();
 
     for attr in attrs {
-        if attr.path().is_ident("doc") {
-            if let Meta::NameValue(MetaNameValue {
+        if attr.path().is_ident("doc")
+            && let Meta::NameValue(MetaNameValue {
                 value:
                     syn::Expr::Lit(syn::ExprLit {
                         lit: Lit::Str(lit_str),
@@ -53,12 +53,11 @@ fn extract_doc_comments(attrs: &[Attribute]) -> String {
                     }),
                 ..
             }) = &attr.meta
-            {
-                let content = lit_str.value();
-                // Remove leading space if present
-                let content = content.strip_prefix(' ').unwrap_or(&content);
-                doc_lines.push(content.to_string());
-            }
+        {
+            let content = lit_str.value();
+            // Remove leading space if present
+            let content = content.strip_prefix(' ').unwrap_or(&content);
+            doc_lines.push(content.to_string());
         }
     }
 
@@ -152,22 +151,22 @@ fn parse_proc_macros(
     let mut macros = Vec::new();
 
     for item in syntax_tree.items {
-        if let Item::Fn(item_fn) = item {
-            if let Some((name, macro_type)) = determine_macro_type_and_name(&item_fn) {
-                let doc_comment = extract_doc_comments(&item_fn.attrs);
-                let attributes = extract_proc_macro_attributes(&item_fn.attrs);
-                let example_file = find_example_file(&name, demo_dir);
-                let signature = format!("pub fn {}(...) -> TokenStream", item_fn.sig.ident);
+        if let Item::Fn(item_fn) = item
+            && let Some((name, macro_type)) = determine_macro_type_and_name(&item_fn)
+        {
+            let doc_comment = extract_doc_comments(&item_fn.attrs);
+            let attributes = extract_proc_macro_attributes(&item_fn.attrs);
+            let example_file = find_example_file(&name, demo_dir);
+            let signature = format!("pub fn {}(...) -> TokenStream", item_fn.sig.ident);
 
-                macros.push(ProcMacroInfo {
-                    name,
-                    macro_type,
-                    doc_comment,
-                    attributes,
-                    example_file,
-                    signature,
-                });
-            }
+            macros.push(ProcMacroInfo {
+                name,
+                macro_type,
+                doc_comment,
+                attributes,
+                example_file,
+                signature,
+            });
         }
     }
 
@@ -214,7 +213,10 @@ fn generate_readme(
 
     // Write header
     writeln!(file, "# Procedural Macros Documentation\n")?;
-    writeln!(file, "This directory contains a collection of procedural macros demonstrating various techniques and patterns for writing proc macros in Rust.\n")?;
+    writeln!(
+        file,
+        "This directory contains a collection of procedural macros demonstrating various techniques and patterns for writing proc macros in Rust.\n"
+    )?;
 
     // Write overview
     writeln!(file, "## Overview\n")?;
@@ -279,7 +281,10 @@ fn generate_readme(
 
     writeln!(file, "## Running Examples\n")?;
 
-    writeln!(file, "Each proc macro has a corresponding example file in the `demo/` directory. To run the examples:\n")?;
+    writeln!(
+        file,
+        "Each proc macro has a corresponding example file in the `demo/` directory. To run the examples:\n"
+    )?;
 
     writeln!(file, "```bash")?;
     writeln!(file, "# Set the development path for thag-auto resolution")?;
@@ -295,7 +300,10 @@ fn generate_readme(
     writeln!(file, "Or use the URL runner for published examples:\n")?;
 
     writeln!(file, "```bash")?;
-    writeln!(file, "thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_ansi_code_derive.rs")?;
+    writeln!(
+        file,
+        "thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_ansi_code_derive.rs"
+    )?;
     writeln!(file, "```\n")?;
 
     // Write development section
@@ -322,7 +330,10 @@ fn generate_readme(
         file,
         "There are two distinct expansion mechanisms, depending on the macro type.\n"
     )?;
-    writeln!(file, "**Attribute macros** (`cached`, `timing`, `retry`) — pass `expand` as an argument directly at the call site.")?;
+    writeln!(
+        file,
+        "**Attribute macros** (`cached`, `timing`, `retry`) — pass `expand` as an argument directly at the call site."
+    )?;
     writeln!(file, "The Cargo `expand` feature has no effect on these:\n")?;
     writeln!(file, "```rust")?;
     writeln!(file, "#[cached(expand)]")?;
@@ -335,8 +346,14 @@ fn generate_readme(
         "fn fallible() -> Result<String, std::io::Error> {{ ... }}"
     )?;
     writeln!(file, "```\n")?;
-    writeln!(file, "**Derive macros** (`DeriveConstructor`, `DeriveBuilder`, `DeriveDisplay`, `DeriveGetters`) — add")?;
-    writeln!(file, "`#[expand_macro]` to the annotated struct or enum. The `expand` Cargo feature is enabled by")?;
+    writeln!(
+        file,
+        "**Derive macros** (`DeriveConstructor`, `DeriveBuilder`, `DeriveDisplay`, `DeriveGetters`) — add"
+    )?;
+    writeln!(
+        file,
+        "`#[expand_macro]` to the annotated struct or enum. The `expand` Cargo feature is enabled by"
+    )?;
     writeln!(file, "default, so no special build flags are needed:\n")?;
     writeln!(file, "```rust")?;
     writeln!(file, "#[derive(DeriveBuilder)]")?;
@@ -346,7 +363,10 @@ fn generate_readme(
     writeln!(file, "    port: u16,")?;
     writeln!(file, "}}")?;
     writeln!(file, "```\n")?;
-    writeln!(file, "In both cases the pretty-printed generated code is written to `stderr` during compilation and")?;
+    writeln!(
+        file,
+        "In both cases the pretty-printed generated code is written to `stderr` during compilation and"
+    )?;
     writeln!(file, "appears in the build output.\n")?;
 
     writeln!(file, "### Example Testing")?;
@@ -378,7 +398,7 @@ fn write_macro_section(
         return Ok(());
     }
 
-    writeln!(file, "## {}\n", section_title)?;
+    writeln!(file, "## {section_title}\n")?;
 
     for macro_info in macros {
         writeln!(file, "### `{}`\n", macro_info.name)?;
@@ -395,16 +415,15 @@ fn write_macro_section(
 
             writeln!(
                 file,
-                "**Example Usage:** [{}](../{})\n",
-                example_file, example_file
+                "**Example Usage:** [{example_file}](../{example_file})\n"
             )?;
 
             if let Some(purpose) = purpose {
-                writeln!(file, "**Purpose:** {}\n", purpose)?;
+                writeln!(file, "**Purpose:** {purpose}\n")?;
             }
 
             if let Some(description) = description {
-                writeln!(file, "**Description:** {}\n", description)?;
+                writeln!(file, "**Description:** {description}\n")?;
             }
 
             // Generate run command
@@ -412,8 +431,7 @@ fn write_macro_section(
             writeln!(file, "\n```bash")?;
             writeln!(
                 file,
-                "thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/{}",
-                example_file
+                "thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/{example_file}"
             )?;
             writeln!(file, "```\n")?;
         }

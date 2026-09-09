@@ -1,6 +1,6 @@
 [package]
 name = "thag_demo"
-version = "1.1.0"
+version.workspace = true
 edition = "2024"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 description = "Interactive demos for thag_rs and thag_profiler - run Rust profiling examples without installing thag"
@@ -19,14 +19,14 @@ eula = false
 [dependencies]
 clap = { version = "4.6", features = ["derive"] }
 colored = "3.0"
-dirs = "6.0"
+dirs = "7.0"
 anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 inferno = "0.12"
 inquire = "0.9"
 shell-words = "1.1"
-thag_profiler = { version = "1", path = "../thag_profiler" }
-thag_rs = { version = "1", path = "../", features = [
+thag_profiler = { workspace = true }
+thag_rs = { workspace = true, features = [
     "build",
     "color_detect",
     "simplelog",

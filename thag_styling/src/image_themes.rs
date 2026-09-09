@@ -7,10 +7,10 @@
 // #![cfg(feature = "image_themes")]
 
 use crate::{
+    ColorSupport, Palette, Role, Style, StylingError, StylingResult, TermBgLuma, Theme, V,
     hsl_to_rgb, rgb_to_hsl,
     styling::{self, rgb_to_hex},
-    svprtln, vprtln, ColorSupport, Palette, Role, Style, StylingError, StylingResult, TermBgLuma,
-    Theme, V,
+    svprtln, vprtln,
 };
 use image::{DynamicImage, ImageReader};
 use palette::{FromColor, Hsl, IntoColor, Lab, Srgb};
@@ -114,9 +114,11 @@ impl ColorAnalysis {
             // For dark themes, text should be light but not too light (avoid pure white)
             self.lightness > 0.6 && self.lightness < 0.75
         };
-        vprtln!(V::V,
+        vprtln!(
+            V::V,
             "is_light_theme={is_light_theme}, self.rgb={}, self.lightness={}, is_text_suitable={is_text_suitable}",
-            Style::with_rgb(self.rgb).paint(format!("{:?}", self.rgb)), self.lightness
+            Style::with_rgb(self.rgb).paint(format!("{:?}", self.rgb)),
+            self.lightness
         );
         // dbg!(is_text_suitable);
         is_text_suitable
@@ -127,8 +129,13 @@ impl ColorAnalysis {
         let lightness_diff = (self.lightness - background.lightness).abs();
         // dbg!(lightness_diff);
         let has_good_contrast_against = lightness_diff > 0.4; // Minimum contrast requirement only, no upper limit
-                                                              // dbg!(has_good_contrast_against);
-        vprtln!(V::V, "self.rgb={}, background.lightness={}, lightness_diff={lightness_diff}, has_good_contrast_against={has_good_contrast_against}", Style::with_rgb(self.rgb).paint(format!("{:?}", self.rgb)), background.lightness);
+        // dbg!(has_good_contrast_against);
+        vprtln!(
+            V::V,
+            "self.rgb={}, background.lightness={}, lightness_diff={lightness_diff}, has_good_contrast_against={has_good_contrast_against}",
+            Style::with_rgb(self.rgb).paint(format!("{:?}", self.rgb)),
+            background.lightness
+        );
         has_good_contrast_against
     }
 
@@ -1220,8 +1227,8 @@ impl ImageThemeGenerator {
         background: Option<&ColorAnalysis>,
     ) -> Option<&'a ColorAnalysis> {
         // First try to find text colors with good background contrast
-        if let Some(bg) = background {
-            if let Some(best) = text_colors
+        if let Some(bg) = background
+            && let Some(best) = text_colors
                 .iter()
                 .filter(|c| c.has_good_contrast_against(bg))
                 .max_by(|a, b| {
@@ -1229,14 +1236,13 @@ impl ImageThemeGenerator {
                         .partial_cmp(&b.frequency)
                         .unwrap_or(std::cmp::Ordering::Equal)
                 })
-            {
-                vprtln!(
-                    V::V,
-                    "Found best text color {}",
-                    Style::with_rgb(best.rgb).paint(format!("{:?}", best.rgb))
-                );
-                return Some(*best);
-            }
+        {
+            vprtln!(
+                V::V,
+                "Found best text color {}",
+                Style::with_rgb(best.rgb).paint(format!("{:?}", best.rgb))
+            );
+            return Some(*best);
         }
 
         // Fall back to any suitable text color

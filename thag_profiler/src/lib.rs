@@ -531,10 +531,10 @@ pub fn finalize_profiling() {
         let global_profile_type = get_global_profile_type();
 
         // Process any recorded profiles
-        if matches!(global_profile_type, ProfileType::Time | ProfileType::Both) {
-            if let Err(e) = profiling::process_time_profile() {
-                debug_log!("Error converting time profile to exclusive time: {e:?}");
-            }
+        if matches!(global_profile_type, ProfileType::Time | ProfileType::Both)
+            && let Err(e) = profiling::process_time_profile()
+        {
+            debug_log!("Error converting time profile to exclusive time: {e:?}");
         }
 
         // Final flush to ensure all data is written

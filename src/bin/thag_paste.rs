@@ -21,7 +21,7 @@ fn main() {
     let mut clipboard = match Clipboard::new() {
         Ok(cb) => cb,
         Err(e) => {
-            eprintln!("Failed to access clipboard: {}", e);
+            eprintln!("Failed to access clipboard: {e}");
             std::process::exit(1);
         }
     };
@@ -32,15 +32,15 @@ fn main() {
                 eprintln!("Failed to write to stdout: {e}");
                 std::process::exit(1);
             }
-            if !text.ends_with('\n') {
-                if let Err(e) = io::stdout().write(b"\n") {
-                    eprintln!("Failed to write line feed to stdout: {e}");
-                    std::process::exit(1);
-                }
+            if !text.ends_with('\n')
+                && let Err(e) = io::stdout().write(b"\n")
+            {
+                eprintln!("Failed to write line feed to stdout: {e}");
+                std::process::exit(1);
             }
         }
         Err(e) => {
-            eprintln!("Failed to read clipboard text: {}", e);
+            eprintln!("Failed to read clipboard text: {e}");
             std::process::exit(1);
         }
     }

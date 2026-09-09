@@ -1,9 +1,10 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::{
+    Ast, BuildState, Dependencies, Style, ThagError, ThagResult,
     ast::{infer_deps_from_ast, infer_deps_from_source},
     code_utils::get_source_path,
     config::DependencyInference,
-    maybe_config, Ast, BuildState, Dependencies, Style, ThagError, ThagResult,
+    maybe_config,
 };
 use cargo_lookup::{Package, Query, Release};
 use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest, Value};
@@ -17,10 +18,10 @@ use std::{
     str::FromStr,
     time::Instant,
 };
-use syn::{parse_file, File};
-use thag_common::{debug_log, get_verbosity, re, vprtln, V};
+use syn::{File, parse_file};
+use thag_common::{V, debug_log, get_verbosity, re, vprtln};
 use thag_profiler::{end, profile, profiled};
-use thag_styling::{sveprtln, svprtln, Role, Styleable, StyledPrint};
+use thag_styling::{Role, Styleable, StyledPrint, sveprtln, svprtln};
 
 #[cfg(debug_assertions)]
 use crate::debug_timings;
@@ -405,25 +406,26 @@ pub fn process_thag_auto_dependencies(build_state: &mut BuildState) -> ThagResul
         ];
 
         for crate_name in &thag_crates {
-            if let Some(dependency) = rs_manifest.dependencies.get(*crate_name) {
-                if should_process_thag_auto(dependency) {
-                    let new_dependency = resolve_thag_dependency(crate_name, dependency)?;
-                    rs_manifest
-                        .dependencies
-                        .insert((*crate_name).to_string(), new_dependency);
-                    build_state.thag_auto_processed = true;
-                }
+            if let Some(dependency) = rs_manifest.dependencies.get(*crate_name)
+                && should_process_thag_auto(dependency)
+            {
+                let new_dependency = resolve_thag_dependency(crate_name, dependency)?;
+                rs_manifest
+                    .dependencies
+                    .insert((*crate_name).to_string(), new_dependency);
+                build_state.thag_auto_processed = true;
             }
+
             // Cater for windows target needing to avoid `color_detect` feature in the first instance.
             for target in rs_manifest.target.values_mut() {
-                if let Some(dependency) = target.dependencies.get_mut(*crate_name) {
-                    if should_process_thag_auto(dependency) {
-                        *dependency = resolve_thag_dependency(crate_name, &dependency.clone())?;
-                        // target
-                        //     .dependencies
-                        //     .insert((*crate_name).to_string(), new_dependency);
-                        build_state.thag_auto_processed = true;
-                    }
+                if let Some(dependency) = target.dependencies.get_mut(*crate_name)
+                    && should_process_thag_auto(dependency)
+                {
+                    *dependency = resolve_thag_dependency(crate_name, &dependency.clone())?;
+                    // target
+                    //     .dependencies
+                    //     .insert((*crate_name).to_string(), new_dependency);
+                    build_state.thag_auto_processed = true;
                 }
             }
         }
@@ -923,9 +925,13 @@ fn display_toml_info(
     let styled_toml_block = Style::for_role(Role::Heading2).paint(&toml_block);
     let styled_inference_level = Style::for_role(Role::EMPH).paint(inference_level.to_string());
     let wording = if existing_toml_block {
-        format!("This is the {styled_inference_level} manifest information that was generated for this run. If you want to, you can merge it into the existing toml block at")
+        format!(
+            "This is the {styled_inference_level} manifest information that was generated for this run. If you want to, you can merge it into the existing toml block at"
+        )
     } else {
-        format!("This toml block contains the same {styled_inference_level} manifest information that was generated for this run. If you want to, you can copy it into")
+        format!(
+            "This toml block contains the same {styled_inference_level} manifest information that was generated for this run. If you want to, you can copy it into"
+        )
     };
     vprtln!(
         V::N,

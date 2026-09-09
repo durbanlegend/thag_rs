@@ -139,16 +139,16 @@ pub use {
     errors::{ThagError, ThagResult},
     log, // re-export log crate for debug_log
     thag_common::{
-        debug_log, debug_timings, eprtln, escape_path_for_windows, get_home_dir,
-        get_home_dir_string, get_verbosity, init_verbosity, lazy_static_var, re,
-        set_global_verbosity, set_verbosity, set_verbosity_from_env, static_lazy, thousands,
-        veprtln, vprtln, ColorSupport, TermBgLuma, Verbosity, OUTPUT_MANAGER, V,
+        ColorSupport, OUTPUT_MANAGER, TermBgLuma, V, Verbosity, debug_log, debug_timings, eprtln,
+        escape_path_for_windows, get_home_dir, get_home_dir_string, get_verbosity, init_verbosity,
+        lazy_static_var, re, set_global_verbosity, set_verbosity, set_verbosity_from_env,
+        static_lazy, thousands, veprtln, vprtln,
     },
     thag_styling::{
+        AnsiStyleExt, Color, ColorInfo, ColorInitStrategy, ColorValue, HowInitialized,
+        PaletteConfig, Role, Style, Styleable, Styled, StyledPrint, StyledString, Styler, Theme,
         display_theme_details, display_theme_roles, find_closest_color, paint_for_role, seprtln,
-        sprtln, sveprtln, svprtln, AnsiStyleExt, Color, ColorInfo, ColorInitStrategy, ColorValue,
-        HowInitialized, PaletteConfig, Role, Style, Styleable, Styled, StyledPrint, StyledString,
-        Styler, Theme,
+        sprtln, sveprtln, svprtln,
     },
 };
 
@@ -161,14 +161,14 @@ pub use thag_proc_macros::{file_navigator, repeat_dash};
 
 #[cfg(any(feature = "ast", feature = "build"))]
 pub use {
-    ast::{find_crates, find_metadata, Ast, CratesFinder, MetadataFinder},
+    ast::{Ast, CratesFinder, MetadataFinder, find_crates, find_metadata},
     code_utils::to_ast,
 };
 
 #[cfg(feature = "build")]
 pub use {
-    builder::{display_timings, execute, gen_build_run, process_expr, BuildState, ScriptState},
-    cmd_args::{get_args, get_proc_flags, set_verbosity, validate_args, Cli, ProcFlags},
+    builder::{BuildState, ScriptState, display_timings, execute, gen_build_run, process_expr},
+    cmd_args::{Cli, ProcFlags, get_args, get_proc_flags, set_verbosity, validate_args},
     code_utils::modified_since_compiled,
     logging::configure_log,
     manifest::extract,
@@ -186,8 +186,8 @@ pub use thag_styling::inquire_theming;
 
 #[cfg(feature = "config")]
 pub use config::{
-    load, maybe_config, Config, Context, Dependencies, FeatureOverride, Logging, Misc, ProcMacros,
-    Styling,
+    Config, Context, Dependencies, FeatureOverride, Logging, Misc, ProcMacros, Styling, load,
+    maybe_config,
 };
 
 #[cfg(feature = "tui")]
@@ -212,6 +212,7 @@ pub const BUILT_IN_CRATES: [&str; 7] = [
 ];
 /// Subdirectory name for dynamic/temporary Rust files
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";
+#[allow(clippy::too_long_first_doc_paragraph)]
 /// Subdirectory name for shared build target (all scripts share dependencies).
 /// This is set as `CARGO_TARGET_DIR` and is owned by Cargo. All scripts build
 /// here to share compiled dependencies, saving space and build time. Cargo

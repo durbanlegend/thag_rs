@@ -22,16 +22,15 @@ fn normalize_key_code(code: &mut KeyCode, modifiers: KeyModifiers) -> bool {
     // profile_fn!(normalize_key_code);
     if matches!(code, KeyCode::Char('\r' | '\n')) {
         *code = KeyCode::Enter;
-    } else if modifiers.contains(KeyModifiers::SHIFT) {
-        if let KeyCode::Char(c) = code {
-            if c.is_ascii_lowercase() {
-                *code = KeyCode::Char(c.to_ascii_uppercase());
-            }
-        }
-    } else if let KeyCode::Char(c) = code {
-        if c.is_ascii_uppercase() {
-            return true;
-        }
+    } else if modifiers.contains(KeyModifiers::SHIFT)
+        && let KeyCode::Char(c) = code
+        && c.is_ascii_lowercase()
+    {
+        *code = KeyCode::Char(c.to_ascii_uppercase());
+    } else if let KeyCode::Char(c) = code
+        && c.is_ascii_uppercase()
+    {
+        return true;
     }
     false
 }

@@ -6,11 +6,11 @@
 //!
 //! This module is only available when the `demo` feature is enabled.
 
-use crate::{enhance_svg_accessibility, file_stem_from_path_str, timing, ProfileType};
+use crate::{ProfileType, enhance_svg_accessibility, file_stem_from_path_str, timing};
 use chrono::Local;
-use inferno::flamegraph::color::BasicPalette::Mem;
 use inferno::flamegraph::Palette::Basic;
-use inferno::flamegraph::{self, color::MultiPalette, Options, Palette};
+use inferno::flamegraph::color::BasicPalette::Mem;
+use inferno::flamegraph::{self, Options, Palette, color::MultiPalette};
 use smol;
 use std::collections::HashMap;
 use std::error::Error;
@@ -287,7 +287,7 @@ pub fn display_analysis(profile_type: ProfileType, analysis: &ProfileAnalysis) {
     println!("💡 Performance Insights:");
     println!("────────────────────────");
     for insight in &analysis.insights {
-        println!("{}", insight);
+        println!("{insight}");
     }
 
     let _ = std::io::stdout().flush();
@@ -418,7 +418,8 @@ pub async fn show_interactive_prompt(
     println!();
     println!("🎯 Would you like to view an interactive {profile_type} {analysis_type_lower}?");
     println!(
-        "This will generate a visual {profile_type} {analysis_type_lower} and open it in your browser.");
+        "This will generate a visual {profile_type} {analysis_type_lower} and open it in your browser."
+    );
 
     print!("Enter 'y' for yes, or any other key to skip: ");
     let _ = std::io::stdout().flush();
@@ -480,7 +481,7 @@ pub async fn generate_and_show_visualization(
         match bg_task.await {
             Ok(()) => println!("✅ Flamegraph generation completed!"),
             Err(e) => {
-                eprintln!("⚠️ Flamegraph generation failed: {}", e);
+                eprintln!("⚠️ Flamegraph generation failed: {e}");
                 println!("💡 Analysis results are still available above.");
             }
         }
@@ -549,7 +550,9 @@ fn generate_and_show_flamegraph(
         ..Default::default()
     };
     let output_path = format!("{demo_name}_{profile_type}_{analysis_type_lower}.svg");
-    eprintln!("profile_type={profile_type}, analysis_type_lower={analysis_type_lower}, output_path={output_path}\n");
+    eprintln!(
+        "profile_type={profile_type}, analysis_type_lower={analysis_type_lower}, output_path={output_path}\n"
+    );
     generate_flamegraph_from_file(&files[0], &output_path, config)?;
     println!("✅ {profile_type_title} {analysis_type} generated: {output_path}");
 
@@ -558,10 +561,7 @@ fn generate_and_show_flamegraph(
         println!("💡 You can manually open: {output_path}");
     } else {
         println!("🌐 {profile_type_title} {analysis_type} opened in your default browser");
-        println!(
-            "🔍 Hover over and click on the bars to explore {}",
-            metric_desc
-        );
+        println!("🔍 Hover over and click on the bars to explore {metric_desc}");
         println!("📊 Function width = {metric_desc}, height = call stack depth");
     }
     Ok(())

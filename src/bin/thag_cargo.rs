@@ -13,7 +13,7 @@ thag_common = { version = "1, thag-auto" }
 #[allow(clippy::single_component_path_imports)]
 use inquire;
 use std::{error::Error, path::PathBuf, process::Command};
-use thag_common::{auto_help, help_system::check_help_and_exit, ThagCommonError};
+use thag_common::{ThagCommonError, auto_help, help_system::check_help_and_exit};
 use thag_proc_macros::file_navigator;
 
 file_navigator! {}
@@ -179,7 +179,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let script_path = match get_script_mode() {
         ScriptMode::Stdin => {
-            eprintln!("This tool cannot be run with stdin input. Please provide a file path or run interactively.");
+            eprintln!(
+                "This tool cannot be run with stdin input. Please provide a file path or run interactively."
+            );
             std::process::exit(1);
         }
         ScriptMode::File => {
@@ -191,7 +193,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             // Use the file selector
             let mut navigator = FileNavigator::new();
             select_file(&mut navigator, Some("rs"), false)
-                .map_err(|e| ThagCommonError::Generic(format!("Failed to select file: {e}",)))?
+                .map_err(|e| ThagCommonError::Generic(format!("Failed to select file: {e}")))?
         }
     };
 

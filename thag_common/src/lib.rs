@@ -257,8 +257,7 @@ pub fn set_global_verbosity(verbosity: Verbosity) {
 /// Will panic if it can't unwrap the lock on the mutex protecting the `OUTPUT_MANAGER` static variable.
 #[must_use]
 pub fn get_verbosity() -> Verbosity {
-    let verbosity = OUTPUT_MANAGER.lock().verbosity();
-    verbosity
+    OUTPUT_MANAGER.lock().verbosity()
 }
 
 /// Ungated print line macro — writes to **stdout**.

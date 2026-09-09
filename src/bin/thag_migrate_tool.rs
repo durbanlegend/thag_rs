@@ -13,7 +13,7 @@ thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 //# Purpose: Migrate tools from tools/ directory to src/bin/ with auto-help integration
 //# Categories: tools
 //# Usage: thag_migrate_tool [--help|-h]
-use inquire::{set_global_render_config, Confirm, Select};
+use inquire::{Confirm, Select, set_global_render_config};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -107,8 +107,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if is_git_repo {
         println!("  3. The file has been moved with git to preserve history");
         println!(
-            "  4. Commit the changes: git commit -m 'Migrate {} to src/bin with auto_help'",
-            selected
+            "  4. Commit the changes: git commit -m 'Migrate {selected} to src/bin with auto_help'"
         );
     } else {
         println!("  3. Remove the original file from tools/ when satisfied");
@@ -157,7 +156,7 @@ fn migrate_tool(
 
         if !git_mv_result.status.success() {
             let error = String::from_utf8_lossy(&git_mv_result.stderr);
-            return Err(format!("Git mv failed: {}", error).into());
+            return Err(format!("Git mv failed: {error}").into());
         }
 
         println!("✅ File moved with git mv");
@@ -303,12 +302,9 @@ fn update_cargo_toml(tool_name: &str) -> Result<bool, Box<dyn std::error::Error>
     let tool_name_without_ext = tool_name.trim_end_matches(".rs");
 
     // Check if this bin entry already exists
-    let bin_entry = format!(r#"name = "{}""#, tool_name_without_ext);
+    let bin_entry = format!(r#"name = "{tool_name_without_ext}""#);
     if content.contains(&bin_entry) {
-        println!(
-            "ℹ️  Cargo.toml already contains entry for {}",
-            tool_name_without_ext
-        );
+        println!("ℹ️  Cargo.toml already contains entry for {tool_name_without_ext}");
         return Ok(false);
     }
 
@@ -337,9 +333,9 @@ fn update_cargo_toml(tool_name: &str) -> Result<bool, Box<dyn std::error::Error>
         // Add the new bin entry
         new_lines.push("");
         new_lines.push("[[bin]]");
-        let var_name = format!(r#"name = "{}""#, tool_name_without_ext);
+        let var_name = format!(r#"name = "{tool_name_without_ext}""#);
         new_lines.push(&var_name);
-        let var_name = format!(r#"path = "src/bin/{}""#, tool_name);
+        let var_name = format!(r#"path = "src/bin/{tool_name}""#);
         new_lines.push(&var_name);
         new_lines.push(r#"required-features = ["tools"]"#);
 
@@ -349,10 +345,7 @@ fn update_cargo_toml(tool_name: &str) -> Result<bool, Box<dyn std::error::Error>
         let new_content = new_lines.join("\n");
         fs::write(cargo_path, new_content)?;
 
-        println!(
-            "📝 Added [[bin]] entry for {} to Cargo.toml",
-            tool_name_without_ext
-        );
+        println!("📝 Added [[bin]] entry for {tool_name_without_ext} to Cargo.toml");
         return Ok(true);
     }
 

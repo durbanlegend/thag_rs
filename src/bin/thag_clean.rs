@@ -12,7 +12,7 @@ thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 //# Purpose: Interactively show, clean or sweep thag script build artifacts.
 //# Categories: maintenance, thag_front_ends, tools
 use chrono::{DateTime, Local};
-use inquire::{set_global_render_config, validator::Validation, Confirm, CustomType, Select};
+use inquire::{Confirm, CustomType, Select, set_global_render_config, validator::Validation};
 use std::{
     cmp::Reverse,
     env,
@@ -24,8 +24,8 @@ use std::{
     sync::LazyLock,
 };
 use thag_styling::{
-    auto_help, help_system::check_help_and_exit, sprtln, themed_inquire_config, veprtln, Role,
-    Styleable, StyledPrint, V,
+    Role, Styleable, StyledPrint, V, auto_help, help_system::check_help_and_exit, sprtln,
+    themed_inquire_config, veprtln,
 };
 
 /// Prefix used by `thag_url` when creating temporary script files.
@@ -258,9 +258,8 @@ fn collect_files(
 ) -> Result<(), Box<dyn Error>> {
     for entry in fs::read_dir(dir)?.flatten() {
         let path = entry.path();
-        let metadata = match entry.metadata() {
-            Ok(m) => m,
-            Err(_) => continue,
+        let Ok(metadata) = entry.metadata() else {
+            continue;
         };
         if metadata.is_file() {
             let file_size = metadata.len();
@@ -327,9 +326,8 @@ fn show_web_scripts() -> Result<(), Box<dyn Error>> {
                 if name.to_string_lossy().starts_with(WEB_SCRIPT_PREFIX) {
                     // println!("  {}", entry.path().display());
                     let path = entry.path();
-                    let metadata = match entry.metadata() {
-                        Ok(m) => m,
-                        Err(_) => continue,
+                    let Ok(metadata) = entry.metadata() else {
+                        continue;
                     };
                     let file_size = metadata.len();
                     let modified_time = metadata.modified()?;
@@ -355,9 +353,7 @@ fn show_web_scripts() -> Result<(), Box<dyn Error>> {
     // eprintln!("Sorting web artifacts by modification time...");
     files.sort_by_key(|f| Reverse(f.formatted_time.clone()));
 
-    for file in files.iter()
-    /* .take(print_top) */
-    {
+    for file in &files {
         println!(
             "{} {:>10} bytes  {}",
             file.formatted_time, file.file_size, file.file_name

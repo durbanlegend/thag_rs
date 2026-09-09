@@ -435,25 +435,25 @@ impl Dependencies {
         // Validate feature overrides
         for (crate_name, override_config) in &self.feature_overrides {
             // Check for conflicts between required and excluded features
-            if let Some(ref required_features) = override_config.required_features {
-                if let Some(ref excluded_features) = override_config.excluded_features {
-                    let conflicts: Vec<_> = required_features
-                        .iter()
-                        .filter(|f| excluded_features.contains(*f))
-                        .collect();
+            if let Some(ref required_features) = override_config.required_features
+                && let Some(ref excluded_features) = override_config.excluded_features
+            {
+                let conflicts: Vec<_> = required_features
+                    .iter()
+                    .filter(|f| excluded_features.contains(*f))
+                    .collect();
 
-                    if !conflicts.is_empty() {
-                        return Err(format!(
-                            "Crate {crate_name} has features that are both required and excluded: {conflicts:?}",
-                        ));
-                    }
+                if !conflicts.is_empty() {
+                    return Err(format!(
+                        "Crate {crate_name} has features that are both required and excluded: {conflicts:?}",
+                    ));
+                }
 
-                    // Check for empty feature lists
-                    if required_features.is_empty() && excluded_features.is_empty() {
-                        return Err(format!(
-                            "Crate {crate_name} has empty feature override lists. Remove the override if not needed"
-                        ));
-                    }
+                // Check for empty feature lists
+                if required_features.is_empty() && excluded_features.is_empty() {
+                    return Err(format!(
+                        "Crate {crate_name} has empty feature override lists. Remove the override if not needed"
+                    ));
                 }
             }
         }
@@ -829,13 +829,13 @@ pub fn validate_config_format(content: &str) -> ConfigResult<()> {
             #[allow(clippy::single_match)]
             match key {
                 "inference_level" => {
-                    if let Some(v) = value.as_str() {
-                        if v.chars().next().unwrap_or('_').is_uppercase() {
-                            return Err(ConfigError::Generic(format!(
-                                "inference_level should be lowercase: '{v}' should be '{}'",
-                                v.to_lowercase()
-                            )));
-                        }
+                    if let Some(v) = value.as_str()
+                        && v.chars().next().unwrap_or('_').is_uppercase()
+                    {
+                        return Err(ConfigError::Generic(format!(
+                            "inference_level should be lowercase: '{v}' should be '{}'",
+                            v.to_lowercase()
+                        )));
                     }
                 }
                 // Add checks for other fields

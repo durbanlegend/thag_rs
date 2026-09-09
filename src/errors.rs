@@ -281,7 +281,7 @@ impl std::fmt::Display for ThagError {
             Self::FromUtf8(e) => write!(f, "{e}"),
             Self::Io(e) => write!(f, "{e}"),
             Self::LockMutexGuard(e) => write!(f, "{e}"),
-            Self::OsString(o) => writeln!(f, "<invalid UTF-8: {o:?}>"),
+            Self::OsString(o) => writeln!(f, "<invalid UTF-8: {}>", o.display()),
             Self::Parse => write!(f, "Error parsing source data"),
             Self::ParseInt(e) => write!(f, "{e}"),
             #[cfg(feature = "profiling")]
@@ -431,8 +431,14 @@ impl std::fmt::Display for ThemeError {
             Self::BackgroundDetectionFailed => {
                 write!(f, "Background RGB not detected or configured for terminal")
             }
-            Self::ColorSupportMismatch { required, available } => {
-                write!(f, "Theme requires {required:?} colors but terminal only supports {available:?}")
+            Self::ColorSupportMismatch {
+                required,
+                available,
+            } => {
+                write!(
+                    f,
+                    "Theme requires {required:?} colors but terminal only supports {available:?}"
+                )
             }
             Self::DarkThemeLightTerm => write!(
                 f,
@@ -446,14 +452,21 @@ impl std::fmt::Display for ThemeError {
             Self::InvalidColorSupport(msg) => write!(f, "Invalid color support: {msg}"),
             Self::InvalidColorValue(msg) => write!(f, "Invalid color value: {msg}"),
             Self::InvalidStyle(style) => write!(f, "Invalid style attribute: {style}"),
-            Self::InvalidTermBgLuma(name) => write!(f, "Unknown value: must be `light` or `dark`: {name}"),
+            Self::InvalidTermBgLuma(name) => {
+                write!(f, "Unknown value: must be `light` or `dark`: {name}")
+            }
             Self::LightThemeDarkTerm => write!(
                 f,
                 "Only dark themes may be selected for a dark terminal background."
             ),
-            Self::NoValidBackground(theme) => write!(f, "No valid background found for theme {theme}"),
+            Self::NoValidBackground(theme) => {
+                write!(f, "No valid background found for theme {theme}")
+            }
             Self::TermBgLumaMismatch { theme, terminal } => {
-                write!(f, "Theme requires {theme:?} background but terminal is {terminal:?}")
+                write!(
+                    f,
+                    "Theme requires {theme:?} background but terminal is {terminal:?}"
+                )
             }
             Self::UnknownTheme(name) => write!(f, "Unknown theme: {name}"),
         }

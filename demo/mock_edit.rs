@@ -2,6 +2,7 @@
 [dependencies]
 crossterm = "0.28" # Specific version
 thag_rs = { version = "=1.0.1", default-features = false, features = ["tui", "simplelog"] }
+thag_styling = { version = "=1.0.1", features = ["crossterm_support", "color_detect"] }
 */
 
 /// Used to debug a doctest.
@@ -12,6 +13,7 @@ use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use mockall::{automock, predicate::str};
 use std::time::Duration;
 use thag_rs::{stdin::edit, EventReader, MockEventReader, ThagResult, ThagError};
+use thag_styling::{ThemedStyle};
 
 pub struct CrosstermEventReader;
 
@@ -21,7 +23,7 @@ impl EventReader for CrosstermEventReader {
     }
 
     fn poll(&self, timeout: Duration) -> ThagResult<bool> {
-            crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
+        crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
     }
 }
 

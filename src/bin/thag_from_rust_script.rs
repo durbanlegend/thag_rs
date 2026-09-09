@@ -21,7 +21,7 @@ fn safe_println(line: &str) -> Result<(), io::Error> {
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
-    if let Err(e) = writeln!(handle, "{}", line) {
+    if let Err(e) = writeln!(handle, "{line}") {
         if e.kind() == io::ErrorKind::BrokenPipe {
             // eprintln!("Broken pipe error: {}", e);
             return Ok(());

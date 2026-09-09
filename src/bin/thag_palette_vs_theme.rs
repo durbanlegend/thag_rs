@@ -20,9 +20,9 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use thag_styling::{
+    ColorInitStrategy, Role, Style, Styleable, StyledPrint, TermAttributes, TermBgLuma, Theme,
     auto_help, display_color_comparison, file_navigator, help_system::check_help_and_exit,
-    select_builtin_theme, sprtln, themed_inquire_config, ColorInitStrategy, Role, Style, Styleable,
-    StyledPrint, TermAttributes, TermBgLuma, Theme,
+    select_builtin_theme, sprtln, themed_inquire_config,
 };
 
 file_navigator! {}
@@ -220,14 +220,13 @@ fn try_parse_osc4_response(response: &str, expected_index: u8) -> Option<Rgb> {
                 && parts
                     .iter()
                     .all(|part| part.chars().all(|c| c.is_ascii_hexdigit()))
-            {
-                if let (Ok(r), Ok(g), Ok(b)) = (
+                && let (Ok(r), Ok(g), Ok(b)) = (
                     parse_hex_component(parts[0]),
                     parse_hex_component(parts[1]),
                     parse_hex_component(parts[2]),
-                ) {
-                    return Some(Rgb::new(r, g, b));
-                }
+                )
+            {
+                return Some(Rgb::new(r, g, b));
             }
         }
 
@@ -308,7 +307,7 @@ impl Default for PaletteDetector {
         Self {
             cache: None,
             timeout: Duration::from_millis(100),
-            cache_duration: Duration::from_secs(300), // 5 minutes
+            cache_duration: Duration::from_mins(5), // 5 minutes
         }
     }
 }
@@ -335,12 +334,11 @@ impl PaletteDetector {
         let terminal_id = get_terminal_id();
 
         // Check cache first
-        if let Some(cache) = &self.cache {
-            if cache.is_valid(self.cache_duration, &terminal_id) {
-                if let Some(color) = cache.get_color(index) {
-                    return Some(color);
-                }
-            }
+        if let Some(cache) = &self.cache
+            && cache.is_valid(self.cache_duration, &terminal_id)
+            && let Some(color) = cache.get_color(index)
+        {
+            return Some(color);
         }
 
         // Query from terminal
@@ -370,10 +368,11 @@ impl PaletteDetector {
         let terminal_id = get_terminal_id();
 
         // Check if we have a valid complete cache
-        if let Some(cache) = &self.cache {
-            if cache.is_valid(self.cache_duration, &terminal_id) && cache.colors.len() == 16 {
-                return cache.get_all_colors();
-            }
+        if let Some(cache) = &self.cache
+            && cache.is_valid(self.cache_duration, &terminal_id)
+            && cache.colors.len() == 16
+        {
+            return cache.get_all_colors();
         }
 
         // Query all colors
@@ -567,16 +566,16 @@ fn detect_terminal_emulator() -> String {
         }
     }
 
-    if let Ok(wt_session) = std::env::var("WT_SESSION") {
-        if !wt_session.is_empty() {
-            return "Windows Terminal".to_string();
-        }
+    if let Ok(wt_session) = std::env::var("WT_SESSION")
+        && !wt_session.is_empty()
+    {
+        return "Windows Terminal".to_string();
     }
 
-    if let Ok(kitty_window_id) = std::env::var("KITTY_WINDOW_ID") {
-        if !kitty_window_id.is_empty() {
-            return "Kitty".to_string();
-        }
+    if let Ok(kitty_window_id) = std::env::var("KITTY_WINDOW_ID")
+        && !kitty_window_id.is_empty()
+    {
+        return "Kitty".to_string();
     }
 
     String::new()
@@ -587,7 +586,7 @@ fn display_ansi_colors(theme: &Theme) {
     // Create detector with production settings
     let mut detector = PaletteDetector::new(
         Duration::from_millis(150), // Reasonable timeout
-        Duration::from_secs(300),   // 5-minute cache
+        Duration::from_mins(5),     // 5-minute cache
     );
 
     println!("🔍 Querying palette colors...");
@@ -832,15 +831,15 @@ fn detect_potential_issues(theme: &Theme) -> Vec<String> {
         let mut issues = Vec::new();
 
         // Check if theme colors are too similar to background
-        if let Some(bg_rgb) = theme.bg_rgbs.first() {
-            if let Some(normal_rgb) = &theme.palette.normal.rgb() {
-                let contrast = calculate_contrast_ratio(*bg_rgb, *normal_rgb);
-                if contrast < 4.5 {
-                    issues.push(format!(
+        if let Some(bg_rgb) = theme.bg_rgbs.first()
+            && let Some(normal_rgb) = &theme.palette.normal.rgb()
+        {
+            let contrast = calculate_contrast_ratio(*bg_rgb, *normal_rgb);
+            if contrast < 4.5 {
+                issues.push(format!(
                     "Low contrast between background and normal text ({}:1, recommended 4.5:1+)",
                     format_args!("{:.1}", contrast)
                 ));
-                }
             }
         }
 

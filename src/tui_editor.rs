@@ -1,9 +1,9 @@
 use crate::{
+    KeyCombination, ThagError, ThagResult,
     code_utils::write_source,
     file_dialog::{DialogMode, FileDialog, Status},
     key,
     stdin::edit_history,
-    KeyCombination, ThagError, ThagResult,
 };
 // use crokey::key;
 // use crokey::crossterm::event::KeyEvent;
@@ -14,8 +14,8 @@ use crossterm::event::{
 };
 use mockall::automock;
 use ratatui::crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
-    LeaveAlternateScreen,
+    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+    is_raw_mode_enabled,
 };
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
@@ -25,7 +25,7 @@ use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::{CompletedFrame, Frame, Terminal};
 use regex::Regex;
-use scopeguard::{guard, ScopeGuard};
+use scopeguard::{ScopeGuard, guard};
 use serde::{Deserialize, Serialize};
 use std::{
     self,
@@ -1110,7 +1110,7 @@ pub fn script_key_handler(
     }
 
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
-                                                           // eprintln!("key_combination={key_combination:?}");
+    // eprintln!("key_combination={key_combination:?}");
 
     let history_path = edit_data.history_path.cloned();
 
@@ -1650,8 +1650,7 @@ pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
 pub fn copy_text(textarea: &mut TextArea<'_>) -> String {
     textarea.select_all();
     textarea.copy();
-    let text = textarea.yank_text().lines().collect::<Vec<_>>().join("\n");
-    text
+    textarea.yank_text().lines().collect::<Vec<_>>().join("\n")
 }
 
 /// Save the history to the backing file.
@@ -1665,11 +1664,11 @@ pub fn save_history(
     history_path: Option<&PathBuf>,
 ) -> ThagResult<()> {
     debug_log!("save_history...{history:?}");
-    if let Some(hist) = history {
-        if let Some(hist_path) = history_path {
-            hist.save_to_file(hist_path)?;
-            debug_log!("... saved to file");
-        }
+    if let Some(hist) = history
+        && let Some(hist_path) = history_path
+    {
+        hist.save_to_file(hist_path)?;
+        debug_log!("... saved to file");
     }
     Ok(())
 }

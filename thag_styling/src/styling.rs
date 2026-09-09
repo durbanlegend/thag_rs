@@ -411,12 +411,14 @@ impl Style {
             return val.to_string();
         }
 
-        if !self.bold && !self.italic && !self.underline && !self.dim {
-            if let Some(ref color_info) = self.foreground {
-                if color_info.index == 0 {
-                    return val.to_string();
-                }
-            }
+        if !self.bold
+            && !self.italic
+            && !self.underline
+            && !self.dim
+            && let Some(ref color_info) = self.foreground
+            && color_info.index == 0
+        {
+            return val.to_string();
         }
 
         let mut result = String::new();
@@ -1841,28 +1843,28 @@ impl Theme {
         let value: toml::Value = toml::from_str(&content)?;
 
         // Extract base_colors array if present
-        if let Some(base_colors_value) = value.get("base_colors") {
-            if let Some(array) = base_colors_value.as_array() {
-                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-                let colors: Vec<[u8; 3]> = array
-                    .iter()
-                    .filter_map(|v| {
-                        let arr = v.as_array()?;
-                        if arr.len() == 3 {
-                            Some([
-                                arr[0].as_integer()? as u8,
-                                arr[1].as_integer()? as u8,
-                                arr[2].as_integer()? as u8,
-                            ])
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
+        if let Some(base_colors_value) = value.get("base_colors")
+            && let Some(array) = base_colors_value.as_array()
+        {
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let colors: Vec<[u8; 3]> = array
+                .iter()
+                .filter_map(|v| {
+                    let arr = v.as_array()?;
+                    if arr.len() == 3 {
+                        Some([
+                            arr[0].as_integer()? as u8,
+                            arr[1].as_integer()? as u8,
+                            arr[2].as_integer()? as u8,
+                        ])
+                    } else {
+                        None
+                    }
+                })
+                .collect();
 
-                if !colors.is_empty() {
-                    self.base_colors = Some(colors);
-                }
+            if !colors.is_empty() {
+                self.base_colors = Some(colors);
             }
         }
 
@@ -2029,27 +2031,27 @@ impl Theme {
 
         // Check config theme_dir
         #[cfg(feature = "config")]
-        if let Some(config) = maybe_config() {
-            if let Some(ref theme_dir) = config.styling.theme_dir {
-                match Self::load_from_directory(theme_dir, theme_name) {
-                    Ok(theme) => {
-                        vprtln!(
-                            V::V,
-                            "Loaded theme '{}' from config theme_dir: {}",
-                            theme_name,
-                            theme_dir
-                        );
-                        return Ok(theme);
-                    }
-                    Err(e) => {
-                        vprtln!(
-                            V::V,
-                            "Error loading theme '{}' from config theme_dir {}: {}",
-                            theme_name,
-                            theme_dir,
-                            e
-                        );
-                    }
+        if let Some(config) = maybe_config()
+            && let Some(ref theme_dir) = config.styling.theme_dir
+        {
+            match Self::load_from_directory(theme_dir, theme_name) {
+                Ok(theme) => {
+                    vprtln!(
+                        V::V,
+                        "Loaded theme '{}' from config theme_dir: {}",
+                        theme_name,
+                        theme_dir
+                    );
+                    return Ok(theme);
+                }
+                Err(e) => {
+                    vprtln!(
+                        V::V,
+                        "Error loading theme '{}' from config theme_dir {}: {}",
+                        theme_name,
+                        theme_dir,
+                        e
+                    );
                 }
             }
         }

@@ -293,12 +293,11 @@ quote = { version = "1.0", optional = true }
 ratatui = { version = "0.30", optional = true }
 reedline = { version = "0.51", optional = true }
 regex = "1.11"
-reqwest = { version = "0.13", features = ["blocking", "json", "rustls-tls"], default-features = false, optional = true }
+reqwest = { version = "0.13", features = ["blocking", "json", "rustls"], default-features = false, optional = true }
 resvg = { version = "0.45", features = ["text"], optional = true }
 rfd = { version = "0.15", optional = true }
 rust-i18n = { version = "4", optional = true }
 sys-locale = { version = "0.3", optional = true }
-reqwest = { version = "0.13", features = ["blocking", "json", "rustls"], default-features = false, optional = true }
 scopeguard = { version = "1.2", optional = true }
 semver = "1.0"
 serde = { version = "1", features = ["derive"] }

@@ -48,8 +48,8 @@ debug = true
 //# Option: --foreground: Stay attached to the launching terminal (Unix only)
 use eframe::egui;
 use egui::{
-    load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint},
     Color32,
+    load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint},
 };
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer, SearchOptions};
 use notify::{RecursiveMode, Watcher};
@@ -61,8 +61,8 @@ use std::{
     env, fs,
     path::{Path, PathBuf},
     sync::{
-        mpsc::{self, Receiver},
         Arc, Mutex,
+        mpsc::{self, Receiver},
     },
     time::{Duration, Instant},
 };
@@ -559,7 +559,7 @@ fn detach_if_tty() {
             .pre_exec(|| {
                 // Create a new session so the child is fully detached from the
                 // controlling terminal.
-                extern "C" {
+                unsafe extern "C" {
                     fn setsid() -> std::ffi::c_int;
                 }
                 if setsid() == -1 {

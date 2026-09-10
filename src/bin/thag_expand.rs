@@ -10,7 +10,7 @@ thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 ///
 //# Purpose: Display the expanded code of a user script on its own or side-by-side with the original script using a choice of diff tools.
 //# Categories: diagnosis, technique, thag_front_ends, tools
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use crossterm::terminal;
 use inquire::set_global_render_config;
 use side_by_side_diff::create_side_by_side_diff;
@@ -86,7 +86,9 @@ fn main() -> Result<()> {
 fn expand_script() -> Result<()> {
     let input_path = match get_script_mode() {
         ScriptMode::Stdin => {
-            eprintln!("This tool cannot be run with stdin input. Please provide a file path or run interactively.");
+            eprintln!(
+                "This tool cannot be run with stdin input. Please provide a file path or run interactively."
+            );
             std::process::exit(1);
         }
         ScriptMode::File => {
@@ -98,7 +100,7 @@ fn expand_script() -> Result<()> {
             // Use the file selector
             let mut navigator = FileNavigator::new();
             select_file(&mut navigator, Some("rs"), false)
-                .map_err(|e| ThagCommonError::Generic(format!("Failed to select file: {e}",)))?
+                .map_err(|e| ThagCommonError::Generic(format!("Failed to select file: {e}")))?
         }
     };
     if !input_path.exists() {

@@ -103,25 +103,25 @@ pub fn validate_theme_file(path: &Path) -> Result<(), BuildError> {
     }
 
     // Validate term_bg_luma value
-    if let Some(luma) = theme.get("term_bg_luma").and_then(|v| v.as_str()) {
-        if !["light", "dark"].contains(&luma) {
-            return Err(BuildError::InvalidValue {
-                field: "term_bg_luma".to_string(),
-                value: luma.to_string(),
-                path: path.to_owned(),
-            });
-        }
+    if let Some(luma) = theme.get("term_bg_luma").and_then(|v| v.as_str())
+        && !["light", "dark"].contains(&luma)
+    {
+        return Err(BuildError::InvalidValue {
+            field: "term_bg_luma".to_string(),
+            value: luma.to_string(),
+            path: path.to_owned(),
+        });
     }
 
     // Validate color_support value
-    if let Some(support) = theme.get("min_color_support").and_then(|v| v.as_str()) {
-        if !["none", "basic", "color256", "true_color"].contains(&support) {
-            return Err(BuildError::InvalidValue {
-                field: "min_color_support".to_string(),
-                value: support.to_string(),
-                path: path.to_owned(),
-            });
-        }
+    if let Some(support) = theme.get("min_color_support").and_then(|v| v.as_str())
+        && !["none", "basic", "color256", "true_color"].contains(&support)
+    {
+        return Err(BuildError::InvalidValue {
+            field: "min_color_support".to_string(),
+            value: support.to_string(),
+            path: path.to_owned(),
+        });
     }
 
     // Validate palette fields

@@ -1,7 +1,28 @@
+[workspace]
+members = [
+  # "demo/proc_macros",
+  ".",
+  "thag_common",
+  "thag_demo",
+  "thag_proc_macros",
+  "thag_profiler",
+  "thag_styling",
+]
+
+[workspace.package]
+version = "1.1.0" # Single source of truth for all crate versions. Ensure [workspace.dependencies] versions are kept in sync.
+
+[workspace.dependencies]
+thag_common = { path = "thag_common", version = "=1.1.0", default-features = false }
+thag_proc_macros = { path = "thag_proc_macros", version = "=1.1.0", default-features = false }
+thag_profiler = { path = "thag_profiler", version = "=1.1.0", default-features = false }
+thag_rs = { path = ".", version = "=1.1.0", default-features = false }
+thag_styling = { path = "thag_styling", version = "=1.1.0", default-features = false }
+
 [package]
 description = "A versatile cross-platform playground for Rust snippets, expressions and programs.\nAccepts a script file or dynamic options."
 name = "thag_rs"
-version = "1.1.0"
+version.workspace = true
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
@@ -43,16 +64,6 @@ all-features = true
 available-locales = ["af", "bg", "ca", "cs", "cy", "da", "de", "el", "en", "es", "fi", "fr", "hr", "hu", "it", "nb", "nl", "no", "pl", "pt", "ro", "ru", "sk", "sl", "st", "sv", "uk", "xh", "zu"]
 default-locale = "en"
 load-path = "locales"
-
-[workspace]
-members = [
-  # "demo/proc_macros",
-  "thag_common",
-  "thag_demo",
-  "thag_proc_macros",
-  "thag_profiler",
-  "thag_styling",
-]
 
 [lib]
 name = "thag_rs"
@@ -317,10 +328,10 @@ syn = { version = "3", features = [
 tempfile = { version = "3", optional = true }
 termbg = { version = "0.6", optional = true }
 terminal-light = { version = "1.8", optional = true }
-thag_common = { path = "thag_common", version = "1" }
-thag_proc_macros = { path = "thag_proc_macros", version = "1" }
-thag_profiler = { path = "thag_profiler", version = "1", optional = true }
-thag_styling = { path = "thag_styling", version = "1", default-features = false, optional = true }
+thag_common = { workspace = true }
+thag_proc_macros = { workspace = true }
+thag_profiler = { workspace = true, optional = true }
+thag_styling = { workspace = true, default-features = false, optional = true }
 tokio = { version = "1.53", features = [
   "macros",
   "rt-multi-thread",
@@ -352,7 +363,7 @@ tokio = { version = "1", features = ["macros", "rt", "time"] }
 [build-dependencies]
 phf = { version = "0.12", features = ["macros"] }
 tempfile = "3"
-thag_proc_macros = { path = "thag_proc_macros", version = "1" }
+thag_proc_macros = { workspace = true }
 toml = "1"
 
 [target.'cfg(windows)'.dependencies]

@@ -24,16 +24,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let content = read_stdin().expect("Problem reading input");
     eprintln!("[{content:#?}]");
-    match syn::parse_str::<syn::File>(&content) {
-        Ok(file) => {
-            println!("{file:#?}");
-            eprintln!("[{}]", quote!(#file));
-        }
-        Err(_) => {
-            let expr = syn::parse_str::<syn::Expr>(&format!("{{ {content} }}"))?;
-            println!("{expr:#?}");
-            eprintln!("[{}]", quote!(#expr));
-        }
+    if let Ok(file) = syn::parse_str::<syn::File>(&content) {
+        println!("{file:#?}");
+        eprintln!("[{}]", quote!(#file));
+    } else {
+        let expr = syn::parse_str::<syn::Expr>(&format!("{{ {content} }}"))?;
+        println!("{expr:#?}");
+        eprintln!("[{}]", quote!(#expr));
     }
     Ok(())
 }

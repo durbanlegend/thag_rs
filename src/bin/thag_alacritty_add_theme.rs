@@ -18,7 +18,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::string::ToString;
 use thag_proc_macros::file_navigator;
-use thag_styling::{themed_inquire_config, Styleable};
+use thag_styling::{Styleable, themed_inquire_config};
 use toml_edit::{DocumentMut, Item, Value};
 
 file_navigator! {}
@@ -260,12 +260,11 @@ fn find_theme_files_in_directory(dir: &Path) -> Result<Vec<PathBuf>, Box<dyn Err
         let entry = entry?;
         let path = entry.path();
 
-        if path.is_file() {
-            if let Some(ext) = path.extension() {
-                if ext == "toml" || ext == "TOML" {
-                    theme_files.push(path);
-                }
-            }
+        if path.is_file()
+            && let Some(ext) = path.extension()
+            && (ext == "toml" || ext == "TOML")
+        {
+            theme_files.push(path);
         }
     }
 
@@ -334,7 +333,7 @@ fn update_config_with_theme(
     config: &AlacrittyConfig,
     theme_filename: &str,
 ) -> Result<(), Box<dyn Error>> {
-    let import_line = format!("themes/{theme_filename}",);
+    let import_line = format!("themes/{theme_filename}");
 
     if config.config_file.exists() {
         let existing_config = fs::read_to_string(&config.config_file)?;
@@ -401,7 +400,7 @@ fn show_installation_summary(installed_themes: &[String], errors: &[(String, Box
     if !installed_themes.is_empty() {
         println!("\n✅ {} Themes:", "Installed".success());
         for theme_name in installed_themes {
-            println!("   • {})", theme_name.info(),);
+            println!("   • {})", theme_name.info());
         }
     }
 
@@ -417,8 +416,12 @@ fn show_installation_summary(installed_themes: &[String], errors: &[(String, Box
 fn show_verification_steps(_installed_themes: &[String]) {
     println!("\n🔍 {} Steps:", "Verification".info());
     println!("1. Ensure your `thag_styling` theme is set to match.");
-    println!("   E.g. `export THAG_THEME=<corresponding thag_styling theme>` in `~/.bashrc` or `~/.zshrc`");
-    println!("   or as preferred light/dark theme via `thag -C` (ensure background color of `thag_styling` theme matches that of terminal)");
+    println!(
+        "   E.g. `export THAG_THEME=<corresponding thag_styling theme>` in `~/.bashrc` or `~/.zshrc`"
+    );
+    println!(
+        "   or as preferred light/dark theme via `thag -C` (ensure background color of `thag_styling` theme matches that of terminal)"
+    );
     println!("2. Restart Alacritty if necessary");
     println!("3. Check that colors match the expected theme");
     println!(

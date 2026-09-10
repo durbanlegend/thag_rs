@@ -103,37 +103,37 @@ impl<'a> Visit<'a> for CratesFinder {
         // Extract first segment of attribute path for crate identification
         match &attr.meta {
             syn::Meta::Path(path) => {
-                if path.segments.len() > 1 {
-                    if let Some(first_seg) = path.segments.first() {
-                        let name = first_seg.ident.to_string();
-                        if !should_filter_dependency(&name) && !self.crates.contains(&name) {
-                            debug_log!("visit_attribute (path) pushing {name} to crates");
-                            self.crates.push(name);
-                        }
+                if path.segments.len() > 1
+                    && let Some(first_seg) = path.segments.first()
+                {
+                    let name = first_seg.ident.to_string();
+                    if !should_filter_dependency(&name) && !self.crates.contains(&name) {
+                        debug_log!("visit_attribute (path) pushing {name} to crates");
+                        self.crates.push(name);
                     }
                 }
             }
             syn::Meta::List(meta_list) => {
                 // Handle paths in list-style attributes like #[crate::attr(args)]
-                if meta_list.path.segments.len() > 1 {
-                    if let Some(first_seg) = meta_list.path.segments.first() {
-                        let name = first_seg.ident.to_string();
-                        if !should_filter_dependency(&name) && !self.crates.contains(&name) {
-                            debug_log!("visit_attribute (list) pushing {name} to crates");
-                            self.crates.push(name);
-                        }
+                if meta_list.path.segments.len() > 1
+                    && let Some(first_seg) = meta_list.path.segments.first()
+                {
+                    let name = first_seg.ident.to_string();
+                    if !should_filter_dependency(&name) && !self.crates.contains(&name) {
+                        debug_log!("visit_attribute (list) pushing {name} to crates");
+                        self.crates.push(name);
                     }
                 }
             }
             syn::Meta::NameValue(meta_name_value) => {
                 // Handle paths in name-value attributes like #[crate::attr = value]
-                if meta_name_value.path.segments.len() > 1 {
-                    if let Some(first_seg) = meta_name_value.path.segments.first() {
-                        let name = first_seg.ident.to_string();
-                        if !should_filter_dependency(&name) && !self.crates.contains(&name) {
-                            debug_log!("visit_attribute (name-value) pushing {name} to crates");
-                            self.crates.push(name);
-                        }
+                if meta_name_value.path.segments.len() > 1
+                    && let Some(first_seg) = meta_name_value.path.segments.first()
+                {
+                    let name = first_seg.ident.to_string();
+                    if !should_filter_dependency(&name) && !self.crates.contains(&name) {
+                        debug_log!("visit_attribute (name-value) pushing {name} to crates");
+                        self.crates.push(name);
                     }
                 }
             }
@@ -244,16 +244,16 @@ impl<'a> Visit<'a> for CratesFinder {
 
     #[profiled]
     fn visit_expr_path(&mut self, expr_path: &'a syn::ExprPath) {
-        if expr_path.path.segments.len() > 1 {
+        if expr_path.path.segments.len() > 1
             // must have the form a::b so not a variable
-            if let Some(first_seg) = expr_path.path.segments.first() {
-                let name = first_seg.ident.to_string();
-                #[cfg(debug_assertions)]
-                debug_log!("Found first seg {name} in expr_path={expr_path:#?}");
-                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
-                    // debug_log!("visit_expr_path pushing {name} to crates");
-                    self.crates.push(name);
-                }
+            && let Some(first_seg) = expr_path.path.segments.first()
+        {
+            let name = first_seg.ident.to_string();
+            #[cfg(debug_assertions)]
+            debug_log!("Found first seg {name} in expr_path={expr_path:#?}");
+            if !should_filter_dependency(&name) && !self.crates.contains(&name) {
+                // debug_log!("visit_expr_path pushing {name} to crates");
+                self.crates.push(name);
             }
         }
         syn::visit::visit_expr_path(self, expr_path);
@@ -261,16 +261,16 @@ impl<'a> Visit<'a> for CratesFinder {
 
     #[profiled]
     fn visit_type_path(&mut self, type_path: &'a TypePath) {
-        if type_path.path.segments.len() > 1 {
-            if let Some(first_seg) = type_path.path.segments.first() {
-                let name = first_seg.ident.to_string();
+        if type_path.path.segments.len() > 1
+            && let Some(first_seg) = type_path.path.segments.first()
+        {
+            let name = first_seg.ident.to_string();
+            // #[cfg(debug_assertions)]
+            // debug_log!("Found first seg {name} in type_path={type_path:#?}");
+            if !should_filter_dependency(&name) && !self.crates.contains(&name) {
                 // #[cfg(debug_assertions)]
-                // debug_log!("Found first seg {name} in type_path={type_path:#?}");
-                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
-                    // #[cfg(debug_assertions)]
-                    // debug_log!("visit_type_path pushing {name} to crates");
-                    self.crates.push(name);
-                }
+                // debug_log!("visit_type_path pushing {name} to crates");
+                self.crates.push(name);
             }
         }
         syn::visit::visit_type_path(self, type_path);
@@ -280,13 +280,13 @@ impl<'a> Visit<'a> for CratesFinder {
     #[profiled]
     fn visit_macro(&mut self, mac: &'a syn::Macro) {
         // Get the macro path (e.g., "serde_json::json" from "serde_json::json!()")
-        if mac.path.segments.len() > 1 {
-            if let Some(first_seg) = mac.path.segments.first() {
-                let name = first_seg.ident.to_string();
-                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
-                    // debug_log!("visit_macro pushing {name} to crates");
-                    self.crates.push(name);
-                }
+        if mac.path.segments.len() > 1
+            && let Some(first_seg) = mac.path.segments.first()
+        {
+            let name = first_seg.ident.to_string();
+            if !should_filter_dependency(&name) && !self.crates.contains(&name) {
+                // debug_log!("visit_macro pushing {name} to crates");
+                self.crates.push(name);
             }
         }
         syn::visit::visit_macro(self, mac);
@@ -296,24 +296,24 @@ impl<'a> Visit<'a> for CratesFinder {
     #[profiled]
     fn visit_item_impl(&mut self, item: &'a syn::ItemImpl) {
         // Check the trait being implemented (if any)
-        if let Some((path, _)) = &item.trait_ {
-            if let Some(first_seg) = path.segments.first() {
-                let name = first_seg.ident.to_string();
-                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
-                    // debug_log!("visit_item_impl pushing {name} to crates (1)");
-                    self.crates.push(name);
-                }
+        if let Some((path, _)) = &item.trait_
+            && let Some(first_seg) = path.segments.first()
+        {
+            let name = first_seg.ident.to_string();
+            if !should_filter_dependency(&name) && !self.crates.contains(&name) {
+                // debug_log!("visit_item_impl pushing {name} to crates (1)");
+                self.crates.push(name);
             }
         }
 
         // Check the type being implemented for
-        if let syn::Type::Path(type_path) = &*item.self_ty {
-            if let Some(first_seg) = type_path.path.segments.first() {
-                let name = first_seg.ident.to_string();
-                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
-                    // debug_log!("visit_item_impl pushing {name} to crates (2)");
-                    self.crates.push(name);
-                }
+        if let syn::Type::Path(type_path) = &*item.self_ty
+            && let Some(first_seg) = type_path.path.segments.first()
+        {
+            let name = first_seg.ident.to_string();
+            if !should_filter_dependency(&name) && !self.crates.contains(&name) {
+                // debug_log!("visit_item_impl pushing {name} to crates (2)");
+                self.crates.push(name);
             }
         }
         syn::visit::visit_item_impl(self, item);
@@ -322,13 +322,13 @@ impl<'a> Visit<'a> for CratesFinder {
     // Handle associated types
     #[profiled]
     fn visit_item_type(&mut self, item: &'a syn::ItemType) {
-        if let syn::Type::Path(type_path) = &*item.ty {
-            if let Some(first_seg) = type_path.path.segments.first() {
-                let name = first_seg.ident.to_string();
-                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
-                    // debug_log!("visit_item_type pushing {name} to crates (2)");
-                    self.crates.push(name);
-                }
+        if let syn::Type::Path(type_path) = &*item.ty
+            && let Some(first_seg) = type_path.path.segments.first()
+        {
+            let name = first_seg.ident.to_string();
+            if !should_filter_dependency(&name) && !self.crates.contains(&name) {
+                // debug_log!("visit_item_type pushing {name} to crates (2)");
+                self.crates.push(name);
             }
         }
         syn::visit::visit_item_type(self, item);
@@ -337,13 +337,13 @@ impl<'a> Visit<'a> for CratesFinder {
     // Handle generic bounds
     #[profiled]
     fn visit_type_param_bound(&mut self, bound: &'a syn::TypeParamBound) {
-        if let syn::TypeParamBound::Trait(trait_bound) = bound {
-            if let Some(first_seg) = trait_bound.path.segments.first() {
-                let name = first_seg.ident.to_string();
-                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
-                    // debug_log!("visit_type_param_bound pushing first {name} to crates");
-                    self.crates.push(name);
-                }
+        if let syn::TypeParamBound::Trait(trait_bound) = bound
+            && let Some(first_seg) = trait_bound.path.segments.first()
+        {
+            let name = first_seg.ident.to_string();
+            if !should_filter_dependency(&name) && !self.crates.contains(&name) {
+                // debug_log!("visit_type_param_bound pushing first {name} to crates");
+                self.crates.push(name);
             }
         }
         syn::visit::visit_type_param_bound(self, bound);
@@ -705,9 +705,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
                         // If it's a block, we're at the end of the if-else chain and can just
                         // decide according to the return type of the last statement in the block.
                         Expr::Block(expr_block) => {
-                            let else_is_unit_type =
-                                expr_block.block.stmts.last().is_some_and(|last_stmt_in_block| is_stmt_unit_type(last_stmt_in_block, function_map));
-                            else_is_unit_type
+                            expr_block.block.stmts.last().is_some_and(|last_stmt_in_block|is_stmt_unit_type(last_stmt_in_block,function_map))
                         }
                         // If it's another if-statement, simply recurse through this method.
                         Expr::If(_) => is_last_stmt_unit_type(expr_else, function_map),
@@ -748,10 +746,10 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
             true
         }
         Expr::Call(expr_call) => {
-            if let Expr::Path(path) = &*expr_call.func {
-                if let Some(value) = is_path_unit_type(path, function_map) {
-                    return value;
-                }
+            if let Expr::Path(path) = &*expr_call.func
+                && let Some(value) = is_path_unit_type(path, function_map)
+            {
+                return value;
             }
 
             false
@@ -849,24 +847,24 @@ pub fn is_path_unit_type<S: BuildHasher>(
     path: &syn::PatPath,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> Option<bool> {
-    if let Some(ident) = path.path.get_ident() {
-        if let Some(return_type) = function_map.get(&ident.to_string()) {
-            return Some(match return_type {
-                ReturnType::Default => {
-                    // debug_log!("%%%%%%%% ReturnType::Default");
-                    true
+    if let Some(ident) = path.path.get_ident()
+        && let Some(return_type) = function_map.get(&ident.to_string())
+    {
+        return Some(match return_type {
+            ReturnType::Default => {
+                // debug_log!("%%%%%%%% ReturnType::Default");
+                true
+            }
+            ReturnType::Type(_, ty) => {
+                if let Tuple(tuple) = &**ty {
+                    // debug_log!("%%%%%%%% Tuple ReturnType");
+                    tuple.elems.is_empty()
+                } else {
+                    // debug_log!("%%%%%%%% Non-unit return type");
+                    false
                 }
-                ReturnType::Type(_, ty) => {
-                    if let Tuple(tuple) = &**ty {
-                        // debug_log!("%%%%%%%% Tuple ReturnType");
-                        tuple.elems.is_empty()
-                    } else {
-                        // debug_log!("%%%%%%%% Non-unit return type");
-                        false
-                    }
-                }
-            });
-        }
+            }
+        });
     }
     None
 }
@@ -936,13 +934,13 @@ pub fn is_stmt_unit_type<S: BuildHasher>(
 pub fn is_main_fn_returning_unit(file: &File) -> ThagResult<bool> {
     // Traverse the file to find the main function
     for item in &file.items {
-        if let Item::Fn(func) = item {
-            if func.sig.ident == "main" {
-                // Check if the return type is the unit type
-                let is_unit_return_type = matches!(func.sig.output, ReturnType::Default);
+        if let Item::Fn(func) = item
+            && func.sig.ident == "main"
+        {
+            // Check if the return type is the unit type
+            let is_unit_return_type = matches!(func.sig.output, ReturnType::Default);
 
-                return Ok(is_unit_return_type);
-            }
+            return Ok(is_unit_return_type);
         }
     }
 

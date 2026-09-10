@@ -19,8 +19,8 @@ use std::{
     path::{Path, PathBuf},
 };
 use thag_styling::{
-    export_theme_to_file, file_navigator, generate_installation_instructions,
-    themed_inquire_config, ExportFormat, Styleable, TermAttributes, Theme,
+    ExportFormat, Styleable, TermAttributes, Theme, export_theme_to_file, file_navigator,
+    generate_installation_instructions, themed_inquire_config,
 };
 
 file_navigator! {}
@@ -269,12 +269,11 @@ fn find_theme_files_in_directory(dir: &Path) -> Result<Vec<PathBuf>, Box<dyn Err
         let entry = entry?;
         let path = entry.path();
 
-        if path.is_file() {
-            if let Some(ext) = path.extension() {
-                if ext == "toml" || ext == "TOML" {
-                    theme_files.push(path);
-                }
-            }
+        if path.is_file()
+            && let Some(ext) = path.extension()
+            && (ext == "toml" || ext == "TOML")
+        {
+            theme_files.push(path);
         }
     }
 

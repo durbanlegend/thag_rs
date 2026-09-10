@@ -2,11 +2,11 @@
 //! In particular, it manages raw mode status which can be affected by some detection operations.
 
 use crate::{
-    lazy_static_var, vprtln, ColorSupport, TermBgLuma, ThagCommonError, ThagCommonResult, V,
+    ColorSupport, TermBgLuma, ThagCommonError, ThagCommonResult, V, lazy_static_var, vprtln,
 };
 use ratatui::crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
 use std::env;
-use std::io::{stdin, stdout, IsTerminal, Read, Write};
+use std::io::{IsTerminal, Read, Write, stdin, stdout};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -538,14 +538,14 @@ fn parse_osc11_background_response(response: &str) -> Option<[u8; 3]> {
                 let rgb_sequence = &rgb_data[..end_pos];
                 let parts: Vec<&str> = rgb_sequence.split('/').collect();
 
-                if parts.len() == 3 {
-                    if let (Ok(r), Ok(g), Ok(b)) = (
+                if parts.len() == 3
+                    && let (Ok(r), Ok(g), Ok(b)) = (
                         parse_hex_component_bg(parts[0]),
                         parse_hex_component_bg(parts[1]),
                         parse_hex_component_bg(parts[2]),
-                    ) {
-                        return Some([r, g, b]);
-                    }
+                    )
+                {
+                    return Some([r, g, b]);
                 }
             }
         }
@@ -555,14 +555,14 @@ fn parse_osc11_background_response(response: &str) -> Option<[u8; 3]> {
             let hex_data = &response_part[hash_pos + 1..];
             if hex_data.len() >= 6 {
                 let hex_str = &hex_data[..6];
-                if hex_str.chars().all(|c| c.is_ascii_hexdigit()) {
-                    if let (Ok(r), Ok(g), Ok(b)) = (
+                if hex_str.chars().all(|c| c.is_ascii_hexdigit())
+                    && let (Ok(r), Ok(g), Ok(b)) = (
                         u8::from_str_radix(&hex_str[0..2], 16),
                         u8::from_str_radix(&hex_str[2..4], 16),
                         u8::from_str_radix(&hex_str[4..6], 16),
-                    ) {
-                        return Some([r, g, b]);
-                    }
+                    )
+                {
+                    return Some([r, g, b]);
                 }
             }
         }
@@ -752,10 +752,10 @@ fn read_osc10_response(stdin: &mut std::io::Stdin, timeout: Duration) -> Option<
 
                 if buffer.len() >= 20 {
                     let response = String::from_utf8_lossy(&buffer);
-                    if response.contains('\x07') || response.contains("\x1b\\") {
-                        if let Some(rgb) = parse_osc10_response(&response) {
-                            return Some(rgb);
-                        }
+                    if (response.contains('\x07') || response.contains("\x1b\\"))
+                        && let Some(rgb) = parse_osc10_response(&response)
+                    {
+                        return Some(rgb);
                     }
                 }
 
@@ -798,14 +798,13 @@ fn parse_osc10_response(response: &str) -> Option<[u8; 3]> {
                     && parts
                         .iter()
                         .all(|part| part.chars().all(|c| c.is_ascii_hexdigit()))
-                {
-                    if let (Ok(r), Ok(g), Ok(b)) = (
+                    && let (Ok(r), Ok(g), Ok(b)) = (
                         u16::from_str_radix(parts[0], 16).map(|v| (v >> 8) as u8),
                         u16::from_str_radix(parts[1], 16).map(|v| (v >> 8) as u8),
                         u16::from_str_radix(parts[2], 16).map(|v| (v >> 8) as u8),
-                    ) {
-                        return Some([r, g, b]);
-                    }
+                    )
+                {
+                    return Some([r, g, b]);
                 }
             }
         }

@@ -1,6 +1,6 @@
 [package]
 name = "thag_common"
-version = "1.1.0"
+version.workspace = true
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
@@ -11,7 +11,7 @@ keywords = ["utilities", "macros", "common"]
 rust-version = "1.95"
 
 [dependencies]
-dirs = "6.0"
+dirs = "7.0"
 document-features = { version = "0.2", optional = true }
 documented = "0.10"
 log = "0.4"

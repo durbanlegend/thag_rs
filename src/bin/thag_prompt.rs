@@ -205,7 +205,7 @@ fn format_option_display(option: &OptionInfo) -> String {
     let mut display = String::new();
 
     if let Some(short) = option.short {
-        let _ = writeln!(display, "-{}", short);
+        let _ = writeln!(display, "-{short}");
         if !option.long.is_empty() {
             let _ = writeln!(display, ", --{}", option.long);
         }
@@ -605,27 +605,23 @@ serde = "1.0""#,
     let mut env_vars_option = None;
 
     // Ask for input file if not already selected
-    if !selected_values.contains_key("input_file") {
-        if let Ok(Some(input_file)) = Text::new("Input file (optional):")
+    if !selected_values.contains_key("input_file")
+        && let Ok(Some(input_file)) = Text::new("Input file (optional):")
             .with_help_message("File to pipe to stdin (leave empty to skip)")
             .prompt_skippable()
-        {
-            if !input_file.trim().is_empty() {
-                input_file_option = Some(input_file);
-            }
-        }
+        && !input_file.trim().is_empty()
+    {
+        input_file_option = Some(input_file);
     }
 
     // Ask for environment variables if not already selected
-    if !selected_values.contains_key("env_vars") {
-        if let Ok(Some(env_vars)) = Text::new("Environment variables (optional):")
+    if !selected_values.contains_key("env_vars")
+        && let Ok(Some(env_vars)) = Text::new("Environment variables (optional):")
             .with_help_message("KEY=VALUE pairs, comma-separated (supports $VAR expansion)")
             .prompt_skippable()
-        {
-            if !env_vars.trim().is_empty() {
-                env_vars_option = Some(env_vars);
-            }
-        }
+        && !env_vars.trim().is_empty()
+    {
+        env_vars_option = Some(env_vars);
     }
 
     // Step 6: Ask about output format
@@ -787,7 +783,7 @@ serde = "1.0""#,
         .or(input_file_option);
     let input_file_info = input_file_path
         .as_ref()
-        .map(|input_file| format!(" < {}", input_file));
+        .map(|input_file| format!(" < {input_file}"));
 
     // Handle environment variables - either from selection or prompt
     let env_input = selected_values.get("env_vars").cloned().or(env_vars_option);
@@ -800,7 +796,7 @@ serde = "1.0""#,
                 let expanded_value = expand_env_vars(value.trim());
                 env_vars_display.push(format!("{}={}", key.trim(), expanded_value));
             } else {
-                eprintln!("Warning: Invalid environment variable format: {}", env_pair);
+                eprintln!("Warning: Invalid environment variable format: {env_pair}");
                 eprintln!("Expected format: KEY=VALUE");
             }
         }
@@ -836,7 +832,7 @@ serde = "1.0""#,
                 use std::process::Stdio;
 
                 let file = File::open(&input_file)
-                    .map_err(|e| format!("Failed to open input file '{}': {}", input_file, e))?;
+                    .map_err(|e| format!("Failed to open input file '{input_file}': {e}"))?;
                 cmd.stdin(Stdio::from(file));
             }
 
@@ -865,7 +861,7 @@ serde = "1.0""#,
             }
         }
         "Copy command to clipboard" => {
-            let shell_command = format!("{}{}", env_prefix, cmd_display);
+            let shell_command = format!("{env_prefix}{cmd_display}");
             sprtln!(
                 Style::for_role(Role::Info),
                 "\nInfo: Command copied to clipboard:",
@@ -882,7 +878,7 @@ serde = "1.0""#,
             }
         }
         "Print command to stdout" => {
-            let shell_command = format!("{}{}", env_prefix, cmd_display);
+            let shell_command = format!("{env_prefix}{cmd_display}");
             sprtln!(Style::for_role(Role::Code), "{shell_command}");
         }
         _ => {}
@@ -1032,12 +1028,12 @@ regex = "1.11""#,
             let test_text = "thag --expr 'println!(\"Hello from clipboard test!\")'";
             match copy_to_clipboard(test_text) {
                 Ok(()) => println!("Clipboard test successful"),
-                Err(e) => println!("Clipboard test failed: {}", e),
+                Err(e) => println!("Clipboard test failed: {e}"),
             }
             return Ok(());
         }
         _ => {
-            eprintln!("Unknown test mode: {}", test_mode);
+            eprintln!("Unknown test mode: {test_mode}");
             eprintln!(
                 "Available modes: iter, expr, expr_string, expr_complex, stdin, script_with_args, filter_simple, filter_with_options, debug_groups, test_input_file, test_env_vars, test_env_expansion, test_verbosity_double, test_no_script_args, test_display_enhanced"
             );
@@ -1046,7 +1042,7 @@ regex = "1.11""#,
     }
 
     let cmd_display = format_command_display(&cmd);
-    println!("Would execute: {}", cmd_display);
+    println!("Would execute: {cmd_display}");
 
     Ok(())
 }
@@ -1068,8 +1064,7 @@ fn expand_env_vars(input: &str) -> String {
             let var_name = &result[start + 2..start + end];
             let replacement = std::env::var(var_name).unwrap_or_else(|_| {
                 eprintln!(
-                    "Warning: Environment variable '{}' not found, using empty string",
-                    var_name
+                    "Warning: Environment variable '{var_name}' not found, using empty string"
                 );
                 String::new()
             });
@@ -1084,10 +1079,7 @@ fn expand_env_vars(input: &str) -> String {
     let result = re.replace_all(&result, |caps: &regex::Captures| {
         let var_name = &caps[1];
         std::env::var(var_name).unwrap_or_else(|_| {
-            eprintln!(
-                "Warning: Environment variable '{}' not found, using empty string",
-                var_name
-            );
+            eprintln!("Warning: Environment variable '{var_name}' not found, using empty string");
             String::new()
         })
     });

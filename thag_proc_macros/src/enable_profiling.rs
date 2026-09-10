@@ -4,10 +4,10 @@ use std::result::Result;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
+    Ident, ItemFn, Token,
     parse::{Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    Ident, ItemFn, Token,
 };
 
 #[derive(Default, PartialEq, Eq)]
@@ -188,7 +188,9 @@ impl Parse for ProfilingArgs {
                     _ => {
                         return Err(syn::Error::new(
                             ident.span(),
-                            format!("Unknown parameter: {param_name}. Expected 'memory', 'time', 'both', 'runtime', 'yes', 'no' or 'function(...)'")
+                            format!(
+                                "Unknown parameter: {param_name}. Expected 'memory', 'time', 'both', 'runtime', 'yes', 'no' or 'function(...)'"
+                            ),
                         ));
                     }
                 }
@@ -208,17 +210,15 @@ impl Parse for ProfilingArgs {
 fn detect_tokio_main_expansion(body: &syn::Block) -> bool {
     // Look for patterns like: let body = async { ... }
     for stmt in &body.stmts {
-        if let syn::Stmt::Local(local) = stmt {
-            // Check if this is a "let body = ..." statement
-            if let syn::Pat::Ident(pat_ident) = &local.pat {
-                if pat_ident.ident == "body" {
-                    // Check if it's assigned an async expression
-                    if let Some(init) = &local.init {
-                        if let syn::Expr::Async(_) = &*init.expr {
-                            return true;
-                        }
-                    }
-                }
+        if let syn::Stmt::Local(local) = stmt
+            && let syn::Pat::Ident(pat_ident) = &local.pat
+            && pat_ident.ident == "body"
+        {
+            // Check if it's assigned an async expression
+            if let Some(init) = &local.init
+                && let syn::Expr::Async(_) = &*init.expr
+            {
+                return true;
             }
         }
     }

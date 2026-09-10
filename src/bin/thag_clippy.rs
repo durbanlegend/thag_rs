@@ -9,11 +9,11 @@ thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 //# Purpose: A user-friendly interface to the `thag` `--cargo` option specifically for running `cargo clippy` on a script.
 //# Categories: technique, thag_front_ends, tools
 //# Usage: thag_clippy [script_path] or thag_clippy (interactive mode)
-use inquire::{set_global_render_config, Confirm, MultiSelect};
+use inquire::{Confirm, MultiSelect, set_global_render_config};
 use std::{env, error::Error, path::PathBuf, process::Command};
 use thag_styling::{
-    auto_help, file_navigator, help_system::check_help_and_exit, sprtln, themed_inquire_config,
-    AnsiStyleExt, Color, Role, Style, Styleable, StyledPrint,
+    AnsiStyleExt, Color, Role, Style, Styleable, StyledPrint, auto_help, file_navigator,
+    help_system::check_help_and_exit, sprtln, themed_inquire_config,
 };
 
 file_navigator! {}
@@ -131,13 +131,11 @@ fn select_script() -> Result<PathBuf, Box<dyn std::error::Error>> {
 
         if let NavigationResult::SelectionComplete(script_path) =
             navigator.navigate(&selection, false)
-        {
-            if Confirm::new(&format!("Use {}?", script_path.display()))
+            && Confirm::new(&format!("Use {}?", script_path.display()))
                 .with_default(true)
                 .prompt()?
-            {
-                return Ok(script_path);
-            }
+        {
+            return Ok(script_path);
         }
     }
 }
@@ -193,7 +191,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let script_path = match get_script_mode() {
         ScriptMode::Stdin => {
-            sprtln!(Role::Error, "This tool cannot be run with stdin input. Please provide a file path or run interactively.");
+            sprtln!(
+                Role::Error,
+                "This tool cannot be run with stdin input. Please provide a file path or run interactively."
+            );
             std::process::exit(1);
         }
         ScriptMode::File => {

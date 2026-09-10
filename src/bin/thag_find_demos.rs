@@ -5,12 +5,12 @@ strum = { version = "0.27", features = ["derive", "phf"] }
 thag_proc_macros = { version = "1, thag-auto" }
 thag_rs = { version = "1, thag-auto", default-features = false, features = ["ast", "simplelog", "tools"] }
 */
-use inquire::set_global_render_config;
 /// Select demo scripts and generate and serve HTML report.
 ///
 //# Purpose: Allow user to select scripts by category.
 //# Categories: technique, tools
 use inquire::MultiSelect;
+use inquire::set_global_render_config;
 use std::fmt::Write as _; // import without risk of name clashing
 use std::{
     collections::{BTreeSet, HashMap},
@@ -99,7 +99,7 @@ impl EscapeState {
         }
     }
 
-    fn reset(&mut self) {
+    const fn reset(&mut self) {
         self.pressed = false;
     }
 }
@@ -780,10 +780,10 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
         let path = entry.as_path();
         // println!("Parsing {:#?}", path.display());
 
-        if path.extension().and_then(|s| s.to_str()) == Some("rs") {
-            if let Some(metadata) = parse_metadata(path) {
-                all_metadata.push(metadata);
-            }
+        if path.extension().and_then(|s| s.to_str()) == Some("rs")
+            && let Some(metadata) = parse_metadata(path)
+        {
+            all_metadata.push(metadata);
         }
     }
 
@@ -794,9 +794,9 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
 
 #[cfg(test)]
 mod tests {
-    use crate::generate_default_filename;
     use crate::FilterLogic;
     use crate::FilterPreferences;
+    use crate::generate_default_filename;
 
     #[test]
     fn test_filename_generation() {
@@ -812,9 +812,11 @@ mod tests {
         let filename = generate_default_filename(&categories, &crates, &filter_prefs);
         // Assert based on expected output
         assert!(filename.starts_with("demo_"));
-        assert!(std::path::Path::new(&filename)
-            .extension()
-            .is_some_and(|ext| ext.eq_ignore_ascii_case("md")));
+        assert!(
+            std::path::Path::new(&filename)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
+        );
         assert!(filename.contains("tok"));
         assert!(filename.contains("ser"));
     }

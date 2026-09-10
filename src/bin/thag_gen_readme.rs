@@ -15,17 +15,18 @@ use regex;
 use std::{
     collections::HashMap,
     env,
-    fs::{self, read_dir, File},
+    fs::{self, File, read_dir},
     io::Write as OtherWrite,
     path::{Path, PathBuf},
 };
 use strum;
 use thag_proc_macros::{category_enum, file_navigator};
 use thag_rs::{
+    Role, V,
     ast::{infer_deps_from_ast, infer_deps_from_source},
     auto_help, code_utils, find_crates, find_metadata,
     help_system::check_help_and_exit,
-    lazy_static_var, re, set_verbosity_from_env, sveprtln, themed_inquire_config, Role, V,
+    lazy_static_var, re, set_verbosity_from_env, sveprtln, themed_inquire_config,
 };
 
 file_navigator! {}
@@ -87,9 +88,14 @@ fn parse_metadata(relative_dir: &Path, file_path: &Path) -> Option<ScriptMetadat
                         // Check all the categories are valid
                         assert!(
                             categories.iter().all(|cat| {
-                                let found = valid_categories.contains(&cat.as_str().to_snake_case());
+                                let found =
+                                    valid_categories.contains(&cat.as_str().to_snake_case());
                                 if !found {
-                                    sveprtln!(Role::ERR, V::N, "Unknown or invalid category: `{cat}`");
+                                    sveprtln!(
+                                        Role::ERR,
+                                        V::N,
+                                        "Unknown or invalid category: `{cat}`"
+                                    );
                                 }
                                 found
                             }),
@@ -212,10 +218,10 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
         let Some(extension) = path.extension().and_then(|s| s.to_str()) else {
             continue;
         };
-        if extension == "rs" {
-            if let Some(metadata) = parse_metadata(scripts_dir, path) {
-                all_metadata.push(metadata);
-            }
+        if extension == "rs"
+            && let Some(metadata) = parse_metadata(scripts_dir, path)
+        {
+            all_metadata.push(metadata);
         }
     }
 
@@ -360,11 +366,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let current_dir = env::current_dir().expect("Failed to get current working directory");
 
         // Convert to a relative path
-        let scripts_dir = pathdiff::diff_paths(&scripts_dir, &current_dir).unwrap_or_else(|| {
+        pathdiff::diff_paths(&scripts_dir, &current_dir).unwrap_or_else(|| {
             eprintln!("Could not compute relative path.");
             std::process::exit(1);
-        });
-        scripts_dir
+        })
     };
 
     let output_path = scripts_dir.join("README.md");

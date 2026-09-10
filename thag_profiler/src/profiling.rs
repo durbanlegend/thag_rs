@@ -1612,11 +1612,11 @@ impl Profile {
         let desc_fn_name = if is_async {
             format!("async::{fn_name}")
         } else {
-            fn_name.to_string()
+            fn_name.clone()
         };
 
         #[cfg(target_os = "windows")]
-        let desc_fn_name = fn_name.to_string(); // Windows already highlights async functions
+        let desc_fn_name = fn_name.clone(); // Windows already highlights async functions
 
         let path = extract_path(&cleaned_stack, Some(fn_name));
 
@@ -1662,8 +1662,8 @@ impl Profile {
             start: Some(actual_start),
             path,
             section_name,
-            registered_name: fn_name.to_string(),
-            fn_name: fn_name.to_string(),
+            registered_name: fn_name.clone(),
+            fn_name: fn_name.clone(),
             start_line,
             end_line,
             detailed_memory,
@@ -2307,13 +2307,11 @@ pub fn extract_profile_callstack() -> Vec<String> {
                             filename,
                             name: name.clone(),
                         });
-                    } else if let Some(site) = &maybe_site {
-                        if name == site.name && filename == site.filename {
-                            recursion_detected = true;
-                            eprintln!("Recursion detected for filename={filename:#?}, name={name}, lineno={lineno:?}");
-                            suppress = true;
-                            break 'process_symbol;
-                        }
+                    } else if let Some(site) = &maybe_site && name == site.name && filename == site.filename {
+                        recursion_detected = true;
+                        eprintln!("Recursion detected for filename={filename:#?}, name={name}, lineno={lineno:?}");
+                        suppress = true;
+                        break 'process_symbol;
                     }
 
                     let mut name = strip_hex_suffix_slice(&name);
@@ -3586,21 +3584,21 @@ pub fn process_all_profraw_files() -> ProfileResult<()> {
             .map_err(|e| ProfileError::General(format!("Failed to read directory entry: {e}")))?;
         let path = entry.path();
 
-        if let Some(extension) = path.extension() {
-            if extension == "profraw" {
-                let profraw_path = path.to_string_lossy();
-                let folded_path = profraw_path.replace(".profraw", "-inclusive.folded");
+        if let Some(extension) = path.extension()
+            && extension == "profraw"
+        {
+            let profraw_path = path.to_string_lossy();
+            let folded_path = profraw_path.replace(".profraw", "-inclusive.folded");
 
-                debug_log!("Processing: {} -> {}", profraw_path, folded_path);
+            debug_log!("Processing: {} -> {}", profraw_path, folded_path);
 
-                match process_profraw_to_folded(&profraw_path, &folded_path) {
-                    Ok(()) => {
-                        processed_count += 1;
-                        debug_log!("Successfully processed: {}", profraw_path);
-                    }
-                    Err(e) => {
-                        debug_log!("Failed to process {}: {}", profraw_path, e);
-                    }
+            match process_profraw_to_folded(&profraw_path, &folded_path) {
+                Ok(()) => {
+                    processed_count += 1;
+                    debug_log!("Successfully processed: {}", profraw_path);
+                }
+                Err(e) => {
+                    debug_log!("Failed to process {}: {}", profraw_path, e);
                 }
             }
         }

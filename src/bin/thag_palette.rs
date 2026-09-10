@@ -14,8 +14,8 @@ thag_styling = { version = "1, thag-auto" }
 //# Purpose: Show terminal palette colors
 //# Categories: color, styling, terminal, theming, tools
 use thag_styling::{
-    auto_help, display_color_comparison, help_system::check_help_and_exit, hsl_to_rgb, ColorValue,
-    Style, TermAttributes,
+    ColorValue, Style, TermAttributes, auto_help, display_color_comparison,
+    help_system::check_help_and_exit, hsl_to_rgb,
 };
 
 fn main() {
@@ -66,10 +66,10 @@ fn display_terminal_info() {
 
     // Display environment variables that affect colors
     if let Ok(term) = std::env::var("TERM") {
-        println!("🖥️  TERM: {}", term);
+        println!("🖥️  TERM: {term}");
     }
     if let Ok(colorterm) = std::env::var("COLORTERM") {
-        println!("🌈 COLORTERM: {}", colorterm);
+        println!("🌈 COLORTERM: {colorterm}");
     }
 
     println!();
@@ -116,14 +116,14 @@ fn display_color_row(colors: &[(u8, &str)]) {
     // Print color indices
     print!("   ");
     for (index, _) in colors {
-        print!("{:>12}", index);
+        print!("{index:>12}");
     }
     println!();
 
     // Print color names
     print!("   ");
     for (_, name) in colors {
-        print!("{:>12}", name);
+        print!("{name:>12}");
     }
     println!();
 
@@ -153,7 +153,7 @@ fn display_256_color_samples() {
         print!("   ");
         for col in 0..6 {
             let index = 16 + row * 36 + col * 6;
-            print!("\x1b[48;5;{}m {:3} \x1b[0m", index, index);
+            print!("\x1b[48;5;{index}m {index:3} \x1b[0m");
         }
         println!();
     }
@@ -168,7 +168,7 @@ fn display_256_color_samples() {
             println!();
             print!("   ");
         }
-        print!("\x1b[48;5;{}m {:3} \x1b[0m", i, i);
+        print!("\x1b[48;5;{i}m {i:3} \x1b[0m");
     }
     println!();
     println!();
@@ -186,7 +186,7 @@ fn display_true_color_test() {
     for i in 0..32 {
         let red = 255 - (i * 8);
         let blue = i * 8;
-        print!("\x1b[48;2;{};0;{}m \x1b[0m", red, blue);
+        print!("\x1b[48;2;{red};0;{blue}m \x1b[0m");
     }
     println!();
 
@@ -195,7 +195,7 @@ fn display_true_color_test() {
     print!("   ");
     for i in 0..32 {
         let green = i * 8;
-        print!("\x1b[48;2;0;{};0m \x1b[0m", green);
+        print!("\x1b[48;2;0;{green};0m \x1b[0m");
     }
     println!();
 
@@ -205,7 +205,7 @@ fn display_true_color_test() {
     for i in 0..32 {
         let hue = (i as f32 / 32.0) * 360.0;
         let [r, g, b] = hsl_to_rgb(hue, 1.0, 0.5);
-        print!("\x1b[48;2;{};{};{}m \x1b[0m", r, g, b);
+        print!("\x1b[48;2;{r};{g};{b}m \x1b[0m");
     }
     println!();
     println!();
@@ -241,7 +241,7 @@ fn display_thag_theme_colors() {
 
     println!("Semantic Colors:");
     for (name, style) in semantic_colors {
-        let colored_text = style.paint(format!("{:>12}", name));
+        let colored_text = style.paint(format!("{name:>12}"));
         let rgb_info = extract_rgb_info(style);
         println!("   {colored_text} - {rgb_info}");
     }
@@ -253,9 +253,9 @@ fn display_thag_theme_colors() {
         println!("Background Color Preview:");
         print!("   ");
         for _ in 0..20 {
-            print!("\x1b[48;2;{};{};{}m \x1b[0m", r, g, b);
+            print!("\x1b[48;2;{r};{g};{b}m \x1b[0m");
         }
-        println!(" RGB({}, {}, {})", r, g, b);
+        println!(" RGB({r}, {g}, {b})");
     }
 }
 
@@ -268,10 +268,10 @@ fn extract_rgb_info(style: &Style) -> String {
                 format!("RGB({}, {}, {})", rgb[0], rgb[1], rgb[2])
             }
             ColorValue::Color256 { color256 } => {
-                format!("256-Color({})", color256)
+                format!("256-Color({color256})")
             }
             ColorValue::Basic { index, .. } => {
-                format!("Basic({})", index)
+                format!("Basic({index})")
             }
         },
     )

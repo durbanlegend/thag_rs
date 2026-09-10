@@ -19,7 +19,7 @@ thag_styling = { version = "1, thag-auto", default-features = false, features = 
 //# Purpose: Facilitate generation and enhancement of custom error modules.
 //# Categories: technique, tools
 use heck::ToSnakeCase;
-use inquire::{set_global_render_config, Confirm, MultiSelect, Select, Text};
+use inquire::{Confirm, MultiSelect, Select, Text, set_global_render_config};
 use std::fmt::Write as _; // import without risk of name clashing
 use std::{error::Error, fs, path::PathBuf};
 use thag_styling::{auto_help, help_system::check_help_and_exit, themed_inquire_config};
@@ -489,15 +489,15 @@ fn generate_error_module(module: &ErrorModule) -> String {
 
     // Generate From impls for wrapped types
     for variant in &module.variants {
-        if let Some(wrapped) = &variant.wrapped_type {
-            if wrapped != "String" {
-                // Skip String as it's handled differently
-                let _ = writeln!(output, "impl From<{wrapped}> for {} {{\n", module.name);
-                let _ = writeln!(output, "    fn from(err: {wrapped}) -> Self {{\n");
-                let _ = writeln!(output, "        Self::{}(err)\n", variant.name);
-                output.push_str("    }\n");
-                output.push_str("}\n\n");
-            }
+        if let Some(wrapped) = &variant.wrapped_type
+            && wrapped != "String"
+        {
+            // Skip String as it's handled differently
+            let _ = writeln!(output, "impl From<{wrapped}> for {} {{\n", module.name);
+            let _ = writeln!(output, "    fn from(err: {wrapped}) -> Self {{\n");
+            let _ = writeln!(output, "        Self::{}(err)\n", variant.name);
+            output.push_str("    }\n");
+            output.push_str("}\n\n");
         }
     }
 

@@ -26,19 +26,19 @@ pub mod exporters;
 
 // Re-export common types
 pub use thag_common::{
+    ColorSupport, OUTPUT_MANAGER, TermBgLuma, ThagCommonError, ThagCommonResult, V, Verbosity,
     auto_help, debug_log, eprtln, get_verbosity, help_system, init_verbosity, prtln, re,
-    set_global_verbosity, set_verbosity, set_verbosity_from_env, veprtln, vprtln, ColorSupport,
-    TermBgLuma, ThagCommonError, ThagCommonResult, Verbosity, OUTPUT_MANAGER, V,
+    set_global_verbosity, set_verbosity, set_verbosity_from_env, veprtln, vprtln,
 };
 
 #[cfg(feature = "color_detect")]
 pub use thag_common::{is_konsole, is_mintty, terminal};
 
 pub use styling::{
-    display_terminal_attributes, display_theme_details, display_theme_roles, find_closest_color,
-    get_rgb, index_to_rgb, paint_for_role, AnsiStyleExt, Color, ColorInfo, ColorInitStrategy,
-    ColorValue, HowInitialized, Palette, PaletteConfig, Role, Style, Styleable, Styled,
-    StyledPrint, StyledString, Styler, TermAttributes, Theme,
+    AnsiStyleExt, Color, ColorInfo, ColorInitStrategy, ColorValue, HowInitialized, Palette,
+    PaletteConfig, Role, Style, Styleable, Styled, StyledPrint, StyledString, Styler,
+    TermAttributes, Theme, display_terminal_attributes, display_theme_details, display_theme_roles,
+    find_closest_color, get_rgb, index_to_rgb, paint_for_role,
 };
 
 // Re-export integration traits and types
@@ -60,20 +60,20 @@ pub use integrations::crossterm_integration::{CrosstermStyleExt, ThemedStylize};
 pub use inquire_theming::themed_inquire_config;
 
 pub use thag_proc_macros::{
-    ansi_styling_support, file_navigator, preload_themes, styled, PaletteMethods,
+    PaletteMethods, ansi_styling_support, file_navigator, preload_themes, styled,
 };
 
 // Re-export image theme generation types
 #[cfg(feature = "image_themes")]
 pub use image_themes::{
-    generate_and_save_theme, generate_theme_from_image, generate_theme_from_image_with_config,
-    save_theme_to_file, theme_to_toml, ImageThemeConfig, ImageThemeGenerator,
+    ImageThemeConfig, ImageThemeGenerator, generate_and_save_theme, generate_theme_from_image,
+    generate_theme_from_image_with_config, save_theme_to_file, theme_to_toml,
 };
 
 // Re-export theme exporter types
 pub use exporters::{
-    export_all_formats, export_theme_to_file, generate_installation_instructions, ExportFormat,
-    ThemeExporter,
+    ExportFormat, ThemeExporter, export_all_formats, export_theme_to_file,
+    generate_installation_instructions,
 };
 
 #[cfg(feature = "inquire")]
@@ -353,7 +353,7 @@ pub fn select_builtin_theme() -> Option<String> {
     // Clear screen initially
     print!("\x1b[2J\x1b[H");
 
-    let maybe_theme_name = {
+    {
         println!("\n🎨 Interactive Theme Browser");
         println!("{}", "═".repeat(80));
         println!("📚 {} themes available", themes.len());
@@ -393,8 +393,7 @@ pub fn select_builtin_theme() -> Option<String> {
                 None
             }
         }
-    };
-    maybe_theme_name
+    }
 }
 
 /// Helper: HSL -> RGB
@@ -440,7 +439,7 @@ pub fn rgb_to_hsl(rgb: [u8; 3]) -> [f32; 3] {
     let min = r.min(g).min(b);
     let delta = max - min;
 
-    let l = (max + min) / 2.0;
+    let l = f32::midpoint(max, min);
 
     if delta == 0.0 {
         return [0.0, 0.0, l];
@@ -468,7 +467,7 @@ pub fn rgb_to_hsl(rgb: [u8; 3]) -> [f32; 3] {
 /// Helper functions for inquire UI theming integration
 #[cfg(feature = "inquire_theming")]
 pub mod inquire_theming {
-    use super::{index_to_rgb, ColorValue, Role, TermAttributes};
+    use super::{ColorValue, Role, TermAttributes, index_to_rgb};
 
     /// Convert a thag Role to an inquire Color using the current theme
     #[must_use]

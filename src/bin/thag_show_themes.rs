@@ -3,11 +3,11 @@
 thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 */
 
-use inquire::{set_global_render_config, Select};
+use inquire::{Select, set_global_render_config};
 use std::{env, error::Error, io};
 use thag_styling::{
-    auto_help, display_theme_details, display_theme_roles, sprtln, styling, themed_inquire_config,
-    Role, TermAttributes, Theme,
+    Role, TermAttributes, Theme, auto_help, display_theme_details, display_theme_roles, sprtln,
+    styling, themed_inquire_config,
 };
 
 /// Display built-in themes and their styling with terminal setup instructions
@@ -115,7 +115,7 @@ fn interactive_theme_browser() {
                 break;
             }
             Err(e) => {
-                println!("❌ Error: {}", e);
+                println!("❌ Error: {e}");
                 break;
             }
         }
@@ -216,9 +216,7 @@ fn get_terminal_setup_instructions(bg_color: &str, luma: &str) -> String {
 	1. Open iTerm2 Settings (Cmd + ,)
 	2. Go to Profiles → Colors
 	3. Recommended: Install desired theme from Color Presets per `https://iterm2colorschemes.com/`
-	4. Otherwise Set Background Color to {}.",
-            bg_color,
-            // luma.to_lowercase()
+	4. Otherwise Set Background Color to {bg_color}."
         ),
 
         TerminalEnv::AppleTerminal => format!(

@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
-use thag_styling::{hsl_to_rgb, rgb_to_hsl, ColorValue, Palette, Role, Style, StylingError, Theme};
+use thag_styling::{ColorValue, Palette, Role, Style, StylingError, Theme, hsl_to_rgb, rgb_to_hsl};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Interactive theme editor", long_about = None)]
@@ -67,7 +67,7 @@ impl ColorCandidate {
             let roles_str = self
                 .roles
                 .iter()
-                .map(|r| format!("{:?}", r))
+                .map(|r| format!("{r:?}"))
                 .collect::<Vec<_>>()
                 .join(", ");
             parts.push(roles_str);
@@ -156,7 +156,7 @@ impl ThemeEditor {
             "Exit without saving",
         ];
 
-        let prompt = format!("What would you like to do?{}", modified_indicator);
+        let prompt = format!("What would you like to do?{modified_indicator}");
         let selection = Select::new(&prompt, actions).prompt()?;
 
         Ok(selection.to_string())
@@ -171,9 +171,8 @@ impl ThemeEditor {
         let current_hex = Self::style_to_hex(&current_style);
 
         println!(
-            "\nCurrent color for {:?}: {}",
-            role,
-            current_style.paint(format!("████ {}", current_hex))
+            "\nCurrent color for {role:?}: {}",
+            current_style.paint(format!("████ {current_hex}"))
         );
 
         // Load base_colors if available
@@ -201,7 +200,7 @@ impl ThemeEditor {
         self.update_role(role, selected.rgb);
         self.modified = true;
 
-        println!("✅ Updated {:?} to {}", role, selected.hex);
+        println!("✅ Updated {role:?} to {}", selected.hex);
 
         Ok(())
     }
@@ -221,7 +220,7 @@ impl ThemeEditor {
         println!(
             "\nCurrent color for {:?}: {}",
             role,
-            current_style.paint(format!("████ {}", current_hex))
+            current_style.paint(format!("████ {current_hex}"))
         );
 
         // Select adjustment type
@@ -266,7 +265,7 @@ impl ThemeEditor {
         if confirm {
             self.update_role(role, adjusted_rgb);
             self.modified = true;
-            println!("✅ Adjusted {:?} to {}", role, adjusted_hex);
+            println!("✅ Adjusted {role:?} to {adjusted_hex}");
         }
 
         Ok(())
@@ -316,7 +315,7 @@ impl ThemeEditor {
         self.update_role(role2, *rgb1);
         self.modified = true;
 
-        println!("✅ Swapped {:?} ↔ {:?}", role1, role2);
+        println!("✅ Swapped {role1:?} ↔ {role2:?}");
 
         Ok(())
     }
@@ -453,7 +452,7 @@ impl ThemeEditor {
         if let Some(base_colors) = &self.theme.base_colors {
             for (i, rgb) in base_colors.iter().enumerate() {
                 let hex = format!("#{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
-                let base_name = format!("base{:02X}", i);
+                let base_name = format!("base{i:02X}");
 
                 color_map
                     .entry(hex.clone())
@@ -485,16 +484,16 @@ impl ThemeEditor {
 
         for role in all_roles {
             let style = self.theme.style_for(role);
-            if let Some(color_info) = &style.foreground {
-                if let ColorValue::TrueColor { rgb } = &color_info.value {
-                    let hex = format!("#{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
+            if let Some(color_info) = &style.foreground
+                && let ColorValue::TrueColor { rgb } = &color_info.value
+            {
+                let hex = format!("#{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
 
-                    color_map
-                        .entry(hex.clone())
-                        .or_insert_with(|| ColorCandidate::new(*rgb))
-                        .roles
-                        .push(role);
-                }
+                color_map
+                    .entry(hex.clone())
+                    .or_insert_with(|| ColorCandidate::new(*rgb))
+                    .roles
+                    .push(role);
             }
         }
 
@@ -651,21 +650,16 @@ fn update_palette_in_toml(
     ];
 
     for (role_name, style) in roles {
-        if let Some(color_info) = &style.foreground {
-            if let ColorValue::TrueColor { rgb } = &color_info.value {
-                if let Some(role_table) = palette.get_mut(role_name).and_then(|r| r.as_table_mut())
-                {
-                    if let Some(rgb_array) =
-                        role_table.get_mut("rgb").and_then(|r| r.as_array_mut())
-                    {
-                        *rgb_array = vec![
-                            toml::Value::Integer(i64::from(rgb[0])),
-                            toml::Value::Integer(i64::from(rgb[1])),
-                            toml::Value::Integer(i64::from(rgb[2])),
-                        ];
-                    }
-                }
-            }
+        if let Some(color_info) = &style.foreground
+            && let ColorValue::TrueColor { rgb } = &color_info.value
+            && let Some(role_table) = palette.get_mut(role_name).and_then(|r| r.as_table_mut())
+            && let Some(rgb_array) = role_table.get_mut("rgb").and_then(|r| r.as_array_mut())
+        {
+            *rgb_array = vec![
+                toml::Value::Integer(i64::from(rgb[0])),
+                toml::Value::Integer(i64::from(rgb[1])),
+                toml::Value::Integer(i64::from(rgb[2])),
+            ];
         }
     }
 }

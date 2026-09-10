@@ -5,7 +5,7 @@ toml_edit = "0.22"
 regex = "1.11"
 */
 
-/// Tool to bump version numbers across the thag_rs workspace for major releases.
+/// Tool to bump version numbers across the `thag_rs` workspace for major releases.
 ///
 /// This utility automates the process of updating version numbers in:
 /// - All Cargo.toml files (workspace members and dependencies)
@@ -17,14 +17,16 @@ regex = "1.11"
 //# Purpose: Automate version bumping across workspace for major releases
 //# Categories: tools
 //# Usage: thag_version_bump [--dry-run] [--version VERSION]
-use inquire::{set_global_render_config, Confirm, Text};
+use inquire::{Confirm, Text, set_global_render_config};
 use regex::Regex;
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::string::ToString;
 use thag_styling::{auto_help, help_system::check_help_and_exit, themed_inquire_config};
 use toml_edit::{DocumentMut, Value};
 
+#[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first
     let help = auto_help!();
@@ -38,7 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .iter()
         .position(|arg| arg == "--version" || arg == "-v")
         .and_then(|i| args.get(i + 1))
-        .map(|s| s.to_string());
+        .map(ToString::to_string);
 
     if dry_run {
         println!("🔍 DRY RUN MODE - No files will be modified\n");
@@ -59,7 +61,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("📦 Current versions:");
     for (name, version) in &workspace_crates {
-        println!("  {} = {}", name, version);
+        println!("  {name} = {version}");
     }
     println!();
 
@@ -75,31 +77,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Validate semver format
     if !is_valid_semver(&target_version) {
-        eprintln!("❌ Invalid semver format: {}", target_version);
+        eprintln!("❌ Invalid semver format: {target_version}");
         return Ok(());
     }
 
     let target_version_short = extract_major_minor(&target_version);
 
     println!("\n📋 Plan:");
-    println!(
-        "  • Update all workspace crate versions to: {}",
-        target_version
-    );
+    println!("  • Update all workspace crate versions to: {target_version}");
     let dep_version_note = if target_version.starts_with("0.") {
-        format!("{} (major.minor for 0.x)", target_version_short)
+        format!("{target_version_short} (major.minor for 0.x)")
     } else {
-        format!("{} (major only for 1.x+)", target_version_short)
+        format!("{target_version_short} (major only for 1.x+)")
     };
 
-    println!(
-        "  • Update all dependency references to: {}",
-        dep_version_note
-    );
-    println!(
-        "  • Update all thag-auto scripts to: {}, thag-auto",
-        target_version_short
-    );
+    println!("  • Update all dependency references to: {dep_version_note}");
+    println!("  • Update all thag-auto scripts to: {target_version_short}, thag-auto");
 
     if !dry_run && version_arg.is_none() {
         set_global_render_config(themed_inquire_config());
@@ -123,7 +116,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let cargo_toml_path = if *crate_name == "thag_rs" {
             PathBuf::from("Cargo.toml")
         } else {
-            PathBuf::from(format!("{}/Cargo.toml", crate_name))
+            PathBuf::from(format!("{crate_name}/Cargo.toml"))
         };
 
         if cargo_toml_path.exists() {
@@ -168,10 +161,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("\n📝 Next steps:");
         println!("  1. Review changes: git diff");
         println!("  2. Test locally: THAG_DEV_PATH=$PWD cargo test");
-        println!(
-            "  3. Commit: git commit -am 'chore: bump version to {}'",
-            target_version
-        );
+        println!("  3. Commit: git commit -am 'chore: bump version to {target_version}'");
         println!("  4. Publish subcrates in order (see release checklist)");
     }
 
@@ -185,7 +175,7 @@ struct Stats {
 }
 
 impl Stats {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             cargo_tomls: 0,
             demo_scripts: 0,
@@ -193,7 +183,7 @@ impl Stats {
         }
     }
 
-    fn total(&self) -> usize {
+    const fn total(&self) -> usize {
         self.cargo_tomls + self.demo_scripts + self.tool_bins
     }
 }
@@ -233,18 +223,17 @@ fn update_cargo_toml(
     let mut modified = false;
 
     // Update package version
-    if let Some(package) = doc.get_mut("package").and_then(|p| p.as_table_mut()) {
-        if let Some(version_item) = package.get_mut("version") {
-            if let Some(version_val) = version_item.as_value_mut() {
-                *version_val = Value::from(full_version);
-                modified = true;
-                println!(
-                    "  ✓ {} [package.version = {}]",
-                    path.display(),
-                    full_version
-                );
-            }
-        }
+    if let Some(package) = doc.get_mut("package").and_then(|p| p.as_table_mut())
+        && let Some(version_item) = package.get_mut("version")
+        && let Some(version_val) = version_item.as_value_mut()
+    {
+        *version_val = Value::from(full_version);
+        modified = true;
+        println!(
+            "  ✓ {} [package.version = {}]",
+            path.display(),
+            full_version
+        );
     }
 
     // Update workspace member dependencies
@@ -269,22 +258,20 @@ fn update_cargo_toml(
                                 );
                             }
                         }
-                    } else if let Some(dep_table) = dep_item.as_table_mut() {
-                        if dep_table.contains_key("path") {
-                            if let Some(version_item) = dep_table.get_mut("version") {
-                                if let Some(version_val) = version_item.as_value_mut() {
-                                    *version_val = Value::from(short_version);
-                                    modified = true;
-                                    println!(
-                                        "  ✓ {} [{}.{}.version = {}]",
-                                        path.display(),
-                                        section,
-                                        crate_name,
-                                        short_version
-                                    );
-                                }
-                            }
-                        }
+                    } else if let Some(dep_table) = dep_item.as_table_mut()
+                        && dep_table.contains_key("path")
+                        && let Some(version_item) = dep_table.get_mut("version")
+                        && let Some(version_val) = version_item.as_value_mut()
+                    {
+                        *version_val = Value::from(short_version);
+                        modified = true;
+                        println!(
+                            "  ✓ {} [{}.{}.version = {}]",
+                            path.display(),
+                            section,
+                            crate_name,
+                            short_version
+                        );
                     }
                 }
             }
@@ -368,14 +355,14 @@ fn update_script_toml_block(
         ),
     ];
 
-    let mut new_content = content.clone();
+    let mut new_content = content;
     let mut modified = false;
 
     for (pattern, crate_name) in patterns {
         let re = Regex::new(pattern)?;
 
         if re.is_match(&new_content) {
-            let replacement = format!(r#"{} = {{ version = "{}, thag-auto""#, crate_name, version);
+            let replacement = format!(r#"{crate_name} = {{ version = "{version}, thag-auto""#);
             let new = re.replace_all(&new_content, replacement);
 
             if new != new_content {

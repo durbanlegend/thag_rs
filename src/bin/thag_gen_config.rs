@@ -15,10 +15,10 @@ thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 use convert_case::{Converter, Pattern};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use inquire::{
+    Confirm,
     error::CustomUserError,
     set_global_render_config,
     validator::{StringValidator, Validation},
-    Confirm,
 };
 use std::{
     collections::HashMap,
@@ -27,17 +27,16 @@ use std::{
     path::{Path, PathBuf},
 };
 use strum::IntoEnumIterator;
-use syn::{parse_file, Attribute, Item, ItemUse, Meta, /*Path as SynPath,*/ UseTree};
+use syn::{Attribute, Item, ItemUse, Meta, /*Path as SynPath,*/ UseTree, parse_file};
 use thag_common::{
-    auto_help,
+    ColorSupport, TermBgLuma, Verbosity, auto_help,
     config::{
-        maybe_config, Config, Context, Dependencies, DependencyInference, FeatureOverride, Logging,
-        Misc, ProcMacros, RealContext, Styling,
+        Config, Context, Dependencies, DependencyInference, FeatureOverride, Logging, Misc,
+        ProcMacros, RealContext, Styling, maybe_config,
     },
     help_system::check_help_and_exit,
-    ColorSupport, TermBgLuma, Verbosity,
 };
-use thag_styling::{file_navigator, themed_inquire_config, Styleable};
+use thag_styling::{Styleable, file_navigator, themed_inquire_config};
 
 type Error = CustomUserError;
 
@@ -198,10 +197,10 @@ fn select_config_file(
         .with_help_message("Press Enter to navigate, select a .toml file to load")
         .prompt()?;
 
-        if let NavigationResult::SelectionComplete(path) = navigator.navigate(&selection, true) {
-            if path.extension().is_some_and(|ext| ext == "toml") {
-                return Ok(path);
-            }
+        if let NavigationResult::SelectionComplete(path) = navigator.navigate(&selection, true)
+            && path.extension().is_some_and(|ext| ext == "toml")
+        {
+            return Ok(path);
         }
     }
 }
@@ -212,30 +211,29 @@ fn collect_modules(project_root: &Path) -> HashMap<String, ModuleInfo> {
     // Start with main modules
     for entry in &["config.rs", "logging.rs"] {
         let path = project_root.join("src").join(entry);
-        if path.exists() {
-            if let Ok(source) = fs::read_to_string(&path) {
-                if let Ok(syntax) = parse_file(&source) {
-                    let module_name = entry.trim_end_matches(".rs").to_string();
-                    let mut uses = Vec::new();
+        if path.exists()
+            && let Ok(source) = fs::read_to_string(&path)
+            && let Ok(syntax) = parse_file(&source)
+        {
+            let module_name = entry.trim_end_matches(".rs").to_string();
+            let mut uses = Vec::new();
 
-                    // Collect use declarations
-                    for item in &syntax.items {
-                        if let Item::Use(use_item) = item {
-                            if let Some((name, path)) = extract_use_path(use_item) {
-                                uses.push((name, path));
-                            }
-                        }
-                    }
-
-                    modules.insert(
-                        module_name,
-                        ModuleInfo {
-                            items: syntax.items,
-                            uses,
-                        },
-                    );
+            // Collect use declarations
+            for item in &syntax.items {
+                if let Item::Use(use_item) = item
+                    && let Some((name, path)) = extract_use_path(use_item)
+                {
+                    uses.push((name, path));
                 }
             }
+
+            modules.insert(
+                module_name,
+                ModuleInfo {
+                    items: syntax.items,
+                    uses,
+                },
+            );
         }
     }
 
@@ -309,15 +307,14 @@ fn get_doc_comments<T>() -> Vec<(String, String)> {
 
         // For each field that's an enum type, look up its module
         for (field_path, type_name) in find_enum_fields(&config_module.items) {
-            if let Some(module_name) = find_enum_module(&type_name, &config_module.uses, &modules) {
-                if let Some(module_info) = modules.get(&module_name) {
-                    // Find and extract enum documentation
-                    if let Some(enum_docs) = extract_enum_docs(&module_info.items, &type_name) {
-                        let key = format!("{field_path}_type").to_lowercase();
-                        eprintln!("Pushing ({key}, {enum_docs} to comments");
-                        comments.push((key, enum_docs));
-                    }
-                }
+            if let Some(module_name) = find_enum_module(&type_name, &config_module.uses, &modules)
+                && let Some(module_info) = modules.get(&module_name)
+                // Find and extract enum documentation
+                && let Some(enum_docs) = extract_enum_docs(&module_info.items, &type_name)
+            {
+                let key = format!("{field_path}_type").to_lowercase();
+                eprintln!("Pushing ({key}, {enum_docs} to comments");
+                comments.push((key, enum_docs));
             }
         }
     }
@@ -338,15 +335,14 @@ fn find_enum_fields(items: &[Item]) -> Vec<(String, String)> {
             let struct_name = struct_item.ident.to_string();
 
             for field in &struct_item.fields {
-                if let Some(field_name) = &field.ident {
-                    if let syn::Type::Path(type_path) = &field.ty {
-                        if let Some(last_seg) = type_path.path.segments.last() {
-                            fields.push((
-                                format!("{struct_name}.{field_name}"),
-                                last_seg.ident.to_string(),
-                            ));
-                        }
-                    }
+                if let Some(field_name) = &field.ident
+                    && let syn::Type::Path(type_path) = &field.ty
+                    && let Some(last_seg) = type_path.path.segments.last()
+                {
+                    fields.push((
+                        format!("{struct_name}.{field_name}"),
+                        last_seg.ident.to_string(),
+                    ));
                 }
             }
         }
@@ -391,23 +387,23 @@ fn contains_enum(items: &[Item], enum_name: &str) -> bool {
 
 fn extract_enum_docs(items: &[Item], enum_name: &str) -> Option<String> {
     for item in items {
-        if let Item::Enum(enum_item) = item {
-            if enum_item.ident == enum_name {
-                let mut docs = extract_attrs_docs(&enum_item.attrs);
-                docs.push("\nAvailable options:".to_string());
+        if let Item::Enum(enum_item) = item
+            && enum_item.ident == enum_name
+        {
+            let mut docs = extract_attrs_docs(&enum_item.attrs);
+            docs.push("\nAvailable options:".to_string());
 
-                for variant in &enum_item.variants {
-                    let variant_docs = extract_attrs_docs(&variant.attrs);
-                    let x = if variant_docs.is_empty() {
-                        "No documentation"
-                    } else {
-                        &variant_docs.join("\n    ")
-                    };
-                    docs.push(format!("  {} - {x}", variant.ident));
-                }
-
-                return Some(docs.join("\n"));
+            for variant in &enum_item.variants {
+                let variant_docs = extract_attrs_docs(&variant.attrs);
+                let x = if variant_docs.is_empty() {
+                    "No documentation"
+                } else {
+                    &variant_docs.join("\n    ")
+                };
+                docs.push(format!("  {} - {x}", variant.ident));
             }
+
+            return Some(docs.join("\n"));
         }
     }
 
@@ -443,14 +439,14 @@ fn extract_doc_comments(items: &[Item], prefix: &str, comments: &mut Vec<(String
                         }
 
                         // Try to get field type docs (for enums)
-                        if let syn::Type::Path(type_path) = &field.ty {
-                            if let Some(last_seg) = type_path.path.segments.last() {
-                                let type_name = last_seg.ident.to_string();
-                                comments.push((
-                                    format!("{prefix}{struct_name}.{ident}_type").to_lowercase(),
-                                    type_name,
-                                ));
-                            }
+                        if let syn::Type::Path(type_path) = &field.ty
+                            && let Some(last_seg) = type_path.path.segments.last()
+                        {
+                            let type_name = last_seg.ident.to_string();
+                            comments.push((
+                                format!("{prefix}{struct_name}.{ident}_type").to_lowercase(),
+                                type_name,
+                            ));
                         }
                     }
                 }
@@ -488,18 +484,16 @@ fn extract_attrs_docs(attrs: &[Attribute]) -> Vec<String> {
     attrs
         .iter()
         .filter_map(|attr| {
-            if attr.path().is_ident("doc") {
-                if let Meta::NameValue(meta) = &attr.meta {
-                    if let syn::Expr::Lit(syn::ExprLit {
-                        lit: syn::Lit::Str(s),
-                        ..
-                    }) = &meta.value
-                    {
-                        let attr_doc = s.value().trim().to_string();
-                        eprintln!("attr_doc={attr_doc}");
-                        return Some(attr_doc);
-                    }
-                }
+            if attr.path().is_ident("doc")
+                && let Meta::NameValue(meta) = &attr.meta
+                && let syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(s),
+                    ..
+                }) = &meta.value
+            {
+                let attr_doc = s.value().trim().to_string();
+                eprintln!("attr_doc={attr_doc}");
+                return Some(attr_doc);
             }
             None
         })
@@ -850,8 +844,8 @@ fn prompt_dependencies_config(
     }
 }
 
-fn prompt_feature_overrides(
-) -> Result<Option<HashMap<String, FeatureOverride>>, Box<dyn std::error::Error>> {
+fn prompt_feature_overrides()
+-> Result<Option<HashMap<String, FeatureOverride>>, Box<dyn std::error::Error>> {
     let mut overrides = HashMap::new();
 
     while Confirm::new("Add crate override?")

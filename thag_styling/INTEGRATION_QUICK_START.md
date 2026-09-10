@@ -118,8 +118,7 @@ let themed = base.with_role(Role::Success);  // Add theme-aware colors
 
 ## 📚 Library-Specific Examples
 
-<details>
-<summary><strong>🔧 Crossterm</strong></summary>
+### 🔧 Crossterm
 
 ```rust
 use crossterm::{execute, style::Print};
@@ -140,10 +139,8 @@ execute!(
     Print(crossterm_helpers::success_style().apply("Done!"))
 )?;
 ```
-</details>
 
-<details>
-<summary><strong>📊 Ratatui</strong></summary>
+### 📊 Ratatui
 
 ```rust
 use ratatui::{
@@ -163,10 +160,8 @@ let text_style = Style::default()
     .bold()
     .with_role(Role::Success);  // Add themed colors
 ```
-</details>
 
-<details>
-<summary><strong>🐚 Nu-ANSI-Term</strong></summary>
+### 🐚 Nu-ANSI-Term
 
 ```rust
 use nu_ansi_term::{Style, Color};
@@ -181,10 +176,8 @@ println!("{}", success.paint("Success!"));
 let prompt_style = reedline_helpers::prompt_style();
 let error_style = reedline_helpers::error_style();
 ```
-</details>
 
-<details>
-<summary><strong>🖥️ Console</strong></summary>
+### 🖥️ Console
 
 ```rust
 use console::{Style, Term};
@@ -202,7 +195,6 @@ term.write_line_themed(Role::Error, "Error occurred!")?;
 // Helper functions
 console_helpers::print_themed(Role::Info, "Information")?;
 ```
-</details>
 
 ## 🔧 Advanced Features
 

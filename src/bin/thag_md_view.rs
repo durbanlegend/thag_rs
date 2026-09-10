@@ -77,7 +77,7 @@ const MOD: &str = "Ctrl";
 /// Documents at or above this byte count get the viewport-cache toggle shown in
 /// the toolbar and have caching auto-enabled.  Below this size the simple
 /// full-document render path is always used (accurate + fast enough).
-const VIEWPORT_CACHE_THRESHOLD: usize = 0; // 200 KB
+const VIEWPORT_CACHE_THRESHOLD: usize = 200_000; // 200 KB
 
 copy_resource_dir!("THAG_DEV_PATH", "locales");
 rust_i18n::i18n!("locales", fallback = "en");
@@ -614,7 +614,7 @@ fn detect_locale() -> String {
     })
 }
 
-#[allow(clippy::cast_precision_loss)]
+#[allow(clippy::cast_precision_loss, clippy::too_many_lines)]
 fn main() -> eframe::Result<()> {
     // Hard size limit — refuse immediately so the GUI doesn't freeze.
     const MAX_BYTES: usize = 50_000_000;
@@ -635,7 +635,7 @@ fn main() -> eframe::Result<()> {
         }
         if input_path.is_dir() {
             eprintln!("Error: Input path is a directory: {}", input_path.display());
-            let _ = env::set_current_dir(&input_path);
+            let _ = env::set_current_dir(input_path);
             None
         } else {
             Some(input_path.to_path_buf())
@@ -649,8 +649,15 @@ fn main() -> eframe::Result<()> {
         detach_if_tty();
     }
 
-    let (canonical_initial_path, raw_content, markdown_content, toc) = match selected_file {
-        Some(file) => {
+    let (canonical_initial_path, raw_content, markdown_content, toc) = selected_file.map_or_else(
+        || {
+            let canonical_initial_path = env::current_dir()
+                .unwrap_or_default()
+                .canonicalize()
+                .unwrap_or_default();
+            (canonical_initial_path, String::new(), String::new(), vec![])
+        },
+        |file| {
             let selected_path = PathBuf::from(&file);
             let canonical_initial_path = selected_path.canonicalize().unwrap_or(selected_path);
             let initial_base_dir = canonical_initial_path
@@ -675,10 +682,10 @@ fn main() -> eframe::Result<()> {
                 );
                 format!(
                     "# ⚠ File Too Large\n\n\
-             Cannot render `{}`.\n\n\
-             **File size: {size_mb:.1} MB** — exceeds the {:.0} MB limit.\n\n\
-             Rendering files this large would make the UI unresponsive.\n\
-             Consider splitting the file into smaller sections.",
+                  Cannot render `{}`.\n\n\
+                  **File size: {size_mb:.1} MB** — exceeds the {:.0} MB limit.\n\n\
+                  Rendering files this large would make the UI unresponsive.\n\
+                  Consider splitting the file into smaller sections.",
                     canonical_initial_path.display(),
                     MAX_BYTES as f64 / 1e6,
                 )
@@ -700,15 +707,8 @@ fn main() -> eframe::Result<()> {
             let (id_injected, toc) = extract_toc_and_inject_ids(&raw_content);
             let markdown_content = absolutize_image_paths(&id_injected, &initial_base_dir);
             (canonical_initial_path, raw_content, markdown_content, toc)
-        }
-        None => {
-            let canonical_initial_path = env::current_dir()
-                .unwrap_or_default()
-                .canonicalize()
-                .unwrap_or_default();
-            (canonical_initial_path, String::new(), String::new(), vec![])
-        }
-    };
+        },
+    );
 
     let options = eframe::NativeOptions {
         renderer: eframe::Renderer::Wgpu,

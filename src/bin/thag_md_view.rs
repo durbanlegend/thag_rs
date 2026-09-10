@@ -58,7 +58,7 @@ use rfd::FileDialog;
 use rust_i18n::t;
 use std::{
     collections::HashMap,
-    env, fs,
+    env,
     path::{Path, PathBuf},
     sync::{
         Arc, Mutex,
@@ -90,6 +90,26 @@ copy_resource_dir!(
     "assets/sublime_themes",
     "assets/sublime_themes"
 );
+
+macro_rules! theme_bytes {
+    ($($theme:literal),+ $(,)?) => {
+        &[
+            $(
+                (
+                    $theme,
+                    include_bytes!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/assets/sublime_themes/",
+                        $theme,
+                        ".tmTheme"
+                    ))
+                ),
+            )+
+        ]
+    };
+}
+
+const THEME_BYTES: &[(&str, &[u8])] = theme_bytes!("Dunkel_Theme", "Slush_and_Poppies",);
 
 /// Applies contrast colours to both egui themes; font sizes are always left at
 /// egui defaults so toggling never causes a scroll-position jump.
@@ -717,6 +737,27 @@ fn main() -> eframe::Result<()> {
         .unwrap()
         .insert(0, preferred_font.to_owned());
 
+    // Do the same for monospace
+    let monospace_font = "Hack";
+    fonts.font_data.insert(
+        monospace_font.to_owned(),
+        egui::FontData::from_static(include_bytes!("../../assets/fonts/Hack-Regular.ttf")).into(),
+    );
+
+    // Put it in monospace list
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Monospace)
+        .unwrap()
+        .insert(0, monospace_font.to_owned());
+
+    // Add it first in proportional list as high priority for symbols
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Proportional)
+        .unwrap()
+        .insert(0, monospace_font.to_owned());
+
     eframe::run_native(
         "Markdown Viewer",
         options,
@@ -1093,18 +1134,8 @@ impl MarkdownApp {
 }
 
 fn add_code_block_themes(cache: &mut CommonMarkCache) {
-    for theme in &["Dunkel_Theme", "Slush_and_Poppies"] {
-        let manifest_dir = env!("CARGO_MANIFEST_DIR");
-        cache
-            .add_syntax_theme_from_bytes(
-                *theme,
-                &fs::read(format!(
-                    "{}/assets/sublime_themes/{theme}.tmTheme",
-                    manifest_dir
-                ))
-                .unwrap(),
-            )
-            .unwrap();
+    for (theme, bytes) in THEME_BYTES {
+        cache.add_syntax_theme_from_bytes(*theme, bytes).unwrap();
     }
 }
 
@@ -1584,7 +1615,10 @@ impl eframe::App for MarkdownApp {
                     // Prev / next buttons.
                     let has_matches = match_count > 0;
                     if ui
-                        .add_enabled(has_matches, egui::Button::new("⬆"))
+                        .add_enabled(
+                            has_matches,
+                            egui::Button::new(egui::RichText::new("\u{276e}").monospace()),
+                        )
                         .on_hover_text(t!("search.prev_tip").to_string())
                         .clicked()
                         || (enter_pressed && ui.input(|i| i.modifiers.shift))
@@ -1592,7 +1626,10 @@ impl eframe::App for MarkdownApp {
                         self.cache.go_to_match(-1);
                     }
                     if ui
-                        .add_enabled(has_matches, egui::Button::new("⬇"))
+                        .add_enabled(
+                            has_matches,
+                            egui::Button::new(egui::RichText::new("\u{276f}").monospace()),
+                        )
                         .on_hover_text(t!("search.next_tip").to_string())
                         .clicked()
                         || (enter_pressed && !ui.input(|i| i.modifiers.shift))

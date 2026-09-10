@@ -392,7 +392,7 @@ macro_rules! re {
 /// # Examples
 ///
 /// ```ignore
-/// use thag_proc_macros::static_lazy;
+/// use thag_common::static_lazy;
 ///
 /// static_lazy! {
 ///     GLOBAL_CONFIG: Option<String> = Some("default".to_string())

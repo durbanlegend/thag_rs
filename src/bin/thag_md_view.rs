@@ -6,7 +6,7 @@ egui_commonmark = { path = "/Users/donf/projects/egui_commonmark/egui_commonmark
 
 egui_extras = { version = "0.36", features = ["svg"] }
 thag_proc_macros = { version = "1, thag-auto" }
-thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
+# thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 resvg = { version = "0.45", features = ["text"] }
 fontdb = { version = "0.23", features = ["fs"] }
 notify = { version = "8" }
@@ -67,7 +67,6 @@ use std::{
     time::{Duration, Instant},
 };
 use thag_proc_macros::copy_resource_dir;
-use thag_styling::{auto_help, file_navigator, themed_inquire_config};
 
 #[cfg(target_os = "macos")]
 const MOD: &str = "Cmd";
@@ -79,8 +78,6 @@ const MOD: &str = "Ctrl";
 /// the toolbar and have caching auto-enabled.  Below this size the simple
 /// full-document render path is always used (accurate + fast enough).
 const VIEWPORT_CACHE_THRESHOLD: usize = 0; // 200 KB
-
-file_navigator! {}
 
 copy_resource_dir!("THAG_DEV_PATH", "locales");
 rust_i18n::i18n!("locales", fallback = "en");
@@ -127,6 +124,12 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
     ctx.global_style_mut(|style| {
         // Show the url of a hyperlink on hover
         style.url_in_tooltip = true;
+        // Reduce the tooltip delay down to 0.0 seconds (or something low like 0.05)
+        style.interaction.tooltip_delay = 0.0;
+        // Don't enforce tooltip delays within this many seconds of viewing the first tooltip
+        style.interaction.tooltip_grace_time = 3.0;
+        // Optional: Show tooltips even if the mouse is still drifting
+        // style.interaction.show_tooltips_only_when_still = false;
     });
     ctx.set_visuals_of(egui::Theme::Dark, {
         let mut v = egui::Visuals::dark();
@@ -155,10 +158,9 @@ fn apply_style(ctx: &egui::Context, enhanced: bool) {
         v
     });
 
-    // Ubuntu Mono renders visually larger than Ubuntu at equal point sizes (wider
-    // per-character advance, larger x-height).  Nudge it down to 12.0 px so that
-    // inline code and fenced code blocks feel balanced against 14 px body text.
-    // In egui 0.35 font styles are stored per-theme, so set both.
+    // Balance monospace font size in inline code and fenced code blocks
+    // against proportional font size.
+    // In egui 0.35+ font styles are stored per-theme, so set both.
     for theme in [egui::Theme::Dark, egui::Theme::Light] {
         ctx.style_mut_of(theme, |style| {
             use egui::{FontFamily, FontId, TextStyle};
@@ -617,15 +619,6 @@ fn main() -> eframe::Result<()> {
     // Hard size limit — refuse immediately so the GUI doesn't freeze.
     const MAX_BYTES: usize = 50_000_000;
 
-    // Help check MUST come before detach: detached children have stdout/stderr
-    // set to null, so any output would be silently lost.
-    // Use a normal return (not process::exit) so macOS framework atexit handlers
-    // run against a cleanly initialised state rather than a partially-started GUI.
-    let help = auto_help!();
-    if help.check_help() {
-        return Ok(());
-    }
-
     // Set the UI locale from the operating system before any translatable string is used.
     let locale = detect_locale();
     rust_i18n::set_locale(&locale);
@@ -634,7 +627,7 @@ fn main() -> eframe::Result<()> {
     // Strip internal markers before processing positional arguments.
     let args: Vec<String> = env::args().filter(|a| a != "--foreground").collect();
 
-    let selected_file: PathBuf = if args.len() > 1 {
+    let selected_file: Option<PathBuf> = if args.len() > 1 {
         let input_path = Path::new(&args[1]);
         if !input_path.exists() {
             eprintln!("Error: Input file does not exist: {}", input_path.display());
@@ -642,14 +635,13 @@ fn main() -> eframe::Result<()> {
         }
         if input_path.is_dir() {
             eprintln!("Error: Input path is a directory: {}", input_path.display());
-            std::process::exit(1);
+            let _ = env::set_current_dir(&input_path);
+            None
+        } else {
+            Some(input_path.to_path_buf())
         }
-        input_path.to_path_buf()
     } else {
-        inquire::set_global_render_config(themed_inquire_config());
-
-        let mut navigator = FileNavigator::new();
-        select_file(&mut navigator, Some("md"), false).unwrap()
+        None
     };
 
     #[cfg(unix)]
@@ -657,53 +649,66 @@ fn main() -> eframe::Result<()> {
         detach_if_tty();
     }
 
-    let selected_path = PathBuf::from(&selected_file);
-    let canonical_initial_path = selected_path.canonicalize().unwrap_or(selected_path);
-    let initial_base_dir = canonical_initial_path
-        .parent()
-        .unwrap_or_else(|| Path::new("."))
-        .to_path_buf();
-    // Keep CWD in sync for canonicalize() calls inside the viewer.
-    let _ = env::set_current_dir(&initial_base_dir);
+    let (canonical_initial_path, raw_content, markdown_content, toc) = match selected_file {
+        Some(file) => {
+            let selected_path = PathBuf::from(&file);
+            let canonical_initial_path = selected_path.canonicalize().unwrap_or(selected_path);
+            let initial_base_dir = canonical_initial_path
+                .parent()
+                .unwrap_or_else(|| Path::new("."))
+                .to_path_buf();
+            // Keep CWD in sync for canonicalize() calls inside the viewer.
+            let _ = env::set_current_dir(&initial_base_dir);
 
-    let raw_content = std::fs::read_to_string(&canonical_initial_path).unwrap_or_else(|_| {
-        format!(
-            "# Error\nFailed to read `{}`.",
-            canonical_initial_path.display()
-        )
-    });
-    let raw_content = if raw_content.len() > MAX_BYTES {
-        let size_mb = raw_content.len() as f64 / 1e6;
-        eprintln!(
-            "thag_md_view: file too large ({size_mb:.1} MB): {}",
-            canonical_initial_path.display()
-        );
-        format!(
-            "# ⚠ File Too Large\n\n\
+            let raw_content =
+                std::fs::read_to_string(&canonical_initial_path).unwrap_or_else(|_| {
+                    format!(
+                        "# Error\nFailed to read `{}`.",
+                        canonical_initial_path.display()
+                    )
+                });
+            let raw_content = if raw_content.len() > MAX_BYTES {
+                let size_mb = raw_content.len() as f64 / 1e6;
+                eprintln!(
+                    "thag_md_view: file too large ({size_mb:.1} MB): {}",
+                    canonical_initial_path.display()
+                );
+                format!(
+                    "# ⚠ File Too Large\n\n\
              Cannot render `{}`.\n\n\
              **File size: {size_mb:.1} MB** — exceeds the {:.0} MB limit.\n\n\
              Rendering files this large would make the UI unresponsive.\n\
              Consider splitting the file into smaller sections.",
-            canonical_initial_path.display(),
-            MAX_BYTES as f64 / 1e6,
-        )
-    } else {
-        raw_content
-    };
-    // Pre-screen for malformed code fences before any processing.
-    let raw_content = match validate_code_fences(&raw_content) {
-        Ok(()) => raw_content,
-        Err(ref fence_err) => {
-            eprintln!(
-                "thag_md_view: {}",
-                fence_err_brief(fence_err, &canonical_initial_path)
-            );
-            fence_error_content(&canonical_initial_path, fence_err)
+                    canonical_initial_path.display(),
+                    MAX_BYTES as f64 / 1e6,
+                )
+            } else {
+                raw_content
+            };
+            // Pre-screen for malformed code fences before any processing.
+            let raw_content = match validate_code_fences(&raw_content) {
+                Ok(()) => raw_content,
+                Err(ref fence_err) => {
+                    eprintln!(
+                        "thag_md_view: {}",
+                        fence_err_brief(fence_err, &canonical_initial_path)
+                    );
+                    fence_error_content(&canonical_initial_path, fence_err)
+                }
+            };
+            // Extract TOC headings and inject {#slug} attributes, then absolutize image paths.
+            let (id_injected, toc) = extract_toc_and_inject_ids(&raw_content);
+            let markdown_content = absolutize_image_paths(&id_injected, &initial_base_dir);
+            (canonical_initial_path, raw_content, markdown_content, toc)
+        }
+        None => {
+            let canonical_initial_path = env::current_dir()
+                .unwrap_or_default()
+                .canonicalize()
+                .unwrap_or_default();
+            (canonical_initial_path, String::new(), String::new(), vec![])
         }
     };
-    // Extract TOC headings and inject {#slug} attributes, then absolutize image paths.
-    let (id_injected, toc) = extract_toc_and_inject_ids(&raw_content);
-    let markdown_content = absolutize_image_paths(&id_injected, &initial_base_dir);
 
     let options = eframe::NativeOptions {
         renderer: eframe::Renderer::Wgpu,
@@ -751,13 +756,6 @@ fn main() -> eframe::Result<()> {
         .unwrap()
         .insert(0, monospace_font.to_owned());
 
-    // Add it first in proportional list as high priority for symbols
-    fonts
-        .families
-        .get_mut(&egui::FontFamily::Proportional)
-        .unwrap()
-        .insert(0, monospace_font.to_owned());
-
     eframe::run_native(
         "Markdown Viewer",
         options,
@@ -770,6 +768,7 @@ fn main() -> eframe::Result<()> {
             // 20-second `load_system_fonts()`) is never constructed.
             cc.egui_ctx.add_image_loader(Arc::new(FastSvgLoader::new()));
             apply_style(&cc.egui_ctx, true);
+
             Ok(Box::new(MarkdownApp::new(
                 markdown_content,
                 raw_content,
@@ -1859,10 +1858,13 @@ impl eframe::App for MarkdownApp {
                 self.handle_link_click(&url)
             }
         } else if open_file_requested {
-            let start_dir = self
-                .current_file_path
-                .parent()
-                .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
+            let start_dir = if self.current_file_path.is_dir() {
+                self.current_file_path.clone()
+            } else {
+                self.current_file_path
+                    .parent()
+                    .map_or_else(|| PathBuf::from("."), Path::to_path_buf)
+            };
             if let Some(path) = FileDialog::new()
                 .add_filter("Markdown", &["md", "markdown"])
                 .set_directory(&start_dir)

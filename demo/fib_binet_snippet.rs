@@ -4,7 +4,7 @@
 /// of a negative number because they may result in a complex number. Regardless,
 /// relying on approximations of irrational numbers lends itself to inaccuracy.
 ///
-/// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+/// See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demo closed-form Fibonacci computation and the limitations of calculations based on irrational numbers..
@@ -20,9 +20,9 @@ if args.len() != 2 {
 
 let n: usize = args[1].parse().expect("Please provide a valid number");
 
-let sqrt_5 = f64::from(5.0).sqrt();
-let phi = (f64::from(1.0) + sqrt_5) / 2.0_f64;
-let psi = (f64::from(1.0) - sqrt_5) / 2.0_f64;
+let sqrt_5 = 5.0.sqrt();
+let phi = f64::midpoint(f64::from(1.0), sqrt_5);
+let psi = (1.0 - sqrt_5) / 2.0_f64;
 // println!("sqrt_5={}, phi={:?}, psi={:?}", sqrt_5, phi, psi);
 
 for i in 0..=n {

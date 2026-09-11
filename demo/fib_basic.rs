@@ -1,6 +1,6 @@
 #! /usr/bin/env thag
 /// Fast non-recursive classic Fibonacci calculations for a specific value or an entire sequence.
-/// I can't recall the exact source, but see for example https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
+/// I can't recall the exact source, but see for example `https://users.rust-lang.org/t/fibonacci-sequence-fun/77495`
 /// for a variety of alternative approaches. The various Fibonacci scripts here in the demo
 /// directory also show a range of approaches. `demo/fib_basic_ibig.rs` shows the use of
 /// the `std::iter::Successors` iterator as well as removing the limitations of Rust
@@ -49,7 +49,7 @@ for a in fib_series(n) {
     #[cfg(debug_assertions)]
     {
         assert_eq!(x, a);
-        (x, y) = (y.clone(), x + y);
+        (x, y) = (y, x + y);
     }
     println!("Fibonacci F({i}) is {a}");
     if i == n {

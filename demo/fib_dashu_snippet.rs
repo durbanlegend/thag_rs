@@ -3,7 +3,7 @@
 ///
 /// Based on discussion https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
 ///
-/// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+/// See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demonstrate snippets, a fast non-recursive fibonacci algorithm using `successors`, and zipping 2 iterators together.

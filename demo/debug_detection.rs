@@ -10,7 +10,7 @@ use crossterm::{
     cursor::position,
     terminal::{disable_raw_mode, enable_raw_mode},
 };
-use std::io::{stdout, Write};
+use std::io::{Write, stdout};
 
 /// Simple corruption detection without synchronization
 fn simple_detect_corruption() -> Result<(u16, u16), Box<dyn std::error::Error>> {
@@ -34,7 +34,7 @@ fn simple_detect_corruption() -> Result<(u16, u16), Box<dyn std::error::Error>> 
     println!("Position after text: {:?}", pos_after_text);
 
     // Send newline
-    print!("\n");
+    println!();
     stdout().flush()?;
 
     // Get position after newline
@@ -76,7 +76,7 @@ fn test_manual_positioning() -> Result<(), Box<dyn std::error::Error>> {
     println!("Position after text: {:?}", pos2);
 
     // Send newline
-    print!("\n");
+    println!();
     stdout().flush()?;
 
     let pos3 = position()?;
@@ -137,7 +137,7 @@ fn test_detection_sequence() -> Result<(), Box<dyn std::error::Error>> {
     let pos_before_newline = position()?;
     println!("Position before newline: {:?}", pos_before_newline);
 
-    print!("\n");
+    println!();
     stdout().flush()?;
 
     let pos_after_newline = position()?;

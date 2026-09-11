@@ -38,7 +38,7 @@ impl Document {
         // Fixed duration for predictability
         std::thread::sleep(Duration::from_millis(10));
 
-        let _create_something = vec![
+        let _create_something = [
             "Hello".to_string(),
             "world".to_string(),
             "testing".to_string(),
@@ -97,7 +97,7 @@ impl Document {
             score /= total_words as f64;
         }
 
-        let _create_something = vec![
+        let _create_something = [
             "Hello".to_string(),
             "world".to_string(),
             "testing".to_string(),

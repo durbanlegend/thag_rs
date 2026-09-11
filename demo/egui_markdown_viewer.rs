@@ -34,6 +34,330 @@ use thag_styling::{
 
 file_navigator! {}
 
+/// Help text rendered in the F1 help window.
+const HELP_TEXT: &str = "\
+# Markdown Viewer — Help
+
+## Keyboard Shortcuts
+
+### File
+| Key | Action |
+|---|---|
+| Cmd/Ctrl-o | Open a markdown file |
+| Cmd/Ctrl-r | Refresh — reload the current file from disk |
+| Cmd/Ctrl-w  /  Cmd/Ctrl-q | Quit |
+
+### Navigation
+| Key | Action |
+|---|---|
+| ◀ / ▶ buttons | Back / Forward in history |
+| Cmd/Ctrl-t | Toggle the table of contents panel |
+
+### Search
+| Key | Action |
+|---|---|
+| Cmd/Ctrl-f | Open / close the search bar |
+| Enter  or  ⬇ button | Next match |
+| Shift-Enter  or  ⬆ button | Previous match |
+| Escape | Close the search bar |
+
+> **Note:** Search navigates to the section containing each match (section-level navigation).
+> Inline text highlighting is planned for a future version.
+
+### Zoom & Font
+| Key | Action |
+|---|---|
+| Cmd/Ctrl-= | Zoom in |
+| Cmd/Ctrl-− | Zoom out |
+| Cmd/Ctrl-z | Reset zoom to 100% |
+| Cmd/Ctrl-Shift-a | Enlarge font |
+| Cmd/Ctrl-a | Reduce font |
+| Cmd/Ctrl-0 | Reset font to 100% |
+
+### Help
+| Key | Action |
+|---|---|
+| F1 | Toggle this help screen |
+";
+
+/// Applies contrast colours to both egui themes; font sizes are always left at
+/// egui defaults so toggling never causes a scroll-position jump.
+///
+/// `enhanced = true`  — high-contrast colours (near-white/near-black text, warm backgrounds).
+/// `enhanced = false` — stock egui colours.
+///
+/// Called once at startup and again whenever the toolbar "Contrast+/-" toggle changes.
+/// `image_loading_spinners` is kept `false` in both modes.
+fn apply_style(ctx: &egui::Context, enhanced: bool) {
+    // ── Dark mode ─────────────────────────────────────────────────────────────────────────
+    ctx.set_visuals_of(egui::Theme::Dark, {
+        let mut v = egui::Visuals::dark();
+        if enhanced {
+            v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(240);
+            v.code_bg_color = egui::Color32::from_gray(100);
+            v.hyperlink_color = egui::Color32::from_rgb(100, 185, 255);
+        }
+        v.image_loading_spinners = false; // always off in a document reader
+        v
+    });
+
+    // ── Light mode ────────────────────────────────────────────────────────────────────────
+    ctx.set_visuals_of(egui::Theme::Light, {
+        let mut v = egui::Visuals::light();
+        if enhanced {
+            v.widgets.noninteractive.fg_stroke.color = egui::Color32::from_gray(5);
+            v.panel_fill = egui::Color32::from_rgb(255, 255, 255);
+            v.window_fill = egui::Color32::from_rgb(255, 255, 255);
+            v.code_bg_color = egui::Color32::from_rgb(225, 225, 230);
+            v.hyperlink_color = egui::Color32::from_rgb(0, 100, 210);
+        }
+        v.image_loading_spinners = false; // always off in a document reader
+        v
+    });
+
+    // Ubuntu Mono renders visually larger than Ubuntu at equal point sizes (wider
+    // per-character advance, larger x-height).  Nudge it down to 12.0 px so that
+    // inline code and fenced code blocks feel balanced against 14 px body text.
+    // In egui 0.35 font styles are stored per-theme, so set both.
+    for theme in [egui::Theme::Dark, egui::Theme::Light] {
+        ctx.style_mut_of(theme, |style| {
+            use egui::{FontFamily, FontId, TextStyle};
+            style.text_styles.insert(
+                TextStyle::Monospace,
+                FontId::new(12.0, FontFamily::Monospace),
+            );
+        });
+    }
+}
+
+// ─── TOC / heading extraction ──────────────────────────────────────────────────
+
+/// An entry in the table of contents, derived from one ATX heading in the document.
+#[derive(Clone)]
+struct TocEntry {
+    /// Heading depth 1–6.
+    level: u8,
+    /// Display text (raw heading text; may include inline markup such as `**bold**`).
+    text: String,
+    /// The `{#slug}` injected into the rendered content, used as the scroll target.
+    slug: String,
+    /// Byte offset of the heading line in the *raw* file content (for search section lookup).
+    byte_start: usize,
+}
+
+/// Converts heading text to a URL-safe slug: lowercased, non-alphanumeric runs replaced by `-`.
+fn slugify(text: &str) -> String {
+    let mut slug = String::with_capacity(text.len());
+    let mut prev_sep = true; // start true to drop any leading hyphens
+    for ch in text.chars() {
+        if ch.is_alphanumeric() {
+            slug.push(ch.to_ascii_lowercase());
+            prev_sep = false;
+        } else if !prev_sep {
+            slug.push('-');
+            prev_sep = true;
+        }
+    }
+    if slug.ends_with('-') {
+        slug.pop();
+    }
+    slug
+}
+
+/// Parses an ATX heading line and returns `(level, plain_text)`.
+/// `plain_text` is the heading content with any trailing `{…}` attribute block stripped.
+/// Returns `None` for non-heading lines, indented lines, or malformed ATX syntax.
+fn parse_heading_line(line: &str) -> Option<(u8, &str)> {
+    let hashes = line.bytes().take_while(|&b| b == b'#').count();
+    if hashes == 0 || hashes > 6 {
+        return None;
+    }
+    // ATX heading must have a space after the `#` run.
+    let rest = line[hashes..].strip_prefix(' ')?;
+    let text = rest.trim_end();
+    if text.is_empty() {
+        return None;
+    }
+    // Strip any trailing `{#id}` / `{.class}` attribute block.
+    let plain = if let Some(brace) = text.rfind('{') {
+        let attr = text[brace..].trim_end();
+        if attr.ends_with('}') {
+            text[..brace].trim_end()
+        } else {
+            text
+        }
+    } else {
+        text
+    };
+    Some((
+        u8::try_from(hashes).expect("Unexpected character in markdown heading line"),
+        plain,
+    ))
+}
+
+/// Returns the explicit `{#id}` from a heading line, if present.
+fn extract_heading_id(line: &str) -> Option<&str> {
+    let brace = line.rfind('{')?;
+    let attr = line[brace..].trim_end();
+    if attr.starts_with("{#") && attr.ends_with('}') {
+        Some(&attr[2..attr.len() - 1])
+    } else {
+        None
+    }
+}
+
+/// Scans `raw` markdown, builds a `Vec<TocEntry>` from ATX headings, and returns a version
+/// of the content with `{#slug}` attributes injected into every heading that lacks one.
+/// `byte_start` values in each `TocEntry` are byte offsets into `raw`.
+fn extract_toc_and_inject_ids(raw: &str) -> (String, Vec<TocEntry>) {
+    let mut out = String::with_capacity(raw.len() + 512);
+    let mut toc = Vec::new();
+    let mut slug_counts: HashMap<String, usize> = HashMap::new();
+    let mut in_fence = false;
+    let mut fence_char = b'`';
+    let mut byte_pos: usize = 0;
+
+    for line in raw.lines() {
+        let line_byte_start = byte_pos;
+        byte_pos += line.len() + 1; // +1 approximates the \n
+
+        let trimmed = line.trim_start_matches(' ');
+
+        // Track fenced code blocks (``` or ~~~, optionally indented up to 3 spaces).
+        let is_fence_candidate = trimmed.starts_with("```") || trimmed.starts_with("~~~");
+        if is_fence_candidate && line.len() - trimmed.len() <= 3 {
+            let ch = trimmed.as_bytes()[0];
+            if !in_fence {
+                in_fence = true;
+                fence_char = ch;
+            } else if ch == fence_char {
+                in_fence = false;
+            }
+            out.push_str(line);
+            out.push('\n');
+            continue;
+        }
+
+        if !in_fence {
+            if let Some((level, plain_text)) = parse_heading_line(line) {
+                let (slug, line_out) = if let Some(id) = extract_heading_id(line) {
+                    // Preserve the existing explicit ID.
+                    (id.to_string(), line.to_string())
+                } else {
+                    // Auto-generate a deduplicated slug.
+                    let base = slugify(plain_text);
+                    let count = slug_counts.entry(base.clone()).or_insert(0);
+                    let slug = if *count == 0 {
+                        base.clone()
+                    } else {
+                        format!("{base}-{count}")
+                    };
+                    *count += 1;
+                    let injected = format!("{} {{#{slug}}}", line.trim_end());
+                    (slug, injected)
+                };
+
+                toc.push(TocEntry {
+                    level,
+                    text: plain_text.to_string(),
+                    slug,
+                    byte_start: line_byte_start,
+                });
+                out.push_str(&line_out);
+                out.push('\n');
+                continue;
+            }
+        }
+
+        out.push_str(line);
+        out.push('\n');
+    }
+
+    (out, toc)
+}
+
+// ─── Image path absolutization ─────────────────────────────────────────────────
+
+/// Rewrites relative image paths in Markdown to absolute `file://` URIs so they
+/// load correctly regardless of platform CWD behaviour.
+///
+/// Paths that already carry a URI scheme (`http://`, `file://`, `data:`, …) are
+/// left untouched. If a relative path cannot be resolved (file does not exist)
+/// it is also left untouched so existing error behaviour is preserved.
+///
+/// Note: processes the raw text, so a path inside a fenced code block is also
+/// rewritten if it matches the image syntax — an acceptable trade-off for the
+/// cross-platform fix.
+fn absolutize_image_paths(content: &str, base_dir: &Path) -> String {
+    let mut out = String::with_capacity(content.len() + 128);
+    let mut rest = content;
+
+    while let Some(bang) = rest.find("![") {
+        out.push_str(&rest[..bang]);
+        rest = &rest[bang..];
+
+        // Find `](`  — alt text must not contain `]`
+        let Some(close_bracket) = rest.find("](") else {
+            out.push_str(&rest[..2]);
+            rest = &rest[2..];
+            continue;
+        };
+
+        let prefix = &rest[..close_bracket + 2]; // `![alt](`
+        rest = &rest[close_bracket + 2..];
+
+        let Some(close_paren) = rest.find(')') else {
+            out.push_str(prefix);
+            continue;
+        };
+
+        let inner = &rest[..close_paren]; // path, possibly with `"title"`
+        rest = &rest[close_paren + 1..];
+
+        // Split optional title: `path "title"` or `path 'title'`
+        let (raw_path, title_suffix) = inner
+            .find(" \"")
+            .or_else(|| inner.find(" '"))
+            .map_or_else(|| (inner.trim(), ""), |i| (&inner[..i], &inner[i..]));
+
+        let is_schemed = raw_path.starts_with("http://")
+            || raw_path.starts_with("https://")
+            || raw_path.starts_with("file://")
+            || raw_path.starts_with("data:");
+
+        out.push_str(prefix);
+        if is_schemed {
+            out.push_str(inner);
+        } else if let Ok(abs) = base_dir.join(raw_path).canonicalize() {
+            out.push_str(&path_to_file_uri(&abs));
+            out.push_str(title_suffix);
+        } else {
+            // File not found — leave unchanged so the viewer shows a
+            // broken-image placeholder rather than silently doing nothing.
+            out.push_str(inner);
+        }
+        out.push(')');
+    }
+    out.push_str(rest);
+    out
+}
+
+/// Converts an absolute `Path` to a `file://` URI that is valid on all platforms.
+/// Windows paths (`C:\…`) become `file:///C:/…`; Unix paths become `file:///…`.
+fn path_to_file_uri(path: &Path) -> String {
+    let s = path.to_string_lossy().into_owned();
+    #[cfg(windows)]
+    {
+        s = s.replace('\\', "/");
+    }
+    // Unix absolute paths start with `/`; Windows paths start with the drive letter.
+    if s.starts_with('/') {
+        format!("file://{s}") // file:// + /unix/path = file:///unix/path
+    } else {
+        format!("file:///{s}") // file:/// + C:/... = file:///C:/...
+    }
+}
+
 fn main() -> eframe::Result<()> {
     let help = auto_help!();
     check_help_and_exit(&help);
@@ -138,7 +462,7 @@ impl MarkdownApp {
         self.history_index + 1 < self.history.len()
     }
 
-    /// Load `path` from disk and update content, current path, cache, and CWD.
+    /// Load `path` from disk and update content, TOC, `raw_content`, cache, and CWD.
     /// Returns `true` on success.
     fn load_file(&mut self, path: PathBuf) -> bool {
         match std::fs::read_to_string(&path) {

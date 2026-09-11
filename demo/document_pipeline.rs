@@ -156,7 +156,7 @@ fn analyze_sentiment_distribution(documents: &[Document]) -> HashMap<String, usi
         let sentiment = match doc.sentiment_score {
             s if s > 0.5 => "very_positive",
             s if s > 0.0 => "positive",
-            s if s == 0.0 => "neutral",
+            0.0 => "neutral",
             s if s > -0.5 => "negative",
             _ => "very_negative",
         };

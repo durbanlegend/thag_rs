@@ -6,14 +6,14 @@ thag_common = { version = "1, thag-auto", features = ["color_detect"] }
 /// Environment Variable Debug
 ///
 /// This script directly tests the environment variable parsing for color support
-/// to debug why THAG_COLOR_MODE=256 isn't working as expected.
+/// to debug why `THAG_COLOR_MODE=256` isn't working as expected.
 //# Purpose: Debug environment variable parsing for color support
 //# Categories: terminal, color, debugging, environment
 use thag_common::{
-    terminal::detect_term_capabilities, terminal::get_fresh_color_support, ColorSupport,
+    ColorSupport, terminal::detect_term_capabilities, terminal::get_fresh_color_support,
 };
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() {
     println!("🔍 Environment Variable Debug");
     println!("==============================");
     println!();
@@ -76,11 +76,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         println!("   THAG_COLOR_MODE not set");
     }
-
-    Ok(())
 }
 
-/// Direct implementation of check_env_color_support for testing
+/// Direct implementation of `check_env_color_support` for testing
 fn check_env_color_support_direct() -> Option<ColorSupport> {
     // Check for NO_COLOR (takes precedence)
     if std::env::var("NO_COLOR").is_ok() {

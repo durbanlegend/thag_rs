@@ -6,7 +6,7 @@
 ///
 /// `ls -1 demo/fib*ibig*.rs | grep -v fib_basic_ibig.rs | while read f; do echo $f; thag_rs -t $f -- 10000000; done`
 ///
-/// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+/// See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demonstrate instrumenting scripts for benchmarking.
@@ -54,8 +54,8 @@ println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
 if n <= 1000 {
     println!("F({n})={fib_n}");
-} else if n >= 1000000 {
-    println!("F({n_disp}) ends in ...{}", fib_n % ubig!(1000000000));
+} else if n >= 1_000_000 {
+    println!("F({n_disp}) ends in ...{}", fib_n % ubig!(1000_000_000));
 } else {
     let fib_n_str = fib_n.to_string();
     let l = fib_n_str.len();

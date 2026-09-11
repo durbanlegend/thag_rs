@@ -1,4 +1,4 @@
-#[allow(unused_doc_comments)]
+#![allow(unused_doc_comments)]
 /// Published example from the `edit` crate readme.
 ///
 /// Will use the editor specified in VISUAL or EDITOR environment variable.
@@ -12,6 +12,7 @@ use std::io::Result;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::ffi::OsStr;
+use std::string::ToString;
 
 
 #[cfg(target_os = "windows")]
@@ -19,7 +20,7 @@ unsafe { env::set_var("VISUAL", "cmd.exe /C type"); }
 #[cfg(target_os = "windows")]
 unsafe { env::set_var("EDITOR", "cmd.exe /C type"); }
 
-fn get_full_editor_cmd(s: String) -> Result<(PathBuf, Vec<String>)> {
+fn get_full_editor_cmd(s: &str) -> Result<(PathBuf, Vec<String>)> {
     let (path, args) = string_to_cmd(s);
     match get_full_editor_path(&path) {
         Ok(result) => Ok((result, args)),
@@ -40,7 +41,7 @@ fn get_full_editor_path<T: AsRef<OsStr> + AsRef<Path>>(binary_name: T) -> Result
     Err(std::io::Error::from(ErrorKind::NotFound))
 }
 
-fn string_to_cmd(s: String) -> (PathBuf, Vec<String>) {
+fn string_to_cmd(s: &str) -> (PathBuf, Vec<String>) {
     let mut args = s.split_ascii_whitespace();
     (
         args.next().unwrap().into(),
@@ -64,21 +65,19 @@ let editor = ENV_VARS
         .iter()
         .filter_map(env::var_os)
         .filter(|v| !v.is_empty())
-        .filter_map(|v| v.into_string().ok()).next();
+        .find_map(|v| v.into_string().ok());
 println!("editor={editor:?}");
 let editor_cmd = ENV_VARS
         .iter()
         .filter_map(env::var_os)
         .filter(|v| !v.is_empty())
         .filter_map(|v| v.into_string().ok())
-        .filter_map(|s| get_full_editor_cmd(s).ok())
-        .next()
+        .find_map(|s| get_full_editor_cmd(&s).ok())
         .or_else(|| {
             HARDCODED_NAMES
                 .iter()
-                .map(|s| s.to_string())
-                .filter_map(|s| get_full_editor_cmd(s).ok())
-                .next()
+                .map(ToString::to_string)
+                .find_map(|s| get_full_editor_cmd(&s).ok())
         });
         // .ok_or_else(|| Error::from(ErrorKind::NotFound));
 println!("editor_cmd={editor_cmd:?}");

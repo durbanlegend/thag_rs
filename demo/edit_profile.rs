@@ -3,7 +3,7 @@
 thag_profiler = { version = "1, thag-auto", features = ["full_profiling"] }
 */
 
-#[allow(unused_doc_comments)]
+#![allow(unused_doc_comments)]
 /// Profiled version of published example from the `edit` crate readme.
 ///
 /// Will use the editor specified in VISUAL or EDITOR environment variable.
@@ -16,6 +16,7 @@ use std::ffi::OsStr;
 use std::io::ErrorKind;
 use std::io::Result;
 use std::path::{Path, PathBuf};
+use std::string::ToString;
 
 use thag_profiler::{enable_profiling, profiled};
 
@@ -72,22 +73,19 @@ fn main() -> Result<()> {
         .iter()
         .filter_map(env::var_os)
         .filter(|v| !v.is_empty())
-        .filter_map(|v| v.into_string().ok())
-        .next();
+        .find_map(|v| v.into_string().ok());
     println!("editor={editor:?}");
     let editor_cmd = ENV_VARS
         .iter()
         .filter_map(env::var_os)
         .filter(|v| !v.is_empty())
         .filter_map(|v| v.into_string().ok())
-        .filter_map(|s| get_full_editor_cmd(s).ok())
-        .next()
+        .find_map(|s| get_full_editor_cmd(s).ok())
         .or_else(|| {
             HARDCODED_NAMES
                 .iter()
-                .map(|s| s.to_string())
-                .filter_map(|s| get_full_editor_cmd(s).ok())
-                .next()
+                .map(ToString::to_string)
+                .find_map(|s| get_full_editor_cmd(s).ok())
         });
     // .ok_or_else(|| Error::from(ErrorKind::NotFound));
     println!("editor_cmd={editor_cmd:?}");

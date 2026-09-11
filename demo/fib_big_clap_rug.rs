@@ -1,7 +1,7 @@
 /// Fast non-recursive Fibonacci series and individual calculation with big integers.
 /// Won't work with default Windows 11 because of `rug` crate.
 ///
-/// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+/// See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 /// The `fib_series` closure could equally be implemented as a function here,

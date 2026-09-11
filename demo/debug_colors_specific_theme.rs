@@ -100,11 +100,9 @@ fn print_role_colors(label: &str, theme: &Theme) {
     for (name, role) in &roles {
         let style = theme.style_for(*role);
         if let Some(color_info) = &style.foreground {
-            if let thag_styling::ColorValue::TrueColor { rgb } = &color_info.value {
-                println!(
-                    "     {:>10} [{}]: RGB({:3},{:3},{:3})",
-                    name, label, rgb[0], rgb[1], rgb[2]
-                );
+            if let thag_styling::ColorValue::TrueColor { rgb } = color_info.value {
+                let [r, g, b] = rgb;
+                println!("     {name:>10} [{label}]: RGB({r:3},{g:3},{b:3})");
             }
         }
     }

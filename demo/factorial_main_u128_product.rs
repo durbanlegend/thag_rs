@@ -6,14 +6,8 @@
 use std::env;
 use std::io::Result;
 
-fn main() -> Result<()> {
-    let fac = |n: u128| -> u128 {
-        if n == 0 {
-            0
-        } else {
-            (1..=n).product()
-        }
-    };
+fn main() {
+    let fac = |n: u128| -> u128 { if n == 0 { 0 } else { (1..=n).product() } };
 
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
@@ -26,5 +20,4 @@ fn main() -> Result<()> {
         .expect("Please provide a valid integer between 0 and 34");
 
     println!("fac({n}) = {}", fac(n));
-    Ok(())
 }

@@ -1,6 +1,6 @@
 /// Fast non-recursive classic Fibonacci individual calculation with big integers.
 ///
-/// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+/// See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demonstrate snippets and a fast non-recursive fibonacci algorithm using the `successors` iterator.
@@ -13,7 +13,7 @@ use std::iter::{successors, Successors, Take};
 // Snippet accepts function or closure. This closure returns only the last value Fn.
 fn fib_value_n(n: usize) -> UBig {
     successors(Some((ubig!(0), ubig!(1))), |(a, b)| {
-        Some((b.clone(), (a + b).into()))
+        Some((b.clone(), a + b))
     })
     .map(|(a, _b)| a)
     .nth(n)

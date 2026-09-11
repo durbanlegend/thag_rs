@@ -8,7 +8,7 @@
 /// Shout-out to the `expr!` macro of the `astro-float` crate, which reduces very
 /// complex representations back to familiar expressions.
 ///
-/// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+/// See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demo closed-form Fibonacci computation and the limitations of calculations based on irrational numbers, also `astro-float` crate..
@@ -36,9 +36,9 @@ let emax = 10000;
 // Create a context.
 let mut ctx = Context::new(p, rm, cc, emin, emax);
 
-let sqrt_5 = f64::from(5.0).sqrt();
-let phi = (f64::from(1.0) + sqrt_5) / 2.0_f64;
-let psi = (f64::from(1.0) - sqrt_5) / 2.0_f64;
+let sqrt_5 = 5.0.sqrt();
+let phi = f64::midpoint(f64::from(1.0), sqrt_5);
+let psi = (1.0 - sqrt_5) / 2.0_f64;
 // println!("sqrt_5={}, phi={:?}, psi={:?}", sqrt_5, phi, psi);
 
 for i in 0..=n {

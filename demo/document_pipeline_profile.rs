@@ -39,7 +39,7 @@ impl Document {
     fn new(id: usize, content: String) -> Self {
         // let _ = sleep(Duration::from_millis(50 + (id % 10 * 5) as u64));
 
-        let _create_something = vec![
+        let _create_something = [
             "Hello".to_string(),
             "world".to_string(),
             "testing".to_string(),
@@ -205,7 +205,7 @@ fn analyze_sentiment_distribution(documents: &[Document]) -> HashMap<String, usi
         let sentiment = match doc.sentiment_score {
             s if s > 0.5 => "very_positive",
             s if s > 0.0 => "positive",
-            s if s == 0.0 => "neutral",
+            0.0 => "neutral",
             s if s > -0.5 => "negative",
             _ => "very_negative",
         };

@@ -8,7 +8,7 @@
 //# Purpose: Demo 3 very fast Fibonacci algorithms, though still 7-11 times slower than `rug`.
 //# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 50`
-use ibig::{ubig, UBig};
+use ibig::{UBig, ubig};
 use std::collections::HashMap;
 use std::env;
 use std::time::Instant;
@@ -26,7 +26,7 @@ fn two() -> UBig {
 }
 
 fn is_even(n: usize) -> bool {
-    n % 2 == 0
+    n.is_multiple_of(2)
 }
 
 fn fibo_ej_olson(n: usize, a: &mut UBig, b: &mut UBig) {
@@ -53,11 +53,11 @@ fn fibo_new_work(n: usize, a: &mut UBig, b: &mut UBig) {
         return;
     }
     fibo_new_work(n / 2, a, b);
-    if n % 2 == 0 {
+    if n.is_multiple_of(2) {
         let t = two() * &*b - &*a;
         *a = &*a * &t;
         *b = &*b * &t;
-        if n % 4 == 0 {
+        if n.is_multiple_of(4) {
             *b = &*b - &one();
         } else {
             *b = &*b + &one();
@@ -85,7 +85,7 @@ fn fibo_new(n: usize, b: &mut UBig) {
     }
     let mut a = zero();
     fibo_new_work((n - 1) / 2, &mut a, b);
-    if n % 2 == 0 {
+    if n.is_multiple_of(2) {
         *b = &*b * (&a + &a + &*b);
     } else {
         let t = &*b * (&(&*b * 2) - &a);
@@ -155,8 +155,8 @@ fn main() {
 
     if n <= 1000 {
         println!("F({n})={fib_n}");
-    } else if n > 1000000000 {
-        println!("F({n}) ends in {}", fib_n / ubig!(1000000000));
+    } else if n > 1_000_000_000 {
+        println!("F({n}) ends in {}", fib_n / ubig!(1_000_000_000));
     } else {
         let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();
@@ -182,8 +182,8 @@ fn main() {
 
     if n <= 1000 {
         println!("F({n})={fib_n}");
-    } else if n > 1000000000 {
-        println!("F({n}) ends in {}", fib_n / ubig!(1000000000));
+    } else if n > 1_000_000_000 {
+        println!("F({n}) ends in {}", fib_n / ubig!(1_000_000_000));
     } else {
         let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();
@@ -209,8 +209,8 @@ fn main() {
 
     if n <= 1000 {
         println!("F({n})={fib_n}");
-    } else if n > 1000000000 {
-        println!("F({n}) ends in {}", fib_n / ubig!(1000000000));
+    } else if n > 1_000_000_000 {
+        println!("F({n}) ends in {}", fib_n / ubig!(1_000_000_000));
     } else {
         let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();

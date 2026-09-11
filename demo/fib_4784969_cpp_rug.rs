@@ -31,7 +31,7 @@ fn two() -> Integer {
 }
 
 fn is_even(n: usize) -> bool {
-    n % 2 == 0
+    n.is_multiple_of(2)
 }
 
 fn fibo_ej_olson(n: usize, a: &mut Integer, b: &mut Integer) {
@@ -61,11 +61,11 @@ fn fibo_new_work(n: usize, a: &mut Integer, b: &mut Integer) {
         return;
     }
     fibo_new_work(n / 2, a, b);
-    if n % 2 == 0 {
+    if n.is_multiple_of(2) {
         let t = (&two() * &*b - &*a).complete();
         *a = (&*a * &t).into();
         *b = (&*b * &t).into();
-        if n % 4 == 0 {
+        if n.is_multiple_of(4) {
             *b -= 1;
         } else {
             *b += 1;
@@ -93,7 +93,7 @@ fn fibo_new(n: usize, b: &mut Integer) {
     }
     let mut a = zero();
     fibo_new_work((n - 1) / 2, &mut a, b);
-    if n % 2 == 0 {
+    if n.is_multiple_of(2) {
         *b = (&*b * &((&a + &a).complete() + &*b)).into();
     } else {
         let bee: Integer = b.clone();
@@ -166,8 +166,8 @@ fn main() {
 
     if n <= 1000 {
         println!("F({n})={fib_n}");
-    } else if n > 1000000000 {
-        println!("F({n}) ends in {}", fib_n / Integer::from(1000000000));
+    } else if n > 1_000_000_000 {
+        println!("F({n}) ends in {}", fib_n / Integer::from(1_000_000_000));
     } else {
         let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();
@@ -193,8 +193,8 @@ fn main() {
 
     if n <= 1000 {
         println!("F({n})={fib_n}");
-    } else if n > 1000000000 {
-        println!("F({n}) ends in {}", fib_n / Integer::from(1000000000));
+    } else if n > 1_000_000_000 {
+        println!("F({n}) ends in {}", fib_n / Integer::from(1_000_000_000));
     } else {
         let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();
@@ -220,8 +220,8 @@ fn main() {
 
     if n <= 1000 {
         println!("F({n})={fib_n}");
-    } else if n > 1000000000 {
-        println!("F({n}) ends in {}", fib_n / Integer::from(1000000000));
+    } else if n > 1_000_000_000 {
+        println!("F({n}) ends in {}", fib_n / Integer::from(1_000_000_000));
     } else {
         let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();

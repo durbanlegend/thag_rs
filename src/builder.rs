@@ -60,6 +60,8 @@ use cargo_toml::Manifest;
 use regex::Regex;
 use side_by_side_diff::create_side_by_side_diff;
 use std::env;
+#[cfg(feature = "build")]
+use std::u16;
 use std::{
     fs::{self, OpenOptions},
     io::Write,
@@ -170,6 +172,8 @@ pub struct BuildState {
     pub infer: DependencyInference,
     /// Optional feature flags to pass to Cargo
     pub features: Option<String>,
+    /// Rust edition
+    pub edition: u16,
     /// Command-line arguments to pass to the built program
     pub args: Vec<String>,
 }
@@ -395,6 +399,7 @@ impl BuildState {
             ),
             args: cli.args.clone(),
             features: cli.features.clone(),
+            edition: cli.edition.unwrap_or(2021),
             ..Default::default()
         }
     }

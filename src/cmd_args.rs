@@ -1,11 +1,11 @@
 use crate::{
-    config::{maybe_config, DependencyInference},
-    ThagError, ThagResult, RS_SUFFIX,
+    RS_SUFFIX, ThagError, ThagResult,
+    config::{DependencyInference, maybe_config},
 };
 use bitflags::bitflags;
 use clap::{ArgGroup /*, ColorChoice */, Parser};
 use std::{fmt, str};
-use thag_common::{set_global_verbosity, Verbosity, V};
+use thag_common::{V, Verbosity, set_global_verbosity};
 use thag_profiler::{end, profile, profiled};
 
 /// The `clap` command-line interface for the `thag_rs` script runner and ITER.
@@ -152,6 +152,9 @@ pub struct Cli {
         num_args = 0..=1,
     )]
     pub clean: Option<String>,
+    /// Rust edition: default 2021
+    #[arg(short='y', long, help_heading = Some("Processing Options"))]
+    pub edition: Option<u16>,
 }
 
 /// Getter for clap command-line arguments
@@ -274,6 +277,8 @@ bitflags! {
         const FEATURES      = 67_108_864;
         /// Clean flag
         const CLEAN         = 134_217_728;
+        /// Edition flag
+        const EDITION       = 268_435_456;
     }
 }
 
@@ -315,6 +320,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
     let is_loop = args.filter.is_some();
     let is_infer = args.infer.is_some();
     let is_features = args.features.is_some();
+    let is_edition = args.edition.is_some();
     profile!(init_config_loop_assert, time);
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
@@ -356,6 +362,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::CARGO, args.cargo);
         proc_flags.set(ProcFlags::INFER, is_infer);
         proc_flags.set(ProcFlags::FEATURES, is_features);
+        proc_flags.set(ProcFlags::EDITION, is_edition);
         proc_flags.set(ProcFlags::TEST_ONLY, args.test_only);
         proc_flags.set(
             ProcFlags::TOOLS,

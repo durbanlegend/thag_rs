@@ -557,6 +557,7 @@ Processing Options:
   -f, --force                Force the generation and build steps, even if the script is unchanged since a previous build. Required if there are updates to dependencies
   -m, --multimain            Allow multiple main methods for the current script
   -i, --infer <INFER>        Dependency inference: none, min, config (default & recommended), max. `thag` infers dependencies from imports and Rust paths (`x::y::z`), with configurable default features
+  -y, --edition <EDITION>    Rust edition: default 2021
 
 Dynamic Options (no script):
   -e, --expr <EXPRESSION>  Evaluate a quoted Rust expression on the fly

@@ -157,28 +157,28 @@ pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
 #[profiled]
 pub fn configure_default(build_state: &BuildState) -> ThagResult<Manifest> {
     let source_stem = &build_state.source_stem;
-
     let gen_src_path = get_source_path(build_state);
+    let edition = build_state.edition;
 
     debug_log!(
         r"build_state.build_from_orig_source={}
-gen_src_path={gen_src_path}",
+gen_src_path={gen_src_path}, edition={edition:?}",
         build_state.build_from_orig_source
     );
 
-    default(source_stem, &gen_src_path)
+    default(source_stem, &gen_src_path, edition)
 }
 
 /// Parse the default manifest from a string template.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
 #[profiled]
-pub fn default(source_stem: &str, gen_src_path: &str) -> ThagResult<Manifest> {
+pub fn default(source_stem: &str, gen_src_path: &str, edition: u16) -> ThagResult<Manifest> {
     let cargo_manifest = format!(
         r#"[package]
 name = "{}"
 version = "0.0.1"
-edition = "2021"
+edition = "{edition}"
 
 [dependencies]
 

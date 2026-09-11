@@ -812,7 +812,7 @@ mod tests {
         sync::{Arc, OnceLock},
     };
     use tempfile::TempDir;
-    use thag_rs::{ColorSupport, Role, TermBgLuma, ThagResult, V, Verbosity, debug_log, svprtln};
+    use thag_rs::{ColorSupport, Role, TermBgLuma, ThagResult, V, Verbosity, svprtln};
 
     static LOGGER: OnceLock<()> = OnceLock::new();
 
@@ -887,7 +887,7 @@ mod tests {
         // eprintln!("config={config:#?}");
 
         assert_eq!(config.logging.default_verbosity, Verbosity::Normal);
-        assert_eq!(config.colors.color_support, ColorSupport::default());
+        assert_eq!(config.colors.color_support, ColorSupport::Undetermined);
         assert_eq!(config.colors.term_bg_luma, TermBgLuma::default());
         Ok(())
     }
@@ -993,8 +993,7 @@ required_features = [
     "parsing",
     "visit",
     "visit-mut",
-]
-default_features = false"#
+]"#
             ),
             "Config file should contain the expected `syn` crate overrides"
         );

@@ -1134,6 +1134,18 @@ impl MarkdownApp {
             }
         }
     }
+
+    fn load_and_register_history(&mut self, path: PathBuf) -> bool {
+        let canonical = path.canonicalize().unwrap_or(path);
+        if self.load_file(canonical.clone()) {
+            self.history.truncate(self.history_index + 1);
+            self.history.push(canonical);
+            self.history_index = self.history.len() - 1;
+            true
+        } else {
+            false
+        }
+    }
 }
 
 fn add_code_block_themes(cache: &mut CommonMarkCache) {
@@ -1887,20 +1899,12 @@ impl eframe::App for MarkdownApp {
                 .set_directory(&start_dir)
                 .pick_file()
             {
-                let canonical = path.canonicalize().unwrap_or(path);
-                if self.load_file(canonical.clone()) {
-                    self.history.truncate(self.history_index + 1);
-                    self.history.push(canonical);
-                    self.history_index = self.history.len() - 1;
-                    true
-                } else {
-                    false
-                }
+                self.load_and_register_history(path)
             } else {
                 false // user cancelled
             }
-        } else if let Some(file) = dropped_file {
-            self.load_file(file)
+        } else if let Some(path) = dropped_file {
+            self.load_and_register_history(path)
         } else if refresh_requested {
             self.reload_file()
             // No history change on refresh.

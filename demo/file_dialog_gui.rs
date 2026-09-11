@@ -28,10 +28,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         let output = command.output().expect("Failed to run rustfmt");
 
         if output.status.success() {
-            println!("Successfully formatted {source_file:#?} with rustfmt.");
+            println!(
+                "Successfully formatted {} with rustfmt.",
+                source_file.display()
+            );
         } else {
             eprintln!(
-                "Failed to format {source_file:#?} with rustfmt:\n{}",
+                "Failed to format {} with rustfmt:\n{}",
+                source_file.display(),
                 String::from_utf8_lossy(&output.stderr)
             );
         }

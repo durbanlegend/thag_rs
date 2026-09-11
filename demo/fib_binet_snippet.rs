@@ -20,8 +20,8 @@ if args.len() != 2 {
 
 let n: usize = args[1].parse().expect("Please provide a valid number");
 
-let sqrt_5 = 5.0.sqrt();
-let phi = f64::midpoint(f64::from(1.0), sqrt_5);
+let sqrt_5 = 5.0_f64.sqrt();
+let phi = f64::midpoint(1.0, sqrt_5);
 let psi = (1.0 - sqrt_5) / 2.0_f64;
 // println!("sqrt_5={}, phi={:?}, psi={:?}", sqrt_5, phi, psi);
 

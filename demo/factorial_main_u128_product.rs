@@ -4,7 +4,6 @@
 //# Categories: learning, math, recreational, technique
 //# Sample arguments: `-- 34`
 use std::env;
-use std::io::Result;
 
 fn main() {
     let fac = |n: u128| -> u128 { if n == 0 { 0 } else { (1..=n).product() } };

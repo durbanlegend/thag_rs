@@ -3,7 +3,7 @@
 /// This example is by courtesy of Gemini AI. See big-number versions
 /// `demo/fib_matrix_dashu.rs` and `demo/fib_matrix_ibig.rs`.
 ///
-/// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+/// See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demo an alternative to the standard computation for Fibonacci numbers.
@@ -23,13 +23,13 @@ fn fibonacci_matrix(n: u128) -> u128 {
   let mut power = n - 1;
   while power > 0 {
     if power & 1 == 1 {
-      result = multiply_matrices(result.clone(), a);
+      result = multiply_matrices(result, a);
     }
     power >>= 1;
-    a = multiply_matrices(a.clone(), a);
+    a = multiply_matrices(a, a);
   }
 
-  return result[0][0];
+  result[0][0]
 }
 
 fn multiply_matrices(a: [[u128; 2]; 2], b: [[u128; 2]; 2]) -> [[u128; 2]; 2] {
@@ -41,7 +41,7 @@ fn multiply_matrices(a: [[u128; 2]; 2], b: [[u128; 2]; 2]) -> [[u128; 2]; 2] {
       }
     }
   }
-  return result;
+  result
 }
 
 let args: Vec<String> = env::args().collect();

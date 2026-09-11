@@ -4,7 +4,7 @@
 /// Won't work with default Windows 11 because of the `rug` crate, which is a pity because
 /// `rug` is a beast due to its access to powerful GNU libraries.
 ///
-/// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+/// See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 /// **Not compatible with Windows MSVC.**
@@ -33,16 +33,16 @@ fn fibonacci_matrix(n: u128) -> Integer {
     let mut power = n - 1;
     while power > 0 {
         if power & 1 == 1 {
-            result = multiply_matrices(result.clone(), a.clone());
+            result = multiply_matrices(&result, &a);
         }
         power >>= 1;
-        a = multiply_matrices(a.clone(), a.clone());
+        a = multiply_matrices(&a, &a);
     }
 
-    return result[0][0].clone();
+    result[0][0].clone()
 }
 
-fn multiply_matrices(a: [[Integer; 2]; 2], b: [[Integer; 2]; 2]) -> [[Integer; 2]; 2] {
+fn multiply_matrices(a: &[[Integer; 2]; 2], b: &[[Integer; 2]; 2]) -> [[Integer; 2]; 2] {
     let mut result: [[Integer; 2]; 2] = [[Integer::from(0), Integer::from(0)], [Integer::from(0), Integer::from(0)]];
     for i in 0..2 {
         for j in 0..2 {
@@ -51,7 +51,7 @@ fn multiply_matrices(a: [[Integer; 2]; 2], b: [[Integer; 2]; 2]) -> [[Integer; 2
             }
         }
     }
-    return result;
+    result
 }
 
 let args: Vec<String> = env::args().collect();

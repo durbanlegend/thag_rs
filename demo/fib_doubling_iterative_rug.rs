@@ -28,7 +28,7 @@ fn invert_order(n: usize, cached: usize) -> Vec<usize> {
         // eprintln!("Popped i={i}");
         if i > cached {
             required_indices.insert(i);
-            if i % 2 == 0 {
+            if i.is_multiple_of(2) {
                 let k = i / 2;
                 for j in (k - 1)..=(k + 1) {
                     if j > cached && !required_indices.contains(&j) {
@@ -49,7 +49,7 @@ fn invert_order(n: usize, cached: usize) -> Vec<usize> {
     }
 
     let mut sorted_indices: Vec<_> = required_indices.into_iter().collect();
-    sorted_indices.sort();
+    sorted_indices.sort_unstable();
     sorted_indices
 }
 
@@ -76,17 +76,13 @@ fn fib(n: usize, cached: usize, sorted_indices: &[usize]) -> Integer {
     };
 
     // Memoize the first 100
-    let mut i = 0;
-    for a in fib_series(cached) {
+    for (i, a) in fib_series(cached).enumerate() {
         memo.insert(i, a);
-        i += 1;
     }
 
     let len = sorted_indices.len();
     let mut fib_n = Integer::from(0);
     sorted_indices.iter().enumerate().for_each(|(index, &i)| {
-        if i == 0 || i == 1 {}
-
         // If the 2 prior numbers are in the list, simply create this one
         // by adding them according to the definition of F(i).
         if index > 1 && sorted_indices[index - 2] == i - 2 && sorted_indices[index - 1] == i - 1 {
@@ -94,42 +90,40 @@ fn fib(n: usize, cached: usize, sorted_indices: &[usize]) -> Integer {
             let fi_2 = &memo[&(i - 2)];
             let fi_1 = &memo[&(i - 1)];
             memo.insert(i, Integer::from(fi_2 + fi_1));
-        } else {
-            if i % 2 == 0 {
-                let k = i / 2;
-                // eprintln!("i={i}, need {}, {k} and {}", k - 1, k + 1);
-                // F_{2k} = F_k x (F_{k-1} + F_{k+1})
-                let fk = &memo[&k];
-                let fk_1 = &memo[&(k - 1)];
-                let fk_2 = &memo[&(k + 1)];
-                let mut temp = Integer::new();
-                temp.assign(fk_1 + fk_2);
-                let fib = Integer::from(fk * temp);
-                if index == len - 1 {
-                    fib_n.assign(fib);
-                    // let dur = start.elapsed();
-                    // println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
-                } else {
-                    memo.insert(i, fib);
-                }
+        } else if i.is_multiple_of(2) {
+            let k = i / 2;
+            // eprintln!("i={i}, need {}, {k} and {}", k - 1, k + 1);
+            // F_{2k} = F_k x (F_{k-1} + F_{k+1})
+            let fk = &memo[&k];
+            let fk_1 = &memo[&(k - 1)];
+            let fk_2 = &memo[&(k + 1)];
+            let mut temp = Integer::new();
+            temp.assign(fk_1 + fk_2);
+            let fib = fk * temp;
+            if index == len - 1 {
+                fib_n.assign(fib);
+                // let dur = start.elapsed();
+                // println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
             } else {
-                // F_{2k+1} = F_k^2 + F_{k+1}^2
-                let k = (i - 1) / 2;
-                // eprintln!("i={i}, need {k} and {}", k + 1);
-                let fk = &memo[&k];
-                let fk_1 = &memo[&(k + 1)];
-                let mut temp1 = Integer::new();
-                let mut temp2 = Integer::new();
-                temp1.assign(fk * fk);
-                temp2.assign(fk_1 * fk_1);
-                let fib = Integer::from(temp1 + temp2);
-                if index == len - 1 {
-                    fib_n.assign(fib);
-                    // let dur = start.elapsed();
-                    // println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
-                } else {
-                    memo.insert(i, fib);
-                }
+                memo.insert(i, fib);
+            }
+        } else {
+            // F_{2k+1} = F_k^2 + F_{k+1}^2
+            let k = (i - 1) / 2;
+            // eprintln!("i={i}, need {k} and {}", k + 1);
+            let fk = &memo[&k];
+            let fk_1 = &memo[&(k + 1)];
+            let mut temp1 = Integer::new();
+            let mut temp2 = Integer::new();
+            temp1.assign(fk * fk);
+            temp2.assign(fk_1 * fk_1);
+            let fib = temp1 + temp2;
+            if index == len - 1 {
+                fib_n.assign(fib);
+                // let dur = start.elapsed();
+                // println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
+            } else {
+                memo.insert(i, fib);
             }
         }
     });

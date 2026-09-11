@@ -2515,7 +2515,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_basic_ibig.r
 **Description:**  Fast non-recursive Fibonacci series and individual calculation with big integers.
  Won't work with default Windows 11 because of `rug` crate.
 
- See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+ See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
  The `fib_series` closure could equally be implemented as a function here,
@@ -2561,7 +2561,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_big_clap_rug
  Shout-out to the `expr!` macro of the `astro-float` crate, which reduces very
  complex representations back to familiar expressions.
 
- See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+ See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
 
@@ -2591,7 +2591,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_binet_astro_
  of a negative number because they may result in a complex number. Regardless,
  relying on approximations of irrational numbers lends itself to inaccuracy.
 
- See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+ See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
 
@@ -2615,7 +2615,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_binet_snippe
 
 **Description:**  Fast non-recursive classic Fibonacci individual calculation with big integers.
 
- See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+ See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
 
@@ -2647,7 +2647,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_classic_ibig
 
  `ls -1 demo/fib*ibig*.rs | grep -v fib_basic_ibig.rs | while read f; do echo $f; thag_rs -t $f -- 10000000; done`
 
- See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+ See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
 
@@ -2676,7 +2676,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_classic_ibig
 
  Based on discussion https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
 
- See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+ See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
 
@@ -2961,7 +2961,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_rec
  This example is by courtesy of Gemini AI. See big-number versions
  `demo/fib_matrix_dashu.rs` and `demo/fib_matrix_ibig.rs`.
 
- See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+ See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
 
@@ -2997,7 +2997,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix.rs --
  not confined to integers but also supports floating point and rational
  numbers.
 
- See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+ See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
 
@@ -3035,7 +3035,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_dashu
  not confined to integers but also supports floating point and rational
  numbers.
 
- See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+ See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
 
@@ -3065,7 +3065,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_ibig.
  Won't work with default Windows 11 because of the `rug` crate, which is a pity because
  `rug` is a beast due to its access to powerful GNU libraries.
 
- See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+ See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
  **Not compatible with Windows MSVC.**
@@ -9279,4 +9279,3 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/windows_detect_p
 ```
 
 ---
-

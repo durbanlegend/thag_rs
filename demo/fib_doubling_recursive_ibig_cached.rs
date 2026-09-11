@@ -23,7 +23,7 @@
 //# Purpose: Demo fast efficient Fibonacci with big numbers and limited, cached recursion.
 //# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
-use ibig::{ubig, UBig};
+use ibig::{UBig, ubig};
 use std::time::Instant;
 use thag_demo_proc_macros::cached;
 
@@ -38,21 +38,19 @@ fn fib(n: usize) -> UBig {
         return ubig!(1);
     }
 
-    let result = if n % 2 == 0 {
+    if n.is_multiple_of(2) {
         // F_{2k} = F_k x (2F_{k-1} + F_{k})
         let k = n / 2;
         let fk = fib(k);
         let fk1 = fib(k - 1);
-        &fk * (&2 * fk1 + &fk)
+        &fk * (2 * fk1 + &fk)
     } else {
         // F_{2k+1} = F_k^2 + F_{k+1}^2
         let k = n / 2;
         let fk = fib(k);
         let fk1 = fib(k + 1);
         &fk * &fk + &fk1 * &fk1
-    };
-
-    result
+    }
 }
 
 fn main() {

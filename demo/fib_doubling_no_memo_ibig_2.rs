@@ -40,7 +40,7 @@
 //# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization.
 //# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
-use ibig::{ubig, UBig};
+use ibig::{UBig, ubig};
 use std::env;
 use std::time::Instant;
 
@@ -62,7 +62,7 @@ fn fib(k: usize, (a, b): (&mut UBig, &mut UBig)) {
     // Now if k is odd, then k = 2j + 1, thus a = F2j+1 and b = F2j_2
 
     // let subtr: i32 = (-1_i32).pow(k as u32 % 2).try_into().unwrap();
-    (*a, *b) = if k % 2 == 0 {
+    (*a, *b) = if k.is_multiple_of(2) {
         // a is F2j, b is F2j+1
         let mult1: UBig = 2 * &*b - &*a;
         (&*a * mult1, &*b * &*b + &*a * &*a)
@@ -96,7 +96,7 @@ fn main() {
 
     let (mut a, mut b) = (ubig!(0), ubig!(1));
     fib(n / 2, (&mut a, &mut b));
-    let fib_n = if n % 2 == 0 { a } else { b };
+    let fib_n = if n.is_multiple_of(2) { a } else { b };
     // let fib_n = fib.0;
 
     let dur = start.elapsed();

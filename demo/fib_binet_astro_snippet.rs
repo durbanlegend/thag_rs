@@ -36,12 +36,12 @@ let emax = 10000;
 // Create a context.
 let mut ctx = Context::new(p, rm, cc, emin, emax);
 
-let sqrt_5 = 5.0.sqrt();
-let phi = f64::midpoint(f64::from(1.0), sqrt_5);
+let sqrt_5 = 5.0_f64.sqrt();
+let phi = f64::midpoint(1.0, sqrt_5);
 let psi = (1.0 - sqrt_5) / 2.0_f64;
 // println!("sqrt_5={}, phi={:?}, psi={:?}", sqrt_5, phi, psi);
 
-for i in 0..=n {
+for i in 0_..=n {
     let f = i as f64;
     let fib_big_float = expr!((pow(phi, f) - pow(psi, f)) / sqrt_5, &mut ctx);
     let fib_str = format!("{fib_big_float}");

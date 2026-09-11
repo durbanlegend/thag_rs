@@ -3,17 +3,17 @@
 /// Described by the authors as "a really gratuitous use of iterators".
 //# Purpose: Demo using `thag_rs` to try out random code snippets ... also iterators.
 //# Categories: learning, technique
-use std::iter::{once, repeat};
+use std::iter::{once, repeat_n};
 
-let fizzes = repeat("").take(2).chain(once("fizz")).cycle();
-let buzzes = repeat("").take(4).chain(once("buzz")).cycle();
+let fizzes = repeat_n("", 2).chain(once("fizz")).cycle();
+let buzzes = repeat_n("", 4).chain(once("buzz")).cycle();
 let fizzes_buzzes = fizzes.zip(buzzes);
 
 let fizz_buzz = (1..100).zip(fizzes_buzzes).map(|tuple| match tuple {
     (i, ("", "")) => i.to_string(),
-    (_, (fizz, buzz)) => format!("{}{}", fizz, buzz),
+    (_, (fizz, buzz)) => format!("{fizz}{buzz}"),
 });
 
 for line in fizz_buzz {
-    println!("{}", line);
+    println!("{line}");
 }

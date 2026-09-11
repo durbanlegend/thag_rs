@@ -12,7 +12,7 @@
 /// not confined to integers but also supports floating point and rational
 /// numbers.
 ///
-/// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+/// See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demo a very fast precise computation for large individual Fibonacci numbers.
@@ -34,16 +34,16 @@ fn fibonacci_matrix(n: u128) -> UBig {
   let mut power = n - 1;
   while power > 0 {
     if power & 1 == 1 {
-      result = multiply_matrices(result.clone(), a.clone());
+      result = multiply_matrices(&result, &a);
     }
     power >>= 1;
-    a = multiply_matrices(a.clone(), a.clone());
+    a = multiply_matrices(&a, &a);
   }
 
-  return result[0][0].clone();
+  result[0][0].clone()
 }
 
-fn multiply_matrices(a: [[UBig; 2]; 2], b: [[UBig; 2]; 2]) -> [[UBig; 2]; 2] {
+fn multiply_matrices(a: &[[UBig; 2]; 2], b: &[[UBig; 2]; 2]) -> [[UBig; 2]; 2] {
   let mut result: [[UBig; 2]; 2] = [[ubig!(0), ubig!(0)], [ubig!(0), ubig!(0)]];
   for i in 0..2 {
     for j in 0..2 {
@@ -52,7 +52,7 @@ fn multiply_matrices(a: [[UBig; 2]; 2], b: [[UBig; 2]; 2]) -> [[UBig; 2]; 2] {
       }
     }
   }
-  return result;
+  result
 }
 
 let args: Vec<String> = env::args().collect();

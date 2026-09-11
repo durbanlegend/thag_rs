@@ -125,7 +125,7 @@ generate_tests! {
 // Helper function for more complex test scenarios
 #[allow(dead_code)]
 fn is_even(n: i32) -> bool {
-    n % 2 == 0
+    n.is_multiple_of(2)
 }
 
 // Example 8: Function testing with helper

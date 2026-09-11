@@ -5,7 +5,7 @@
 //# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization.
 //# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
-use ibig::{ubig, UBig};
+use ibig::{UBig, ubig};
 use std::env;
 use std::time::Instant;
 
@@ -19,13 +19,13 @@ fn fib(n: usize) -> UBig {
     }
 
     // eprintln!("Entered fib with n={n}");
-    if n % 2 == 0 {
+    if n.is_multiple_of(2) {
         let k = n / 2;
         let fk = fib(k);
         let fk_minus_1 = fib(k - 1);
         &fk * (2 * &fk_minus_1 + &fk)
     } else {
-        let k = (n + 1) / 2;
+        let k = n.div_ceil(2);
         let fk = fib(k);
         let fk_minus_1 = fib(k - 1);
         &fk * &fk + &fk_minus_1 * &fk_minus_1

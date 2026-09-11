@@ -6,14 +6,14 @@
 /// changes:
 ///
 /// 1. Instead of calculating the `Fi` values in descending order as soon as they are
-/// identified, add them to a list and then calculate them from the list in ascending
-/// order.
+///    identified, add them to a list and then calculate them from the list in ascending
+///    order.
 ///
 /// 2. The list tends to end up containing strings of 3 or more commonly 4 consecutive
-/// `i` values for which `Fi` must be calculated. For any `i` that is the 3rd or
-/// subsequent entry in such a consecutive run, that is, for which Fi-2 and Fi-1 have
-/// already been calculated, compute Fi cheaply as Fi-2 + Fi-1 instead of using the
-/// normal multiplication formula.
+///    `i` values for which `Fi` must be calculated. For any `i` that is the 3rd or
+///    subsequent entry in such a consecutive run, that is, for which Fi-2 and Fi-1 have
+///    already been calculated, compute Fi cheaply as Fi-2 + Fi-1 instead of using the
+///    normal multiplication formula.
 //# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization.
 //# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
@@ -52,7 +52,7 @@ fn main() {
         // eprintln!("Popped i={i}");
         if i > cached {
             required_indices.insert(i);
-            if i % 2 == 0 {
+            if i.is_multiple_of(2) {
                 let k = i / 2;
                 for j in (k - 1)..=(k + 1) {
                     if j > cached && !required_indices.contains(&j) {
@@ -76,27 +76,23 @@ fn main() {
 
     // Sort indices in ascending order
     let mut sorted_indices: Vec<_> = required_indices.into_iter().collect();
-    sorted_indices.sort();
+    sorted_indices.sort_unstable();
     // eprintln!("sorted_indices={sorted_indices:#?}");
 
     let mut memo = HashMap::new();
     let fib_series = |n: usize| {
         successors(Some((ubig!(0), ubig!(1))), |(a, b)| {
-            Some((b.clone(), (a + b).into()))
+            Some((b.clone(), a + b))
         })
         .map(|(a, _b)| a)
         .take(n + 1)
     };
 
-    let mut i = 0;
-    for a in fib_series(cached) {
+    for (i, a) in fib_series(cached).enumerate() {
         memo.insert(i, a);
-        i += 1;
     }
 
     sorted_indices.iter().enumerate().for_each(|(index, &i)| {
-        if i == 0 || i == 1 {}
-
         // If the 2 prior numbers are in the list, simply create this one
         // by adding them according to the definition of F(i).
         if index > 1 && sorted_indices[index - 2] == i - 2 && sorted_indices[index - 1] == i - 1 {
@@ -106,7 +102,7 @@ fn main() {
             memo.insert(i, fi_2 + fi_1);
         } else {
             // F_{2k} = F_k x (F_{k-1} + F_{k+1})
-            if i % 2 == 0 {
+            if i.is_multiple_of(2) {
                 let k = i / 2;
                 let fk = &memo[&k];
                 let fk_1 = &memo[&(k - 1)];

@@ -19,8 +19,6 @@ nanorand = { version = "0.7", features = ["getrandom"], optional = true }
 /// Must be run with --multimain (-m) option to allow multiple main methods.
 //# Purpose: demo of async and channel programming and of `flume` in particular.
 //# Categories: async, crates, technique
-use flume;
-
 #[cfg(feature = "async")]
 #[async_std::main]
 async fn main() {

@@ -40,6 +40,7 @@ let n: usize = matches
     .unwrap();
 
 // Snippet accepts function or closure. This closure returns only the last value Fn.
+#[allow(clippy::items_after_statements)]
 fn fib_value_n(n: usize) -> Integer {
     successors(Some((Integer::from(0), Integer::from(1))), |(a, b)| Some((b.clone(), (a + b).into())))
         .map(|(a, b): (Integer, Integer)| a)

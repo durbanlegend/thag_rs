@@ -20,7 +20,7 @@ use std::time::Instant;
 // Snippet accepts function or closure. This closure returns only the last value Fn.
 fn fib_value_n(n: usize) -> UBig {
     successors(Some((ubig!(0), ubig!(1))), |(a, b)| {
-        Some((b.clone(), (a + b).into()))
+        Some((b.clone(), a + b))
     })
     .map(|(a, _b)| a)
     .nth(n)
@@ -55,7 +55,7 @@ println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
 if n <= 1000 {
     println!("F({n})={fib_n}");
 } else if n >= 1_000_000 {
-    println!("F({n_disp}) ends in ...{}", fib_n % ubig!(1000_000_000));
+    println!("F({n_disp}) ends in ...{}", fib_n % ubig!(1_000_000_000));
 } else {
     let fib_n_str = fib_n.to_string();
     let l = fib_n_str.len();

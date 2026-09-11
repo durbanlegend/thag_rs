@@ -9,15 +9,13 @@ thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] } # Fo
 /// Compare with `demo/file_dialog_gui.rs`, which uses the platform's native gui.
 //# Purpose: Demo file chooser and calling an external program, in this case the Rust formatter.
 //# Categories: crates, technique
-use std::error::Error;
-// use inquire;
 use inquire::set_global_render_config; // For optional theming of `inquire`
 use std::process::Command;
 use thag_proc_macros::file_navigator;
 
 file_navigator! {}
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
     // For optional theming of `inquire`
     set_global_render_config(thag_styling::themed_inquire_config());
 
@@ -25,14 +23,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Check if rustfmt is available
     if Command::new("rustfmt").arg("--version").output().is_ok() {
-        let source_file = match select_file(&mut navigator, Some("rs"), false) {
-            Ok(path) => path,
-            Err(_) => {
-                println!("No file selected. Exiting.");
-                return Ok(());
-            }
+        let Ok(source_file) = select_file(&mut navigator, Some("rs"), false) else {
+            println!("No file selected. Exiting.");
+            return;
         };
-
         println!("Selected file: {}\n", source_file.display());
 
         // Run rustfmt on the source file
@@ -43,15 +37,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         let output = command.output().expect("Failed to run rustfmt");
 
         if output.status.success() {
-            println!("Successfully formatted {source_file:#?} with rustfmt.");
+            println!(
+                "Successfully formatted {} with rustfmt.",
+                source_file.display()
+            );
         } else {
             eprintln!(
-                "Failed to format {source_file:#?} with rustfmt:\n{}",
+                "Failed to format {} with rustfmt:\n{}",
+                source_file.display(),
                 String::from_utf8_lossy(&output.stderr)
             );
         }
     } else {
         eprintln!("`rustfmt` not found. Please install it to use this script.");
     }
-    Ok(())
 }

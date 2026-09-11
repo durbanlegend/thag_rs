@@ -24,8 +24,6 @@ thag_profiler = { version = "1, thag-auto", features = ["full_profiling"] }
 /// async functions with `thag_profiler`.
 //# Purpose: demo and test profiling of non-tokio async functions with `thag_profiler`.
 //# Categories: async, crates, proc_macros, profiling, technique
-use flume;
-
 use thag_profiler::{self, enable_profiling, end, profile, profiled};
 
 #[cfg(feature = "async")]
@@ -44,7 +42,7 @@ async fn main() {
         println!("Profiling feature is disabled");
     }
 
-    let _ = perform().await;
+    let () = perform().await;
 }
 
 #[profiled]

@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 use thag_profiler::{
-    enable_profiling, end, profile, profiled, prompted_analysis, AnalysisType, ProfileType,
+    AnalysisType, ProfileType, enable_profiling, end, profile, profiled, prompted_analysis,
 };
 
 #[profiled]
@@ -117,7 +117,7 @@ fn demonstrate_call_patterns() {
     // This will show repeated calls to the same function
     for i in 0..10 {
         level_3_function_a1();
-        if i % 2 == 0 {
+        if i.is_multiple_of(2) {
             level_3_function_a2();
         }
     }

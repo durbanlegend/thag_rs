@@ -655,7 +655,11 @@ fn main() -> eframe::Result<()> {
                 .unwrap_or_default()
                 .canonicalize()
                 .unwrap_or_default();
-            (canonical_initial_path, String::new(), String::new(), vec![])
+            let raw_content = format!(
+                "# Welcome!\n\nDrag and drop a markdown file on to this panel, or use {MOD}-O or click on the \'\u{1f4d6}\u{2026}\' icon in the toolbar to open a file");
+            let (id_injected, toc) = extract_toc_and_inject_ids(&raw_content);
+            let markdown_content = absolutize_image_paths(&id_injected, &canonical_initial_path);
+            (canonical_initial_path, raw_content, markdown_content, toc)
         },
         |file| {
             let selected_path = PathBuf::from(&file);
@@ -1229,6 +1233,20 @@ impl eframe::App for MarkdownApp {
                 i.key_pressed(Key::Escape),
                 i.key_pressed(Key::Escape),
             )
+        });
+
+        let dropped_file: Option<PathBuf> = ui.ctx().input(|i| {
+            if i.raw.dropped_files.is_empty() {
+                None
+            } else {
+                // Select the first '.md' file; ignore other extensions.
+                i.raw
+                    .dropped_files
+                    .iter()
+                    .filter(|f| f.path().extension().is_some_and(|e| e == "md"))
+                    .next()
+                    .map(|f| f.path().to_owned())
+            }
         });
 
         // Act on shortcuts (zoom/font) only when text field does not have focus.
@@ -1882,6 +1900,8 @@ impl eframe::App for MarkdownApp {
             } else {
                 false // user cancelled
             }
+        } else if let Some(file) = dropped_file {
+            self.load_file(file.to_path_buf())
         } else if refresh_requested {
             self.reload_file()
             // No history change on refresh.

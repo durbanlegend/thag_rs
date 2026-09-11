@@ -262,13 +262,15 @@ cargo install thag_rs --features tools
 cargo install thag_rs
 ```
 
-On *nix systems you may need to install `OpenSSL` and/or `pkg-conf` for the `openssl-sys` transitive dependency. Refer to the [openssl crate](https://docs.rs/openssl/latest/openssl/) documentation.
+Prior to v1.1.0, on *nix systems you may need to install `OpenSSL` and/or `pkg-conf` for the `openssl-sys` transitive dependency. Refer to the [openssl crate](https://docs.rs/openssl/latest/openssl/) documentation.
 
 For example, for Debian and Ubuntu:
 
 ```bash
 $ sudo apt-get install pkg-config libssl-dev
 ```
+
+`thag_rs` v1.1.0 removes this transitive dependency.
 
 #### Downloading the starter kit (demo directory)
 
@@ -476,14 +478,27 @@ thag -qql 'let (stack, _calls, micros) = sscanf::sscanf!(line, "{&str} {&str} {u
 ### As an executable:
 The --executable (-x) option builds your script in **release mode** and moves it to ~/.cargo/bin/, which is highly recommended to be in your path as `thag` and its tools are installed there.
 
-```bash
+```zsh
 thag demo/smol_chat_server.rs -x                                        # Long form: --executable
 ```
-![XBuild](assets/xbuildt.png)
+
+```zsh
+$ thag demo/smol_chat_server.rs -xq
+    Updating crates.io index
+     Locking 37 packages to latest compatible versions
+     ...
+   Compiling smol_chat_server v0.0.1 (/var/folders/rx/mng2ds0s6y53v12znz5jhpk80000gn/T/thag_rs/smol_chat_server)
+    Finished `release` profile [optimized] target(s) in 16.03s
+──────────────────────────────────────────────────────────────────────
+Executable built and moved to ~/.cargo/bin/smol_chat_server
+──────────────────────────────────────────────────────────────────────
+```
 
 You can of course use an OS command to rename the executable if you so desire.
 
-![XBuild](assets/xrenamet.png)
+```zsh
+$ mv ~/.cargo/bin/{smol_chat_server,chat_server}
+```
 
 However, it's probably best to rename your source in the first place so you don't lose track of where the command came from if you want to update it.
 
@@ -500,7 +515,11 @@ On the downside, the compiled executable may typically take up between 0.5 MB a
 
 Putting it to use:
 
-![XBuild](assets/xuset.png)
+```zsh
+$ smol_chat_server
+Listening on 127.0.0.1:6000
+Start a chat client now!
+```
 
 ### Run `cargo test` in place:
 The --test-only (-T) is for scripts (not snippets) with embedded unit tests. (For snippets there's the --cargo (-A) option that accepts cargo subcommands including `test`).
@@ -518,7 +537,60 @@ env TEST_CONFIG_PATH=/absolute/path/to/config.toml thag demo/config_with_tests.r
 
 Hopefully the help screen is self-explanatory:
 
-![Help](assets/helpt.png)
+```zsh
+$ thag -h
+A versatile cross-platform playground for Rust snippets, expressions and programs.
+Accepts a script file or dynamic options.
+
+Usage: thag [OPTIONS] <SCRIPT|--expr <EXPRESSION>|--rapid|--loop <FILTER>|--stdin|--edit|--config|--clean [<WHAT>]> [-- <ARGS>...]
+
+Arguments:
+  [SCRIPT]   Optional path of a script to run (`path`/`stem`.rs)
+  [ARGS]...  Any arguments for the script
+
+Options:
+  -h, --help     Print help (see more with '--help')
+  -V, --version  Print version
+
+Processing Options:
+      --features <FEATURES>  Features to enable when building the script (comma separated)
+  -f, --force                Force the generation and build steps, even if the script is unchanged since a previous build. Required if there are updates to dependencies
+  -m, --multimain            Allow multiple main methods for the current script
+  -i, --infer <INFER>        Dependency inference: none, min, config (default & recommended), max. `thag` infers dependencies from imports and Rust paths (`x::y::z`), with configurable default features
+
+Dynamic Options (no script):
+  -e, --expr <EXPRESSION>  Evaluate a quoted Rust expression on the fly
+  -r, --rapid              Rapid iteration mode for Rust expressions, or for dynamic scripts using TUI or external editors [alias: --iter]
+  -s, --stdin              Read script from stdin
+  -d, --edit               Simple TUI edit-submit with history. Editor will also capture any stdin input
+  -l, --loop <FILTER>      Run the given filter expression in a loop against every line of stdin, with optional pre- and/or post-loop logic via -M, -B and -E. Expression may optionally print or return a value for line output
+  -C, --config             Edit the configuration file
+
+Filter Options:
+  -M, --toml <CARGO-TOML>  Optional manifest info for --loop in Cargo.toml format, such as a `[dependencies]` section
+  -B, --begin <PRE-LOOP>   Optional pre-loop Rust statements for --loop, somewhat like awk BEGIN
+  -E, --end <POST-LOOP>    Optional post-loop Rust statements for --loop, somewhat like awk END
+
+Output Options:
+  -t, --timings              Display timings
+  -v, --verbose...           Set verbose mode. Double up for debug mode with destination app.log
+  -N, --normal               Set normal verbosity. Only needed in the case of overriding a different configured value
+  -q, --quiet...             Suppress unnecessary output. Double up to show only errors, or when piping output to another command
+  -u, --unquote [<UNQUOTE>]  Strip double quotes from string result of expression (true/false). Default: config value / false [possible values: true, false]
+
+No-run Options:
+  -g, --gen         Just generate individual Cargo.toml and any required Rust scaffolding for script, unless script unchanged from a previous build
+  -b, --build       Just build script (generating first if necessary), unless unchanged from a previous build
+  -x, --executable  Just build executable `home_dir`/.cargo/bin/`stem` from script `path`/`stem`.rs using `cargo build --release`
+  -c, --check       Just cargo check script, unless unchanged from a previous build. Less thorough than build. Used by integration test to check all demo scripts
+  -X, --expand      Just generate script, unless unchanged from a previous build, and show the version with expanded macros side by side with the original version. Requires the `cargo-expand` binary to be installed
+  -A, --cargo       Just generate script, unless unchanged from a previous build, and run the specified Cargo subcommand against the generated project `temp_dir`/`thag_rs`/`stem`. E.g. `thag demo/hello.rs -A tree`
+  -T, --test-only   Test a module in isolation. Just generate the Cargo.toml and use it to run the internal unit tests without wrapping or modifying the source code
+
+Maintenance Options:
+      --clean [<WHAT>]  Clean cached build artifacts. Options: 'bins' (executables only), 'target' (shared build cache), 'all' (both). Default: 'all'
+$
+```
 
 `thag_rs` uses a standard `clap` CLI, so it follows the common `clap` conventions, in a very similar way to `cargo`. You can enter `thag` arguments and options in any order. If your script or dynamic run accepts arguments of its own, they must come after the `thag` arguments and separated from them by a double dash (`--`).
 

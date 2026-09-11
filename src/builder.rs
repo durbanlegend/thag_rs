@@ -39,6 +39,7 @@
 //! generation and build steps and execute almost immediately, similarly to a Cargo `run`. In this case
 //! the `build` module  will display an informational message to this effect at normal verbosity levels.
 //!
+use crate::Verbosity::{Debug as Dbug, Verbose};
 use crate::ast::{self, is_unit_return_type};
 use crate::code_utils::{
     self, build_loop, create_temp_source_file, extract_ast_expr, get_source_path,
@@ -48,13 +49,12 @@ use crate::code_utils::{
 use crate::config::{self, DependencyInference, RealContext};
 use crate::crossterm::terminal;
 use crate::manifest::extract;
-use crate::Verbosity::{Debug as Dbug, Verbose};
 use crate::{
-    get_home_dir, get_proc_flags, get_verbosity, manifest, maybe_config, modified_since_compiled,
-    repeat_dash, validate_args, Ast, Cli, ColorSupport, Dependencies, ProcFlags, Role, ThagError,
-    ThagResult, DYNAMIC_SUBDIR, EXECUTABLE_CACHE_SUBDIR, FLOWER_BOX_LEN, ITER_SCRIPT_NAME,
-    ITER_SUBDIR, PACKAGE_NAME, RS_SUFFIX, SHARED_TARGET_SUBDIR, TEMP_DIR_NAME, TEMP_SCRIPT_NAME,
-    TMPDIR, TOML_NAME,
+    Ast, Cli, ColorSupport, DYNAMIC_SUBDIR, Dependencies, EXECUTABLE_CACHE_SUBDIR, FLOWER_BOX_LEN,
+    ITER_SCRIPT_NAME, ITER_SUBDIR, PACKAGE_NAME, ProcFlags, RS_SUFFIX, Role, SHARED_TARGET_SUBDIR,
+    TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, ThagError, ThagResult, get_home_dir,
+    get_proc_flags, get_verbosity, manifest, maybe_config, modified_since_compiled, repeat_dash,
+    validate_args,
 };
 use cargo_toml::Manifest;
 use regex::Regex;
@@ -68,20 +68,20 @@ use std::{
     string::ToString,
     time::Instant,
 };
-use thag_common::{self, debug_log, re, veprtln, V};
+use thag_common::{self, V, debug_log, re, veprtln};
 use thag_profiler::profiled;
-use thag_styling::{paint_for_role, sveprtln, Styleable, StyledPrint, TermAttributes};
+use thag_styling::{Styleable, StyledPrint, TermAttributes, paint_for_role, sveprtln};
 
 #[cfg(feature = "tui")]
 use crate::{
-    stdin::{edit, read},
     CrosstermEventReader,
+    stdin::{edit, read},
 };
 
 #[cfg(debug_assertions)]
 use {
-    crate::{debug_timings, logging::is_debug_logging_enabled, VERSION},
-    log::{log_enabled, Level::Debug},
+    crate::{VERSION, debug_timings, logging::is_debug_logging_enabled},
+    log::{Level::Debug, log_enabled},
 };
 
 #[cfg(feature = "iter")]
@@ -928,9 +928,9 @@ pub fn gen_build_run(
                         Some(true)
                     } else {
                         writeln!(
-                        &mut std::io::stderr(),
-                        "{count} main methods found, only one allowed by default. Specify --multimain (-m) option to allow more"
-                    )?;
+                            &mut std::io::stderr(),
+                            "{count} main methods found, only one allowed by default. Specify --multimain (-m) option to allow more"
+                        )?;
                         std::process::exit(1);
                     }
                 }
@@ -1320,7 +1320,10 @@ fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> Th
 
     if proc_flags.contains(ProcFlags::EXECUTABLE) {
         deploy_executable(build_state)?;
-    } else if !proc_flags.contains(ProcFlags::CHECK) && !proc_flags.contains(ProcFlags::CARGO) {
+    } else if !proc_flags.contains(ProcFlags::CHECK)
+        && !proc_flags.contains(ProcFlags::CARGO)
+        && !proc_flags.contains(ProcFlags::TEST_ONLY)
+    {
         // For regular builds (not check, not arbitrary cargo subcommands), cache the executable.
         // CARGO mode runs user-specified subcommands (e.g. expand, clippy, tree) that don't
         // necessarily produce a build artifact, so caching would fail.
@@ -1404,9 +1407,15 @@ fn display_expansion_diff(stdout: Vec<u8>, build_state: &BuildState) -> ThagResu
 fn display_build_failure(inference_level: &DependencyInference) {
     let advice = match inference_level {
         config::DependencyInference::None => "You are running without dependency inference.",
-        config::DependencyInference::Min => "You may be missing features or `thag` may not be picking up dependencies.",
-        config::DependencyInference::Config => "You may need to tweak your config feature overrides or 'toml` block",
-        config::DependencyInference::Max => "It may be that maximal dependency inference is specifying conflicting features. Consider trying `config` or failing that, a `toml` block",
+        config::DependencyInference::Min => {
+            "You may be missing features or `thag` may not be picking up dependencies."
+        }
+        config::DependencyInference::Config => {
+            "You may need to tweak your config feature overrides or 'toml` block"
+        }
+        config::DependencyInference::Max => {
+            "It may be that maximal dependency inference is specifying conflicting features. Consider trying `config` or failing that, a `toml` block"
+        }
     };
 
     sveprtln!(
@@ -1482,8 +1491,12 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
         let mut output_path_pdb = output_path.clone();
         output_path_pdb.set_extension("pdb");
 
-        debug_log!("executable_path={executable_path:#?}, pdb_path={pdb_path:#?}, output_path_exe={output_path_exe:#?}, output_path_pdb={output_path_pdb:#?}");
-        eprintln!("executable_path={executable_path:#?}, pdb_path={pdb_path:#?}, output_path_exe={output_path_exe:#?}, output_path_pdb={output_path_pdb:#?}");
+        debug_log!(
+            "executable_path={executable_path:#?}, pdb_path={pdb_path:#?}, output_path_exe={output_path_exe:#?}, output_path_pdb={output_path_pdb:#?}"
+        );
+        eprintln!(
+            "executable_path={executable_path:#?}, pdb_path={pdb_path:#?}, output_path_exe={output_path_exe:#?}, output_path_pdb={output_path_pdb:#?}"
+        );
         // On Windows, rename can fail across drives/volumes, so use copy+delete instead
         fs::copy(executable_path, &output_path_exe)?;
         fs::copy(pdb_path, &output_path_pdb)?;

@@ -153,9 +153,6 @@ required_features = ["fs"]
 [dependencies.feature_overrides.rustyline]
 excluded_features = ["with-sqlite-history"]
 
-[dependencies.feature_overrides.rustix]
-required_features = ["fs"]
-
 [dependencies.feature_overrides.spin1]
 required_features = ["mutex"]
 

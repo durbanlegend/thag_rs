@@ -655,8 +655,8 @@ fn main() -> eframe::Result<()> {
                 .unwrap_or_default()
                 .canonicalize()
                 .unwrap_or_default();
-            let raw_content = format!(
-                "# Welcome!\n\nDrag and drop a markdown file on to this panel, or use {MOD}-O or click on the \'\u{1f4d6}\u{2026}\' icon in the toolbar to open a file");
+            let raw_content =
+                t!("welcome.instruction", cmd = MOD, icon = "\u{1f4d6}\u{2026}").to_string();
             let (id_injected, toc) = extract_toc_and_inject_ids(&raw_content);
             let markdown_content = absolutize_image_paths(&id_injected, &canonical_initial_path);
             (canonical_initial_path, raw_content, markdown_content, toc)

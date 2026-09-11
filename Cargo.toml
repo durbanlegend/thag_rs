@@ -19,6 +19,9 @@ thag_profiler = { path = "thag_profiler", version = "=1.1.0", default-features =
 thag_rs = { path = ".", version = "=1.1.0", default-features = false }
 thag_styling = { path = "thag_styling", version = "=1.1.0", default-features = false }
 
+[workspace.lints.clippy]
+uninlined_format_args = "allow"
+
 [package]
 description = "A versatile cross-platform playground for Rust snippets, expressions and programs.\nAccepts a script file or dynamic options."
 name = "thag_rs"

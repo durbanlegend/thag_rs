@@ -34,5 +34,5 @@ pub struct Options {
 }
 
 fn main() {
-    println!("{:?}", options().run())
+    println!("{:?}", options().run());
 }

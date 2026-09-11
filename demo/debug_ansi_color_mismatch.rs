@@ -9,15 +9,14 @@ thag_styling = { version = "1, thag-auto" }
 /// by examining the ANSI codes being generated for specific RGB values.
 //# Purpose: Diagnose ANSI color generation mismatch in dynamic color system
 //# Categories: color, styling, debugging, terminal
-use thag_styling::{
-    ColorInfo, ColorInitStrategy, ColorSupport, Style, StylingResult, TermAttributes,
-};
+use thag_styling::{ColorInfo, ColorInitStrategy, ColorSupport, Style, TermAttributes};
 
-fn rgb_to_hex(rgb: &(u8, u8, u8)) -> String {
-    format!("#{:02x}{:02x}{:02x}", rgb.0, rgb.1, rgb.2)
+fn rgb_to_hex(rgb: (u8, u8, u8)) -> String {
+    let (r, g, b) = rgb;
+    format!("#{r:02x}{g:02x}{b:02x}")
 }
 
-fn test_specific_colors() -> StylingResult<()> {
+fn test_specific_colors() {
     println!("🔍 Testing Specific Color Values from Your Output");
     println!("{}", "=".repeat(60));
     println!();
@@ -41,15 +40,13 @@ fn test_specific_colors() -> StylingResult<()> {
     println!();
 
     for (name, rgb) in test_colors {
-        let color_info = ColorInfo::rgb(rgb[0], rgb[1], rgb[2]);
+        let [r, g, b] = rgb;
+        let color_info = ColorInfo::rgb(r, g, b);
         let style = Style::with_rgb(rgb);
 
         // Show what ANSI codes are generated for different support levels
-        println!("🎨 {}: RGB({}, {}, {})", name, rgb[0], rgb[1], rgb[2]);
-        println!(
-            "   Expected color: {} (hex)",
-            rgb_to_hex(&(rgb[0], rgb[1], rgb[2]))
-        );
+        println!("🎨 {name}: RGB({r}, {g}, {b})");
+        println!("   Expected color: {} (hex)", rgb_to_hex((r, g, b)));
 
         // Show ANSI for all support levels
         let support_levels = [
@@ -64,24 +61,22 @@ fn test_specific_colors() -> StylingResult<()> {
 
             // Create a temporary style with this specific ANSI to see what it renders
             if support == term_attrs.color_support {
-                print!("{}████ THIS IS WHAT YOU SEE{}", ansi, "\x1b[0m");
+                print!("{ansi}████ THIS IS WHAT YOU SEE\x1b[0m");
             } else {
-                print!("{}████ preview{}", ansi, "\x1b[0m");
+                print!("{ansi}████ preview\x1b[0m");
             }
             println!();
         }
 
         // Show what the paint method actually produces
         let painted = style.paint("████ ACTUAL PAINTED RESULT");
-        println!("   Style.paint(): {}", painted);
+        println!("   Style.paint(): {painted}");
         println!("   Color index: {}", color_info.index);
         println!();
     }
-
-    Ok(())
 }
 
-fn test_color_index_mapping() -> StylingResult<()> {
+fn test_color_index_mapping() {
     println!("🔢 Testing Color Index Mapping");
     println!("{}", "=".repeat(60));
     println!();
@@ -93,33 +88,25 @@ fn test_color_index_mapping() -> StylingResult<()> {
         [107, 37, 65],   // The dark purple
     ];
 
-    for rgb in test_rgbs {
-        let color_info = ColorInfo::rgb(rgb[0], rgb[1], rgb[2]);
-        println!(
-            "RGB({}, {}, {}) → index: {}",
-            rgb[0], rgb[1], rgb[2], color_info.index
-        );
+    for [r, g, b] in test_rgbs {
+        let color_info = ColorInfo::rgb(r, g, b);
+        println!("RGB({}, {}, {}) → index: {}", r, g, b, color_info.index);
 
         // Show what this index looks like when rendered directly as 256-color
         let index_ansi = format!("\x1b[38;5;{}m", color_info.index);
         println!(
-            "   Index {} as 256-color: {}████ Direct index color{}",
-            color_info.index, index_ansi, "\x1b[0m"
+            "   Index {} as 256-color: {index_ansi}████ Direct index color\x1b[0m",
+            color_info.index
         );
 
         // Show what TrueColor version looks like
-        let rgb_ansi = format!("\x1b[38;2;{};{};{}m", rgb[0], rgb[1], rgb[2]);
-        println!(
-            "   RGB as TrueColor:      {}████ TrueColor version{}",
-            rgb_ansi, "\x1b[0m"
-        );
+        let rgb_ansi = format!("\x1b[38;2;{r};{g};{b}m");
+        println!("   RGB as TrueColor:      {rgb_ansi}████ TrueColor version\x1b[0m");
         println!();
     }
-
-    Ok(())
 }
 
-fn test_find_closest_color_function() -> StylingResult<()> {
+fn test_find_closest_color_function() {
     println!("🎯 Testing find_closest_color Function");
     println!("{}", "=".repeat(60));
     println!();
@@ -129,8 +116,8 @@ fn test_find_closest_color_function() -> StylingResult<()> {
     let pink = (177, 61, 108);
 
     println!("This will help us understand if the color index mapping is correct:");
-    println!("Duck-egg RGB{:?} should map to a cyan-ish index", duck_egg);
-    println!("Pink RGB{:?} should map to a magenta-ish index", pink);
+    println!("Duck-egg RGB{duck_egg:?} should map to a cyan-ish index");
+    println!("Pink RGB{pink:?} should map to a magenta-ish index");
     println!();
 
     // Create ColorInfo for these and see the indices
@@ -138,22 +125,16 @@ fn test_find_closest_color_function() -> StylingResult<()> {
     let pink_info = ColorInfo::rgb(pink.0, pink.1, pink.2);
 
     println!(
-        "Duck-egg → index {}: {}████{}",
-        duck_egg_info.index,
-        format!("\x1b[38;5;{}m", duck_egg_info.index),
-        "\x1b[0m"
+        "Duck-egg → index {}: \x1b[38;5;{}m████\x1b[0m",
+        duck_egg_info.index, duck_egg_info.index,
     );
     println!(
-        "Pink → index {}: {}████{}",
-        pink_info.index,
-        format!("\x1b[38;5;{}m", pink_info.index),
-        "\x1b[0m"
+        "Pink → index {}: \x1b[38;5;{}m████\x1b[0m",
+        pink_info.index, pink_info.index,
     );
-
-    Ok(())
 }
 
-fn test_current_terminal_detection() -> StylingResult<()> {
+fn test_current_terminal_detection() {
     println!("🖥️  Current Terminal Detection");
     println!("{}", "=".repeat(60));
     println!();
@@ -164,7 +145,7 @@ fn test_current_terminal_detection() -> StylingResult<()> {
     println!("How initialized: {:?}", term_attrs.how_initialized);
 
     if let Some(bg_rgb) = term_attrs.term_bg_rgb {
-        println!("Terminal background RGB: {:?}", bg_rgb);
+        println!("Terminal background RGB: {bg_rgb:?}");
     }
     println!("Terminal background luma: {:?}", term_attrs.term_bg_luma);
     println!();
@@ -178,11 +159,9 @@ fn test_current_terminal_detection() -> StylingResult<()> {
     println!("Red:   {}", red.paint("████ Should be red"));
     println!("Green: {}", green.paint("████ Should be green"));
     println!("Blue:  {}", blue.paint("████ Should be blue"));
-
-    Ok(())
 }
 
-fn main() -> StylingResult<()> {
+fn main() {
     // Initialize terminal attributes
     TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
 
@@ -192,22 +171,20 @@ fn main() -> StylingResult<()> {
     println!("Investigating why RGB values don't match displayed colors...");
     println!();
 
-    test_current_terminal_detection()?;
+    test_current_terminal_detection();
     println!();
 
-    test_specific_colors()?;
+    test_specific_colors();
     println!();
 
-    test_color_index_mapping()?;
+    test_color_index_mapping();
     println!();
 
-    test_find_closest_color_function()?;
+    test_find_closest_color_function();
 
     println!("🔍 Analysis:");
     println!("- If TrueColor support shows correct colors but current terminal doesn't,");
     println!("  the issue is in color downgrading (find_closest_color function)");
     println!("- If indices are swapped/wrong, there may be an issue with color mapping");
     println!("- If ANSI codes look right but colors are wrong, it's a terminal issue");
-
-    Ok(())
 }

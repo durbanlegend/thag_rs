@@ -1,11 +1,10 @@
-//# Purpose: Choose black or white as a contrasting colour for a given colour.
+//# Purpose: Demo choosing a black or white background for best contrast.
 //# Categories: technique
-
 // Calculate luminance from RGB components
 fn luminance(r: u8, g: u8, b: u8) -> f64 {
-    let r = r as f64 / 255.0;
-    let g = g as f64 / 255.0;
-    let b = b as f64 / 255.0;
+    let r = f64::from(r) / 255.0;
+    let g = f64::from(g) / 255.0;
+    let b = f64::from(b) / 255.0;
     0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 
@@ -35,7 +34,7 @@ fn find_contrast_color(rgb: (u8, u8, u8)) -> String {
 /// contrast better with black or white (background or foreground).
 /// Can't recall provenance, but the luminance formula is one of
 /// many discussed here:
-/// https://stackoverflow.com/questions/596216/formula-to-determine-perceived-brightness-of-rgb-color
+/// `https://stackoverflow.com/questions/596216/formula-to-determine-perceived-brightness-of-rgb-color`
 fn main() {
     let rgb_color = (100, 150, 200); // Example RGB color
     println!("Chosen color: {:#?}", rgb_color);

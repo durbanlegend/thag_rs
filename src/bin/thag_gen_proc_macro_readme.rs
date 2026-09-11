@@ -11,6 +11,7 @@ thag_styling = { version = "1, thag-auto", default-features = false }
 //# Purpose: Generate README.md documentation for proc macros with examples and usage
 //# Categories: proc_macros, technique, tools
 // Simple case conversion without external dependencies
+use quote::quote;
 use std::{
     env,
     fs::{self, File},
@@ -73,7 +74,7 @@ fn extract_proc_macro_attributes(attrs: &[Attribute]) -> Vec<String> {
             || path.is_ident("proc_macro_attribute")
             || path.is_ident("proc_macro")
         {
-            proc_attrs.push(format!("{}", quote::quote!(#attr)));
+            proc_attrs.push(format!("{}", quote!(#attr)));
         }
     }
 

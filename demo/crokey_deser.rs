@@ -14,16 +14,16 @@
 //# Categories: crates, technique
 use {
     crokey::{
+        KeyCombination, KeyCombinationFormat,
         crossterm::{
-            event::{read, Event},
+            event::{Event, read},
             style::Stylize,
             terminal,
         },
-        key, KeyCombination, KeyCombinationFormat,
+        key,
     },
     serde::Deserialize,
     std::collections::HashMap,
-    toml,
 };
 
 // This is an example of a configuration structure which contains a map from KeyEvent to String.
@@ -72,7 +72,7 @@ pub fn main() {
                     word.clone().yellow(),
                 );
             } else {
-                println!("You hit {} which isn't mapped", fmt.to_string(key).red(),);
+                println!("You hit {} which isn't mapped", fmt.to_string(key).red());
             }
         }
     }

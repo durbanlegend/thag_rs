@@ -1,19 +1,19 @@
 /// Published example from the `crossterm` crate.
 ///
-/// Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/event-read.rs
+/// Url: `https://github.com/crossterm-rs/crossterm/blob/master/examples/event-read.rs`
 /// "Demonstrates how to block read events."
 //# Purpose: Demo running crate example code, `crossterm` events.
 //# Categories: crates, technique
 use std::io;
 
 use crossterm::event::{
-    poll, KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+    KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags, poll,
 };
 use crossterm::{
     cursor::position,
     event::{
-        read, DisableBracketedPaste, DisableFocusChange, DisableMouseCapture, EnableBracketedPaste,
-        EnableFocusChange, EnableMouseCapture, Event, KeyCode,
+        DisableBracketedPaste, DisableFocusChange, DisableMouseCapture, EnableBracketedPaste,
+        EnableFocusChange, EnableMouseCapture, Event, KeyCode, read,
     },
     execute, queue,
     terminal::{disable_raw_mode, enable_raw_mode},

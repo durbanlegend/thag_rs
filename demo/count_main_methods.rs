@@ -1,7 +1,21 @@
-use syn::visit::Visit;
 use syn::Expr;
+use syn::visit::Visit;
 
-/// Prototype of a function required by thag_rs to count the main methods
+#[derive(Default)]
+struct FindMainFns {
+    main_method_count: usize,
+}
+
+impl<'a> Visit<'a> for FindMainFns {
+    // Count the number of main() methods
+    fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
+        if node.sig.ident == "main" && node.sig.inputs.is_empty() {
+            self.main_method_count += 1;
+        }
+    }
+}
+
+/// Prototype of a function required by `thag_rs` to count the main methods
 /// in a script to decide if it's a program or a snippet. Uses the `syn`
 /// visitor pattern. This is more reliable than a simple source code search
 /// which tends to find false positives in string literals and comments.
@@ -22,21 +36,6 @@ fn count_main_methods(rs_source: &str) -> usize {
         Ok(tree) => tree,
         Err(_) => return 0, // Return 0 if parsing fails
     };
-
-    // Count the number of main() methods
-    #[derive(Default)]
-    struct FindMainFns {
-        main_method_count: usize,
-    }
-
-    impl<'a> Visit<'a> for FindMainFns {
-        fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
-            if node.sig.ident == "main" && node.sig.inputs.is_empty() {
-                self.main_method_count += 1;
-            }
-        }
-    }
-
     let mut finder = FindMainFns::default();
     finder.visit_expr(&ast);
 

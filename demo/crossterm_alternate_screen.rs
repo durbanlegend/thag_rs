@@ -2,22 +2,22 @@
 /// "Print a rectangle colored with magenta and use both direct execution and lazy execution."
 /// Direct execution with `execute` and lazy execution with `queue`.
 ///
-/// Url: https://docs.rs/crossterm/latest/crossterm/
+/// Url: `https://docs.rs/crossterm/latest/crossterm/`
 //# Purpose: Demo `crossterm` command API.
 //# Categories: crates, technique, tui
 //# Sample arguments: `-- true`
 use std::{
     env,
-    io::{stderr, Result},
+    io::{Result, stderr},
     thread::sleep,
     time::Duration,
 };
 
 use ratatui::crossterm::{
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{prelude::*, widgets::*};
+use ratatui::{prelude::*, widgets::Paragraph};
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();

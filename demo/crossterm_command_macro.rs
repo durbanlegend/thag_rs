@@ -9,7 +9,7 @@ use std::io::{self, Write};
 /// "Print a rectangle colored with magenta and use both direct execution and lazy execution."
 /// Direct execution with `execute` and lazy execution with `queue`.
 ///
-/// Url: https://docs.rs/crossterm/latest/crossterm/
+/// Url: `https://docs.rs/crossterm/latest/crossterm/`
 //# Purpose: Demo `crossterm` command API.
 //# Categories: crates, technique
 fn main() -> io::Result<()> {

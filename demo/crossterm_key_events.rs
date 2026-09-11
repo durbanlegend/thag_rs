@@ -1,6 +1,6 @@
 /// Published example from the `crossterm` crate.
 ///
-/// Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/key-display.rs
+/// Url: `https://github.com/crossterm-rs/crossterm/blob/master/examples/key-display.rs`
 /// "Demonstrates the display format of key events.
 ///
 /// This example demonstrates the display format of key events, which is useful for displaying in
@@ -11,14 +11,14 @@ use std::io;
 
 use crossterm::event::{KeyEventKind, KeyModifiers};
 use crossterm::{
-    event::{read, Event, KeyCode},
+    event::{Event, KeyCode, read},
     terminal::{disable_raw_mode, enable_raw_mode},
 };
 
-const HELP: &str = r#"Key display
+const HELP: &str = r"Key display
  - Press any key to see its display format
  - Use Esc to quit
-"#;
+";
 
 fn main() -> io::Result<()> {
     println!("{}", HELP);

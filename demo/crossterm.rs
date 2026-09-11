@@ -1,14 +1,13 @@
 /// Published example from the `crossterm` crate.
 ///
-/// Url: https://github.com/crossterm-rs/crossterm/blob/master/README.md
+/// Url: `https://github.com/crossterm-rs/crossterm/blob/master/README.md`
 //# Purpose: Demo crossterm terminal manipulation.
 //# Categories: crates, technique
 use std::io::stdout;
 
 use crossterm::{
-    execute,
+    ExecutableCommand, execute,
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
-    ExecutableCommand,
 };
 
 fn main() -> std::io::Result<()> {
@@ -29,7 +28,7 @@ fn main() -> std::io::Result<()> {
         .execute(SetBackgroundColor(Color::Red))?
         .execute(Print("Styled text here."))?
         .execute(ResetColor)?;
-    println!("");
+    println!();
 
     Ok(())
 }

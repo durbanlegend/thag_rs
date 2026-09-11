@@ -61,7 +61,7 @@ fn main() {
             (_, true, _) => minor += 1,
             (_, _, true) => patch += 1,
             _ => unreachable!(),
-        };
+        }
         format!("{}.{}.{}", major, minor, patch)
     };
 

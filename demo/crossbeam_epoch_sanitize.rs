@@ -3,9 +3,9 @@
 rand = "0.9"
 */
 
+use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed};
-use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -13,8 +13,8 @@ use std::time::{Duration, Instant};
 /// an alternative to garbage collection.
 ///
 /// This is the published example from the `crossbeam-epoch` crate. For a more intuitive
-/// example, you can try the "Canary" example from https://github.com/ericseppanen/epoch_playground.
-/// and the associated blog post https://codeandbitters.com/learning-rust-crossbeam-epoch/.
+/// example, you can try the `Canary` example from `https://github.com/ericseppanen/epoch_playground`.
+/// and the associated blog post `https://codeandbitters.com/learning-rust-crossbeam-epoch/.`
 /// (Not included here due to implicit copyright). This will need at least a change from
 /// `rng.gen_range(0, bc_size)` to `rng.gen_range(0..bc_size)`, and optional updates to function naming.
 ///
@@ -23,7 +23,7 @@ use std::time::{Duration, Instant};
 use crossbeam_epoch::{self as epoch, Atomic, Collector, LocalHandle, Owned, Shared};
 use rand::Rng;
 
-fn worker(a: Arc<Atomic<AtomicUsize>>, handle: LocalHandle) -> usize {
+fn worker(a: &Arc<Atomic<AtomicUsize>>, handle: &LocalHandle) -> usize {
     let mut rng = rand::rng();
     let mut sum = 0;
 
@@ -66,7 +66,7 @@ fn main() {
             .map(|_| {
                 let a = a.clone();
                 let c = collector.clone();
-                thread::spawn(move || worker(a, c.register()))
+                thread::spawn(move || worker(&a, &c.register()))
             })
             .collect::<Vec<_>>();
 

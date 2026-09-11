@@ -2,7 +2,6 @@
 //# Purpose: Explore use of `bitflags` to control processing.
 //# Categories: crates, exploration, technique
 use bitflags::bitflags;
-use std::error::Error;
 use std::fmt;
 
 bitflags! {
@@ -20,14 +19,12 @@ impl fmt::Display for ProcFlags {
     }
 }
 
-fn print_flag(proc_flag: ProcFlags) {
+fn print_flag(proc_flag: &ProcFlags) {
     println!("proc_flag={proc_flag}");
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    print_flag(ProcFlags::from_bits(5).unwrap());
+fn main() {
+    print_flag(&ProcFlags::from_bits(5).unwrap());
 
     println!("FORCE bits={}", ProcFlags::bits(&ProcFlags::FORCE));
-
-    Ok(())
 }

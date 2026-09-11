@@ -6,7 +6,7 @@ mod tests {
     use std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Once, time::Instant};
     use thag_rs::code_utils::to_ast;
     use thag_rs::manifest::{self, capture_dep, cargo_lookup, configure_default, extract, merge};
-    use thag_rs::{find_crates, find_metadata, BuildState};
+    use thag_rs::{BuildState, find_crates, find_metadata};
     use thag_styling::{ColorInitStrategy, TermAttributes};
 
     // Set environment variables before running tests
@@ -72,11 +72,13 @@ mod tests {
         let manifest = configure_default(&build_state).unwrap();
         let package = manifest.package.expect("Problem unwrapping package");
         assert_eq!(package.name, "example");
-        assert!(package
-            .version
-            .get()
-            .as_ref()
-            .is_ok_and(|v| v.to_string().contains("0.0.1")));
+        assert!(
+            package
+                .version
+                .get()
+                .as_ref()
+                .is_ok_and(|v| v.to_string().contains("0.0.1"))
+        );
         assert!(matches!(package.edition.get().unwrap(), Edition::E2021));
     }
 
@@ -436,7 +438,7 @@ mod tests {
     #[test]
     fn test_manifest_cargo_manifest_display() {
         set_up();
-        let mut manifest = manifest::default("example", "path/to/script").unwrap();
+        let mut manifest = manifest::default("example", "path/to/script", 2021).unwrap();
 
         manifest.dependencies.insert(
             "serde".to_string(),

@@ -70,9 +70,9 @@ fn main() {
 
         for (name, role) in &roles {
             let style = monet_theme.style_for(*role);
-            if let Some(color_info) = &style.foreground {
-                let styled_text = style.paint(format!("{} message", name));
-                println!("     {}", styled_text);
+            if let Some(_color_info) = &style.foreground {
+                let styled_text = style.paint(format!("{name} message"));
+                println!("     {styled_text}");
             }
         }
     }

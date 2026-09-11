@@ -4,7 +4,7 @@
  bpaf_derive = "0.5.10"
 */
 
-/// Example from bpaf crate docs2/src/adjacent_command/derive.rs.
+/// Example from bpaf crate `docs2/src/adjacent_command/derive.rs`.
 ///
 /// E.g. `thag demo/bpaf_cmd-chain.rs -- eat Fastfood drink --coffee sleep --time=5`
 //# Purpose: Demo CLI alternative to clap crate
@@ -42,5 +42,5 @@ pub enum Cmd {
 }
 
 fn main() {
-    println!("{:?}", options().run())
+    println!("{:?}", options().run());
 }

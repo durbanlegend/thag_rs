@@ -1,4 +1,4 @@
-/// Published example of KeyCombination from the `crokey` crate.
+/// Published example of `KeyCombination` from the `crokey` crate.
 ///
 /// The latest version of this example is available in the [examples] folder
 ///  in the `crokey` repository. At time of writing you can run it successfully just
@@ -14,11 +14,11 @@
 //# Categories: crates, technique
 use crokey::{
     crossterm::{
-        event::{read, Event, KeyEventKind},
+        event::{Event, KeyEventKind, read},
         style::Stylize,
         terminal,
     },
-    {key, KeyCombinationFormat},
+    {KeyCombinationFormat, key},
 };
 
 pub fn main() {

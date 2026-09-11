@@ -1243,8 +1243,7 @@ impl eframe::App for MarkdownApp {
                 i.raw
                     .dropped_files
                     .iter()
-                    .filter(|f| f.path().extension().is_some_and(|e| e == "md"))
-                    .next()
+                    .find(|f| f.path().extension().is_some_and(|e| e == "md"))
                     .map(|f| f.path().to_owned())
             }
         });
@@ -1901,7 +1900,7 @@ impl eframe::App for MarkdownApp {
                 false // user cancelled
             }
         } else if let Some(file) = dropped_file {
-            self.load_file(file.to_path_buf())
+            self.load_file(file)
         } else if refresh_requested {
             self.reload_file()
             // No history change on refresh.

@@ -20,13 +20,13 @@
 /// running concurrently, or conversely an outer `with_sys_alloc` ending in one thread
 /// could prematurely reset the current allocator to  `TaskAware` while another
 /// instance is still running in another thread. We can and do build in a check in
-/// the TaskAware branch to detect and ignore profiler code, but in practice there is
+/// the `TaskAware` branch to detect and ignore profiler code, but in practice there is
 /// little sign of such races being a problem.
 ///
 /// Attempts to resolve this issue with thread-local storage have not borne fruit.
 /// For instance async tasks are by no means guaranteed to resume in the same thread
 /// after suspension.
-/// The ideal would seem to be a reentrant Mutex or RwLock with mutability - so far tried
+/// The ideal would seem to be a reentrant Mutex or `RwLock` with mutability - so far tried
 /// without success, but a subject for another prototype.
 //# Purpose: Prototype of a ring-fenced allocator for memory profiling.
 //# Categories: profiling, prototype
@@ -49,9 +49,18 @@ pub enum Allocator {
 impl fmt::Display for Allocator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Allocator::TaskAware => write!(f, "TaskAware"),
-            Allocator::System => write!(f, "System"),
+            Self::TaskAware => write!(f, "TaskAware"),
+            Self::System => write!(f, "System"),
         }
+    }
+}
+
+// Create struct to handle cleanup on drop
+struct Cleanup;
+
+impl Drop for Cleanup {
+    fn drop(&mut self) {
+        USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
     }
 }
 
@@ -65,15 +74,6 @@ where
     }
 
     USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
-
-    // Create struct to handle cleanup on drop
-    struct Cleanup;
-
-    impl Drop for Cleanup {
-        fn drop(&mut self) {
-            USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
-        }
-    }
 
     // Create guard to restore on scope exit
     let _cleanup = Cleanup {};
@@ -96,7 +96,7 @@ pub fn current_allocator() -> Allocator {
 static ALLOCATOR: Dispatcher = Dispatcher::new();
 
 /// Dispatcher that routes allocation requests to the active allocator
-/// according to the USING_SYSTEM_ALLOCATOR variable for the current thread.
+/// according to the `USING_SYSTEM_ALLOCATOR` static variable for the current thread.
 pub struct Dispatcher {
     pub task_aware: TaskAwareAllocator,
     pub system: std::alloc::System,

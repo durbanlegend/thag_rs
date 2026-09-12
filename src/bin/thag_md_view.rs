@@ -68,6 +68,10 @@ use std::{
 };
 use thag_proc_macros::copy_resource_dir;
 
+const HIST_BACK: &'static str = "\u{25c0}";
+const HIST_FORWARD: &'static str = "\u{25b6}";
+const OPEN_FILES: &'static str = "\u{1f4d6}\u{2026}";
+
 #[cfg(target_os = "macos")]
 const MOD: &str = "Cmd";
 
@@ -637,17 +641,21 @@ fn main() -> eframe::Result<()> {
             eprintln!("Error: Input path is a directory: {}", input_path.display());
             let _ = env::set_current_dir(input_path);
             None
-        } else {
+        } else if input_path.extension().is_some_and(|e| e == "md") {
             Some(input_path.to_path_buf())
+        } else {
+            eprintln!(
+                "Error: Input file has unsupported extension: {}; must be `md`",
+                input_path.display()
+            );
+            std::process::exit(1);
         }
     } else {
         None
     };
 
     #[cfg(unix)]
-    if args.len() > 1 {
-        detach_if_tty();
-    }
+    detach_if_tty();
 
     let (canonical_initial_path, raw_content, markdown_content, toc) = selected_file.map_or_else(
         || {
@@ -655,8 +663,14 @@ fn main() -> eframe::Result<()> {
                 .unwrap_or_default()
                 .canonicalize()
                 .unwrap_or_default();
-            let raw_content =
-                t!("welcome.instruction", cmd = MOD, icon = "\u{1f4d6}\u{2026}").to_string();
+            let raw_content = t!(
+                "welcome.instruction",
+                cmd = MOD,
+                open_files = OPEN_FILES,
+                hist_back = HIST_BACK,
+                hist_forward = HIST_FORWARD
+            )
+            .to_string();
             let (id_injected, toc) = extract_toc_and_inject_ids(&raw_content);
             let markdown_content = absolutize_image_paths(&id_injected, &canonical_initial_path);
             (canonical_initial_path, raw_content, markdown_content, toc)
@@ -859,7 +873,7 @@ impl MarkdownApp {
             raw_content,
             current_file_path: path.clone(),
             cache: CommonMarkCache::default(),
-            history: vec![path],
+            history: if path.is_file() { vec![path] } else { vec![] },
             history_index: 0,
             font_scale: 1.0,
             enhanced_contrast: true,
@@ -1200,7 +1214,7 @@ impl eframe::App for MarkdownApp {
 
         // ── Mutable locals updated by keyboard / buttons, applied at end of frame ─────────
         let mut nav_action = NavAction::None;
-        let mut open_file_requested = false;
+        let mut open_files_requested = false;
         let mut refresh_requested = false;
         let mut new_font_scale = self.font_scale;
         let mut new_enhanced_contrast = enhanced_contrast;
@@ -1247,16 +1261,23 @@ impl eframe::App for MarkdownApp {
             )
         });
 
-        let dropped_file: Option<PathBuf> = ui.ctx().input(|i| {
+        let dropped_files: Vec<PathBuf> = ui.ctx().input(|i| {
             if i.raw.dropped_files.is_empty() {
-                None
+                vec![]
             } else {
                 // Select the first '.md' file; ignore other extensions.
-                i.raw
+                let collect = i
+                    .raw
                     .dropped_files
                     .iter()
-                    .find(|f| f.path().extension().is_some_and(|e| e == "md"))
+                    .filter(|f| f.path().extension().is_some_and(|e| e == "md"))
                     .map(|f| f.path().to_owned())
+                    .collect();
+                if i.raw.dropped_files.is_empty() {
+                    vec![]
+                } else {
+                    collect
+                }
             }
         });
 
@@ -1266,7 +1287,7 @@ impl eframe::App for MarkdownApp {
         if close {
             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
         } else if open_key {
-            open_file_requested = true;
+            open_files_requested = true;
         } else if !wants_text {
             if zoom_in_key {
                 let z = ui.ctx().zoom_factor();
@@ -1359,14 +1380,14 @@ impl eframe::App for MarkdownApp {
                 }
                 ui.separator();
                 if ui
-                    .add_enabled(can_go_back, egui::Button::new("◀"))
+                    .add_enabled(can_go_back, egui::Button::new(HIST_BACK))
                     .on_hover_text(&back_tip)
                     .clicked()
                 {
                     nav_action = NavAction::Back;
                 }
                 if ui
-                    .add_enabled(can_go_forward, egui::Button::new("▶"))
+                    .add_enabled(can_go_forward, egui::Button::new(HIST_FORWARD))
                     .on_hover_text(&forward_tip)
                     .clicked()
                 {
@@ -1375,10 +1396,10 @@ impl eframe::App for MarkdownApp {
                 ui.separator();
                 if ui
                     .button("📖…")
-                    .on_hover_text(t!("toolbar.open_file", cmd = MOD).to_string())
+                    .on_hover_text(t!("toolbar.open_files", cmd = MOD).to_string())
                     .clicked()
                 {
-                    open_file_requested = true;
+                    open_files_requested = true;
                 }
                 if ui
                     .button("🔄")
@@ -1886,7 +1907,7 @@ impl eframe::App for MarkdownApp {
             } else {
                 self.handle_link_click(&url)
             }
-        } else if open_file_requested {
+        } else if open_files_requested {
             let start_dir = if self.current_file_path.is_dir() {
                 self.current_file_path.clone()
             } else {
@@ -1894,17 +1915,29 @@ impl eframe::App for MarkdownApp {
                     .parent()
                     .map_or_else(|| PathBuf::from("."), Path::to_path_buf)
             };
-            if let Some(path) = FileDialog::new()
+            if let Some(paths) = FileDialog::new()
                 .add_filter("Markdown", &["md", "markdown"])
                 .set_directory(&start_dir)
-                .pick_file()
+                .pick_files()
             {
-                self.load_and_register_history(path)
+                let mut success = false;
+                for path in paths {
+                    if self.load_and_register_history(path) && !success {
+                        success = true
+                    }
+                }
+                success
             } else {
                 false // user cancelled
             }
-        } else if let Some(path) = dropped_file {
-            self.load_and_register_history(path)
+        } else if !dropped_files.is_empty() {
+            let mut success = false;
+            for path in dropped_files {
+                if self.load_and_register_history(path) && !success {
+                    success = true
+                }
+            }
+            success
         } else if refresh_requested {
             self.reload_file()
             // No history change on refresh.
@@ -1935,7 +1968,7 @@ impl eframe::App for MarkdownApp {
 
         // Reclaim key-window focus after the native file dialog releases it;
         // without this the next keyboard shortcut typically needs two presses.
-        // if open_file_requested {
+        // if open_files_requested {
         //     ui.ctx().send_viewport_cmd(egui::ViewportCommand::Focus);
         // }
 

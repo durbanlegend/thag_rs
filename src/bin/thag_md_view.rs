@@ -1061,7 +1061,11 @@ impl MarkdownApp {
     /// Reload the current file from disk without changing history.
     fn reload_file(&mut self) -> bool {
         let path = self.current_file_path.clone();
-        self.load_file(path)
+        if path.is_file() {
+            self.load_file(path)
+        } else {
+            false
+        }
     }
 
     /// Navigate one step back in history. Returns `true` on success.
@@ -1317,7 +1321,7 @@ impl eframe::App for MarkdownApp {
                 self.search_focus = true;
             }
         }
-        if cmd_r {
+        if cmd_r && self.current_file_path.is_file() {
             refresh_requested = true;
         }
         if f1_key || (escape_key && show_help) {
@@ -1402,7 +1406,7 @@ impl eframe::App for MarkdownApp {
                     open_files_requested = true;
                 }
                 if ui
-                    .button("🔄")
+                    .add_enabled(self.current_file_path.is_file(), egui::Button::new("🔄"))
                     .on_hover_text(t!("toolbar.reload", cmd = MOD).to_string())
                     .clicked()
                 {

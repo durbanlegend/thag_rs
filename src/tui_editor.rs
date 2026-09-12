@@ -10,12 +10,15 @@ use crate::{
 use crossterm::event::{
     self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
-    KeyEvent, KeyEventKind,
+    KeyCode, KeyEventKind, KeyModifiers,
 };
 use mockall::automock;
-use ratatui::crossterm::terminal::{
-    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
-    is_raw_mode_enabled,
+use ratatui::crossterm::{
+    event::KeyEvent,
+    terminal::{
+        EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+        is_raw_mode_enabled,
+    },
 };
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
@@ -94,6 +97,7 @@ impl EventReader for CrosstermEventReader {
 ///
 /// This struct manages a terminal instance and ensures proper cleanup
 /// when the terminal goes out of scope, regardless of how the program exits.
+#[derive(Debug)]
 pub struct ManagedTerminal<'a> {
     terminal: TermScopeGuard<'a>,
 }
@@ -576,8 +580,19 @@ impl History {
     }
 }
 
+type KeyHandlerClosure = dyn Fn(KeyEvent, &mut EditData) -> ThagResult<KeyAction>;
+
+#[derive(Debug, Default, PartialEq)]
+/// Define `vim`-style editor states
+pub enum EditorMode {
+    /// Text editing mode (tui-textarea consumes text input)
+    #[default]
+    Edit,
+    /// Navigation mode (Vim/Helix style chords)
+    Vim,
+}
+
 #[allow(dead_code)]
-#[derive(Debug, Default)]
 /// Struct to hold data-related parameters for the TUI editor
 pub struct EditData<'a> {
     /// Whether to return the edited text as part of the result
@@ -590,10 +605,349 @@ pub struct EditData<'a> {
     pub history_path: Option<&'a PathBuf>,
     /// Optional history object for managing edit history
     pub history: Option<History>,
+    /// The `TextArea` to be used to edit the content.
+    pub textarea: TextArea<'a>,
+    /// The wrapped terminal instance
+    pub maybe_term: Option<ManagedTerminal<'a>>,
+    /// Popup active flag
+    pub popup: bool,
+    /// Saved flag
+    pub saved: bool,
+    /// The user_selected styling message role for text highlighting
+    pub tui_highlight_fg: Role,
+    /// The popup scroll state tracker
+    pub popup_scroll: PopupScrollState,
+    /// The edit status message
+    pub status_message: String,
+    /// The preconfigured key display lines
+    pub adjusted_mappings: Vec<KeyDisplayLine>,
+    /// The display-related parameters for the TUI editor
+    pub display: KeyDisplay<'a>,
+    /// A preconfigured key event handler to use in the current context
+    pub key_handler: Option<Box<KeyHandlerClosure>>,
+    /// The `vim`-style navigation or text editing mode.
+    pub mode: EditorMode,
+    /// Tracks multi-key sequences like `gg` for top of file.
+    pub last_char: Option<char>,
+}
+
+impl<'a> EditData<'a> {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> ThagResult<KeyAction> {
+        match self.mode {
+            EditorMode::Edit => {
+                // In Insert mode, Esc drops back to Normal/Nav mode
+                if key_event.code == KeyCode::Esc {
+                    self.mode = EditorMode::Vim;
+                } else {
+                    // log::debug_log!("key_event={key_event:#?}");
+                    let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
+
+                    // Handle scrolling in popup before normal editor keys
+                    if self.popup {
+                        let max_scroll = self.adjusted_mappings.len().saturating_sub(10);
+
+                        match key_combination {
+                            key!(up) => {
+                                self.popup_scroll.scroll_offset =
+                                    self.popup_scroll.scroll_offset.saturating_sub(1);
+                                return Ok(KeyAction::Continue);
+                            }
+                            key!(down) => {
+                                if self.popup_scroll.scroll_offset < max_scroll {
+                                    self.popup_scroll.scroll_offset += 1;
+                                }
+                                return Ok(KeyAction::Continue);
+                            }
+                            _ => {} // Let other keys fall through to toggle popup
+                        }
+                    }
+
+                    // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.
+                    #[allow(clippy::unnested_or_patterns)]
+                    match key_combination {
+                        key!(ctrl - h) | key!(backspace) => {
+                            self.textarea.delete_char();
+                        }
+                        // Not how this works. Intercepting tab and Ctrl-i is counter-productive.
+                        // key!(ctrl - i) | key!(tab) => {
+                        //     textarea.indent();
+                        // }
+                        key!(ctrl - m) | key!(enter) => {
+                            self.textarea.insert_newline();
+                        }
+                        key!(ctrl - k) => {
+                            self.textarea.delete_line_by_end();
+                        }
+                        key!(ctrl - j) => {
+                            self.textarea.delete_line_by_head();
+                        }
+                        key!(ctrl - w) | key!(alt - backspace) => {
+                            self.textarea.delete_word();
+                        }
+                        key!(alt - d) => {
+                            self.textarea.delete_next_word();
+                        }
+                        key!(ctrl - u) => {
+                            self.textarea.undo();
+                        }
+                        key!(ctrl - r) => {
+                            self.textarea.redo();
+                        }
+                        key!(ctrl - c) => {
+                            self.textarea.copy();
+                        }
+                        key!(ctrl - x) => {
+                            self.textarea.cut();
+                        }
+                        key!(ctrl - y) => {
+                            self.textarea.paste();
+                        }
+                        key!(ctrl - f) | key!(right) => {
+                            if self.textarea.is_selecting() {
+                                self.textarea.cancel_selection();
+                            }
+                            self.textarea.move_cursor(CursorMove::Forward);
+                        }
+                        key!(ctrl - b) | key!(left) => {
+                            if self.textarea.is_selecting() {
+                                self.textarea.cancel_selection();
+                            }
+                            self.textarea.move_cursor(CursorMove::Back);
+                        }
+                        key!(ctrl - p) | key!(up) => {
+                            if self.textarea.is_selecting() {
+                                self.textarea.cancel_selection();
+                            }
+                            self.textarea.move_cursor(CursorMove::Up);
+                        }
+                        key!(ctrl - n) | key!(down) => {
+                            if self.textarea.is_selecting() {
+                                self.textarea.cancel_selection();
+                            }
+                            self.textarea.move_cursor(CursorMove::Down);
+                        }
+                        key!(alt - f) => {
+                            if self.textarea.is_selecting() {
+                                self.textarea.cancel_selection();
+                            }
+                            self.textarea.move_cursor(CursorMove::WordForward);
+                        }
+                        key!(alt - shift - f) => {
+                            self.textarea.move_cursor(CursorMove::WordEnd);
+                        }
+                        key!(alt - b) => {
+                            if self.textarea.is_selecting() {
+                                self.textarea.cancel_selection();
+                            }
+                            self.textarea.move_cursor(CursorMove::WordBack);
+                        }
+                        key!(alt - p) | key!(alt - ')') | key!(f1) => {
+                            if self.textarea.is_selecting() {
+                                self.textarea.cancel_selection();
+                            }
+                            self.textarea.move_cursor(CursorMove::ParagraphBack);
+                        }
+                        key!(alt - n) | key!(alt - '(') | key!(f2) => {
+                            self.textarea.move_cursor(CursorMove::ParagraphForward);
+                        }
+                        key!(ctrl - e) | key!(end) | key!(ctrl - alt - f) => {
+                            self.textarea.move_cursor(CursorMove::End);
+                        }
+                        key!(ctrl - a) | key!(home) | key!(ctrl - alt - b) => {
+                            self.textarea.move_cursor(CursorMove::Head);
+                        }
+                        key!(f9) => {
+                            ratatui::crossterm::execute!(
+                                std::io::stdout().lock(),
+                                DisableMouseCapture,
+                            )?;
+                            self.textarea.remove_line_number();
+                            self.textarea.set_block(
+                                Block::default()
+                                    .borders(Borders::NONE)
+                                    .title(self.display.title)
+                                    .title_style(self.display.title_style),
+                            );
+                        }
+                        key!(f10) => {
+                            // eprintln!("key_combination={key_combination:?}");
+                            ratatui::crossterm::execute!(
+                                std::io::stdout().lock(),
+                                EnableMouseCapture,
+                            )?;
+                            self.textarea
+                                .set_line_number_style(RataStyle::themed(Role::Hint));
+                            self.textarea.set_block(
+                                Block::default()
+                                    .borders(Borders::ALL)
+                                    .title(self.display.title)
+                                    .title_style(self.display.title_style),
+                            );
+                        }
+                        key!(alt - '<') | key!(ctrl - alt - p) => {
+                            self.textarea.move_cursor(CursorMove::Top);
+                        }
+                        key!(alt - '>') | key!(ctrl - alt - n) => {
+                            self.textarea.move_cursor(CursorMove::Bottom);
+                        }
+                        key!(alt - c) => {
+                            if self.textarea.is_selecting() {
+                                self.textarea.cancel_selection();
+                            } else {
+                                self.textarea.start_selection();
+                            }
+                        }
+                        key!(alt - shift - 'h') => {
+                            if !self.textarea.is_selecting() {
+                                self.textarea.start_selection();
+                            }
+                            self.textarea.move_cursor(CursorMove::WordBack);
+                        }
+                        key!(alt - shift - 'j') => {
+                            if !self.textarea.is_selecting() {
+                                self.textarea.start_selection();
+                            }
+                            self.textarea.move_cursor(CursorMove::Down);
+                        }
+                        key!(alt - shift - 'k') => {
+                            if !self.textarea.is_selecting() {
+                                self.textarea.start_selection();
+                            }
+                            self.textarea.move_cursor(CursorMove::Up);
+                        }
+                        key!(alt - shift - 'l') => {
+                            if !self.textarea.is_selecting() {
+                                self.textarea.start_selection();
+                            }
+                            self.textarea.move_cursor(CursorMove::WordEnd);
+                        }
+                        key!(alt - shift - 'p') => {
+                            if !self.textarea.is_selecting() {
+                                self.textarea.start_selection();
+                            }
+                            self.textarea.move_cursor(CursorMove::ParagraphBack);
+                        }
+                        key!(alt - shift - 'n') => {
+                            if !self.textarea.is_selecting() {
+                                self.textarea.start_selection();
+                            }
+                            self.textarea.move_cursor(CursorMove::ParagraphForward);
+                        }
+                        // key!(alt - shift - c) => {
+                        //     textarea.start_selection();
+                        // }
+                        key!(alt - shift - a) => {
+                            self.textarea.select_all();
+                        }
+                        key!(ctrl - t) => {
+                            // Toggle highlighting colours
+                            self.tui_highlight_fg = match self.tui_highlight_fg {
+                                Role::Emphasis => Role::Info,
+                                Role::Info => Role::Error,
+                                Role::Error => Role::Warning,
+                                Role::Warning => Role::Heading1,
+                                Role::Heading1 => Role::Heading2,
+                                Role::Heading2 => Role::Heading3,
+                                _ => Role::Emphasis,
+                            };
+                            if var("TEST_ENV").is_err() {
+                                #[allow(clippy::option_if_let_else)]
+                                if let Some(ref mut term) = self.maybe_term {
+                                    term.draw(|_| {
+                                        highlight_selection(
+                                            &mut self.textarea,
+                                            self.tui_highlight_fg,
+                                        );
+                                    })?;
+                                }
+                            }
+                        }
+                        _ => {
+                            // Call the key_handler closure to process events
+                            // Use `take` to work around the borrow checker
+                            if let Some(handler) = self.key_handler.take() {
+                                let result = handler(key_event, self);
+
+                                self.key_handler = Some(handler);
+
+                                return result;
+                            }
+                            // eprintln!("key_action={key_action:?}");
+                        }
+                    }
+                }
+            }
+            EditorMode::Vim => {
+                self.handle_normal_mode(key_event);
+            }
+        }
+        return Ok(KeyAction::Continue);
+    }
+
+    fn handle_normal_mode(&mut self, key: KeyEvent) {
+        // If we are waiting for a sequence (like 'g' prefix)
+        if let Some('g') = self.last_char {
+            self.last_char = None; // Reset prefix tracker
+            match key.code {
+                KeyCode::Char('g') => self.textarea.move_cursor(CursorMove::Top), // Vim 'gg'
+                KeyCode::Char('k') => self.textarea.move_cursor(CursorMove::Top), // Helix 'gk'
+                KeyCode::Char('j') => self.textarea.move_cursor(CursorMove::Bottom), // Helix 'gj'
+                _ => {}
+            }
+            return;
+        }
+
+        match (key.code, key.modifiers) {
+            // Mode switching: press 'i' to enter typing mode
+            (KeyCode::Char('i'), KeyModifiers::NONE) => {
+                self.mode = EditorMode::Edit;
+            }
+
+            // --- Micro-Navigation ---
+            (KeyCode::Char('h'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::Back),
+            (KeyCode::Char('j'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::Down),
+            (KeyCode::Char('k'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::Up),
+            (KeyCode::Char('l'), KeyModifiers::NONE) => {
+                self.textarea.move_cursor(CursorMove::Forward)
+            }
+
+            // --- Large Jumps ---
+            (KeyCode::Char('g'), KeyModifiers::NONE) => {
+                self.last_char = Some('g'); // Stash 'g' to await the next keystroke
+            }
+            (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
+                self.textarea.move_cursor(CursorMove::Bottom); // Vim style Bottom
+            }
+
+            // --- Paragraph Jumping (Empty line boundaries) ---
+            (KeyCode::Char('{'), KeyModifiers::NONE) => {
+                self.textarea.move_cursor(CursorMove::ParagraphBack);
+            }
+            (KeyCode::Char('}'), KeyModifiers::NONE) => {
+                self.textarea.move_cursor(CursorMove::ParagraphForward);
+            }
+
+            // --- Paging (Ctrl-u / Ctrl-d) ---
+            (KeyCode::Char('u'), KeyModifiers::CONTROL) => {
+                // tui-textarea doesn't have a native 'page' command,
+                // but you can loop standard jumps or use custom window logic
+                for _ in 0..15 {
+                    self.textarea.move_cursor(CursorMove::Up);
+                }
+            }
+            (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
+                for _ in 0..15 {
+                    self.textarea.move_cursor(CursorMove::Down);
+                }
+            }
+
+            _ => {}
+        }
+    }
 }
 
 /// Struct to hold display-related parameters for the TUI editor
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct KeyDisplay<'a> {
     /// The title to display at the top of the editor
     pub title: &'a str,
@@ -652,72 +1006,60 @@ pub enum KeyAction {
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 #[profiled]
-pub fn tui_edit<R, F>(
+pub fn tui_edit<R>(
     event_reader: &R,
     edit_data: &mut EditData,
-    display: &KeyDisplay,
-    key_handler: F, // closure or function for key handling
 ) -> ThagResult<(KeyAction, Option<Vec<String>>)>
 where
     R: EventReader + Debug,
-    F: Fn(
-        ratatui::crossterm::event::KeyEvent,
-        Option<&mut ManagedTerminal>,
-        &mut TextArea,
-        &mut EditData,
-        &mut bool,
-        &mut bool,
-        &mut String,
-    ) -> ThagResult<KeyAction>,
 {
     // Initialize state variables
-    let mut popup = false;
-    let mut tui_highlight_fg: Role = Role::Emphasis;
-    let mut saved = false;
-    let mut status_message: String = String::default(); // Add status message variable
-
-    let mut maybe_term = resolve_term()?;
+    edit_data.maybe_term = resolve_term()?;
 
     // Create the `TextArea` from initial content
-    let mut textarea = TextArea::from(edit_data.initial_content.lines());
-    textarea.set_hard_tab_indent(true);
-    // eprintln!("textarea.tab_length()={}", textarea.tab_length());
+    // let mut textarea = TextArea::from(edit_data.initial_content.lines());
+    // let mut textarea = &edit_data.textarea;
+    edit_data.textarea.set_hard_tab_indent(true);
+    // eprintln!("edit_data.textarea.tab_length()={}", edit_data.textarea.tab_length());
 
     // Set up the display parameters for the `TextArea`
-    textarea.set_block(
+    edit_data.textarea.set_block(
         Block::default()
             .borders(Borders::ALL)
-            .title(display.title)
-            .title_style(display.title_style),
+            .title(edit_data.display.title)
+            .title_style(edit_data.display.title_style),
     );
 
-    textarea.set_line_number_style(RataStyle::themed(Role::Hint));
-    textarea.move_cursor(CursorMove::Bottom);
+    edit_data
+        .textarea
+        .set_line_number_style(RataStyle::themed(Role::Hint));
+    edit_data.textarea.move_cursor(CursorMove::Bottom);
     // New line with cursor at EOF for usability
-    textarea.move_cursor(CursorMove::End);
-    if !textarea.is_empty() {
-        textarea.insert_newline();
+    edit_data.textarea.move_cursor(CursorMove::End);
+    if !edit_data.textarea.is_empty() {
+        edit_data.textarea.insert_newline();
     }
 
     // Apply initial highlights
-    highlight_selection(&mut textarea, tui_highlight_fg);
+    highlight_selection(&mut edit_data.textarea, edit_data.tui_highlight_fg);
 
-    let remove = display.remove_keys;
-    let add = display.add_keys;
+    let remove = edit_data.display.remove_keys;
+    let add = edit_data.display.add_keys;
     // Track popup scroll state
-    let mut popup_scroll = PopupScrollState::default();
+    // let mut popup_scroll = PopupScrollState::default();
 
     // Can't make these OnceLock values, since their configuration depends on the `remove`
     // and `add` values passed in by the caller.
-    let mut adjusted_mappings: Vec<KeyDisplayLine> = MAPPINGS
+    edit_data.adjusted_mappings = MAPPINGS
         .iter()
         .filter(|&row| !remove.contains(&row.keys))
         .chain(add.iter())
         .cloned()
         .collect();
-    adjusted_mappings.sort();
+    edit_data.adjusted_mappings.sort();
     let (max_key_len, max_desc_len) =
-        adjusted_mappings
+        edit_data
+            .adjusted_mappings
             .iter()
             .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
                 let key_len = row.keys.len().try_into().unwrap();
@@ -734,7 +1076,7 @@ where
             event_reader.read_event()?
         } else {
             // Real-world interaction
-            maybe_term.as_mut().map_or_else(
+            edit_data.maybe_term.as_mut().map_or_else(
                 || Err("Logic issue unwrapping term we wrapped ourselves".into()),
                 |term| {
                     term.draw(|f| {
@@ -752,34 +1094,38 @@ where
                                 .split(area);
 
                             // Render the `TextArea` in the first chunk
-                            f.render_widget(&textarea, chunks[0]);
+                            f.render_widget(&edit_data.textarea, chunks[0]);
 
                             // Render the status line in the second chunk
                             let status_block = Block::default()
                                 .borders(Borders::ALL)
                                 .title("Status")
                                 .style(RataStyle::themed(Role::Success))
-                                .title_style(display.title_style)
+                                .title_style(edit_data.display.title_style)
                                 .padding(ratatui::widgets::Padding::horizontal(1));
 
-                            let status_text = Paragraph::new::<&str>(status_message.as_ref())
-                                .block(status_block)
-                                .style(RataStyle::themed(Role::Info));
+                            let status_text =
+                                Paragraph::new::<&str>(edit_data.status_message.as_ref())
+                                    .block(status_block)
+                                    .style(RataStyle::themed(Role::Info));
 
                             f.render_widget(status_text, chunks[1]);
 
-                            if popup {
+                            if edit_data.popup {
                                 display_popup(
-                                    &adjusted_mappings,
+                                    &edit_data.adjusted_mappings,
                                     TITLE_TOP,
                                     TITLE_BOTTOM,
                                     max_key_len,
                                     max_desc_len,
-                                    &mut popup_scroll,
+                                    &mut edit_data.popup_scroll,
                                     f,
                                 );
                             }
-                            highlight_selection(&mut textarea, tui_highlight_fg);
+                            highlight_selection(
+                                &mut edit_data.textarea,
+                                edit_data.tui_highlight_fg,
+                            );
                             // status_message = String::new();
                         }
                     })
@@ -795,19 +1141,22 @@ where
         };
 
         if let Paste(ref data) = event {
-            textarea.insert_str(normalize_newlines(data));
+            edit_data.textarea.insert_str(normalize_newlines(data));
         } else if let Event::Mouse(mouse_event) = event {
             // Handle mouse scrolling in popup
-            if popup {
+            if edit_data.popup {
                 use ratatui::crossterm::event::MouseEventKind;
                 match mouse_event.kind {
                     MouseEventKind::ScrollDown => {
-                        if popup_scroll.scroll_offset + 1 < adjusted_mappings.len() {
-                            popup_scroll.scroll_offset += 1;
+                        if edit_data.popup_scroll.scroll_offset + 1
+                            < edit_data.adjusted_mappings.len()
+                        {
+                            edit_data.popup_scroll.scroll_offset += 1;
                         }
                     }
                     MouseEventKind::ScrollUp => {
-                        popup_scroll.scroll_offset = popup_scroll.scroll_offset.saturating_sub(1);
+                        edit_data.popup_scroll.scroll_offset =
+                            edit_data.popup_scroll.scroll_offset.saturating_sub(1);
                     }
                     _ => {}
                 }
@@ -817,259 +1166,36 @@ where
             if !matches!(key_event.kind, KeyEventKind::Press) {
                 continue;
             }
-            //
-            // log::debug_log!("key_event={key_event:#?}");
-            let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
-            // Handle scrolling in popup before normal editor keys
-            if popup {
-                let max_scroll = adjusted_mappings.len().saturating_sub(10);
-
-                match key_combination {
-                    key!(up) => {
-                        popup_scroll.scroll_offset = popup_scroll.scroll_offset.saturating_sub(1);
-                        continue;
-                    }
-                    key!(down) => {
-                        if popup_scroll.scroll_offset < max_scroll {
-                            popup_scroll.scroll_offset += 1;
-                        }
-                        continue;
-                    }
-                    _ => {} // Let other keys fall through to toggle popup
+            let key_action = edit_data.handle_key_event(key_event)?;
+            match key_action {
+                KeyAction::AbandonChanges => {
+                    return Ok((key_action, None::<Vec<String>>));
                 }
-            }
-
-            // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.
-            #[allow(clippy::unnested_or_patterns)]
-            match key_combination {
-                key!(ctrl - h) | key!(backspace) => {
-                    textarea.delete_char();
-                }
-                // Not how this works. Intercepting tab and Ctrl-i is counter-productive.
-                // key!(ctrl - i) | key!(tab) => {
-                //     textarea.indent();
-                // }
-                key!(ctrl - m) | key!(enter) => {
-                    textarea.insert_newline();
-                }
-                key!(ctrl - k) => {
-                    textarea.delete_line_by_end();
-                }
-                key!(ctrl - j) => {
-                    textarea.delete_line_by_head();
-                }
-                key!(ctrl - w) | key!(alt - backspace) => {
-                    textarea.delete_word();
-                }
-                key!(alt - d) => {
-                    textarea.delete_next_word();
-                }
-                key!(ctrl - u) => {
-                    textarea.undo();
-                }
-                key!(ctrl - r) => {
-                    textarea.redo();
-                }
-                key!(ctrl - c) => {
-                    textarea.copy();
-                }
-                key!(ctrl - x) => {
-                    textarea.cut();
-                }
-                key!(ctrl - y) => {
-                    textarea.paste();
-                }
-                key!(ctrl - f) | key!(right) => {
-                    if textarea.is_selecting() {
-                        textarea.cancel_selection();
-                    }
-                    textarea.move_cursor(CursorMove::Forward);
-                }
-                key!(ctrl - b) | key!(left) => {
-                    if textarea.is_selecting() {
-                        textarea.cancel_selection();
-                    }
-                    textarea.move_cursor(CursorMove::Back);
-                }
-                key!(ctrl - p) | key!(up) => {
-                    if textarea.is_selecting() {
-                        textarea.cancel_selection();
-                    }
-                    textarea.move_cursor(CursorMove::Up);
-                }
-                key!(ctrl - n) | key!(down) => {
-                    if textarea.is_selecting() {
-                        textarea.cancel_selection();
-                    }
-                    textarea.move_cursor(CursorMove::Down);
-                }
-                key!(alt - f) => {
-                    if textarea.is_selecting() {
-                        textarea.cancel_selection();
-                    }
-                    textarea.move_cursor(CursorMove::WordForward);
-                }
-                key!(alt - shift - f) => {
-                    textarea.move_cursor(CursorMove::WordEnd);
-                }
-                key!(alt - b) => {
-                    if textarea.is_selecting() {
-                        textarea.cancel_selection();
-                    }
-                    textarea.move_cursor(CursorMove::WordBack);
-                }
-                key!(alt - p) | key!(alt - ')') | key!(f1) => {
-                    if textarea.is_selecting() {
-                        textarea.cancel_selection();
-                    }
-                    textarea.move_cursor(CursorMove::ParagraphBack);
-                }
-                key!(alt - n) | key!(alt - '(') | key!(f2) => {
-                    textarea.move_cursor(CursorMove::ParagraphForward);
-                }
-                key!(ctrl - e) | key!(end) | key!(ctrl - alt - f) => {
-                    textarea.move_cursor(CursorMove::End);
-                }
-                key!(ctrl - a) | key!(home) | key!(ctrl - alt - b) => {
-                    textarea.move_cursor(CursorMove::Head);
-                }
-                key!(f9) => {
-                    ratatui::crossterm::execute!(std::io::stdout().lock(), DisableMouseCapture,)?;
-                    textarea.remove_line_number();
-                    textarea.set_block(
-                        Block::default()
-                            .borders(Borders::NONE)
-                            .title(display.title)
-                            .title_style(display.title_style),
-                    );
-                }
-                key!(f10) => {
-                    // eprintln!("key_combination={key_combination:?}");
-                    ratatui::crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
-                    textarea.set_line_number_style(RataStyle::themed(Role::Hint));
-                    textarea.set_block(
-                        Block::default()
-                            .borders(Borders::ALL)
-                            .title(display.title)
-                            .title_style(display.title_style),
-                    );
-                }
-                key!(alt - '<') | key!(ctrl - alt - p) => {
-                    textarea.move_cursor(CursorMove::Top);
-                }
-                key!(alt - '>') | key!(ctrl - alt - n) => {
-                    textarea.move_cursor(CursorMove::Bottom);
-                }
-                key!(alt - c) => {
-                    if textarea.is_selecting() {
-                        textarea.cancel_selection();
+                KeyAction::Quit(_)
+                | KeyAction::SaveAndExit
+                | KeyAction::SaveAndSubmit
+                | KeyAction::Submit => {
+                    let maybe_text = if edit_data.return_text {
+                        Some(edit_data.textarea.lines().to_vec())
                     } else {
-                        textarea.start_selection();
-                    }
-                }
-                key!(alt - shift - 'h') => {
-                    if !textarea.is_selecting() {
-                        textarea.start_selection();
-                    }
-                    textarea.move_cursor(CursorMove::WordBack);
-                }
-                key!(alt - shift - 'j') => {
-                    if !textarea.is_selecting() {
-                        textarea.start_selection();
-                    }
-                    textarea.move_cursor(CursorMove::Down);
-                }
-                key!(alt - shift - 'k') => {
-                    if !textarea.is_selecting() {
-                        textarea.start_selection();
-                    }
-                    textarea.move_cursor(CursorMove::Up);
-                }
-                key!(alt - shift - 'l') => {
-                    if !textarea.is_selecting() {
-                        textarea.start_selection();
-                    }
-                    textarea.move_cursor(CursorMove::WordEnd);
-                }
-                key!(alt - shift - 'p') => {
-                    if !textarea.is_selecting() {
-                        textarea.start_selection();
-                    }
-                    textarea.move_cursor(CursorMove::ParagraphBack);
-                }
-                key!(alt - shift - 'n') => {
-                    if !textarea.is_selecting() {
-                        textarea.start_selection();
-                    }
-                    textarea.move_cursor(CursorMove::ParagraphForward);
-                }
-                // key!(alt - shift - c) => {
-                //     textarea.start_selection();
-                // }
-                key!(alt - shift - a) => {
-                    textarea.select_all();
-                }
-                key!(ctrl - t) => {
-                    // Toggle highlighting colours
-                    tui_highlight_fg = match tui_highlight_fg {
-                        Role::Emphasis => Role::Info,
-                        Role::Info => Role::Error,
-                        Role::Error => Role::Warning,
-                        Role::Warning => Role::Heading1,
-                        Role::Heading1 => Role::Heading2,
-                        Role::Heading2 => Role::Heading3,
-                        _ => Role::Emphasis,
+                        None::<Vec<String>>
                     };
-                    if var("TEST_ENV").is_err() {
-                        #[allow(clippy::option_if_let_else)]
-                        if let Some(ref mut term) = maybe_term {
-                            term.draw(|_| {
-                                highlight_selection(&mut textarea, tui_highlight_fg);
-                            })?;
-                        }
+                    return Ok((key_action, maybe_text));
+                }
+                KeyAction::Continue | KeyAction::Save | KeyAction::ToggleHighlight => (),
+                KeyAction::TogglePopup => {
+                    // Reset scroll position when popup is opened
+                    if edit_data.popup {
+                        edit_data.popup_scroll.scroll_offset = 0;
                     }
                 }
-                _ => {
-                    // Call the key_handler closure to process events
-                    let key_action = key_handler(
-                        key_event,
-                        maybe_term.as_mut(),
-                        &mut textarea,
-                        edit_data,
-                        &mut popup,
-                        &mut saved,
-                        &mut status_message,
-                    )?;
-                    // eprintln!("key_action={key_action:?}");
-                    match key_action {
-                        KeyAction::AbandonChanges => break Ok((key_action, None::<Vec<String>>)),
-                        KeyAction::Quit(_)
-                        | KeyAction::SaveAndExit
-                        | KeyAction::SaveAndSubmit
-                        | KeyAction::Submit => {
-                            let maybe_text = if edit_data.return_text {
-                                Some(textarea.lines().to_vec())
-                            } else {
-                                None::<Vec<String>>
-                            };
-                            break Ok((key_action, maybe_text));
-                        }
-                        KeyAction::Continue | KeyAction::Save | KeyAction::ToggleHighlight => (),
-                        KeyAction::TogglePopup => {
-                            // Reset scroll position when popup is opened
-                            if popup {
-                                popup_scroll.scroll_offset = 0;
-                            }
-                        }
-                        KeyAction::ShowHelp => todo!(),
-                    }
-                }
+                KeyAction::ShowHelp => todo!(),
             }
-        } else {
-            // println!("You typed {key_combination:?} which represents nothing yet"/*, key.blue()*/);
+        } else if edit_data.mode == EditorMode::Edit {
+            // Otherwise, tui-textarea handles typing natively
             let input = tui_textarea::Input::from(event);
-            textarea.input(input);
+            edit_data.textarea.input(input);
         }
     }
 }
@@ -1095,47 +1221,32 @@ pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: Role) 
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[allow(clippy::too_many_lines, clippy::missing_panics_doc)]
 #[profiled]
-pub fn script_key_handler(
-    key_event: KeyEvent,
-    maybe_term: Option<&mut ManagedTerminal>,
-    textarea: &mut TextArea,
-    edit_data: &mut EditData,
-    popup: &mut bool,
-    saved: &mut bool, // TODO decide if we need this
-    status_message: &mut String,
-) -> ThagResult<KeyAction> {
-    // let mut owned_path: PathBuf;
-    if !matches!(key_event.kind, event::KeyEventKind::Press) {
+pub fn script_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> ThagResult<KeyAction> {
+    if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
     }
 
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
     // eprintln!("key_combination={key_combination:?}");
 
-    let history_path = edit_data.history_path.cloned();
+    // let history_path = edit_data.history_path.cloned();
 
     #[allow(clippy::unnested_or_patterns)]
     match key_combination {
-        key!(esc) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
-        key!(ctrl - d) => save_and_submit(history_path.as_ref(), edit_data, textarea),
+        key!(esc) | key!(ctrl - q) => Ok(KeyAction::Quit(edit_data.saved)),
+        key!(ctrl - d) => save_and_submit(edit_data),
         key!(ctrl - s) | key!(ctrl - alt - s) | key!(f12) => {
             if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
                 // eprintln!("key_combination matches ctrl-s");
-                save(
-                    edit_data,
-                    history_path.as_ref(),
-                    textarea,
-                    saved,
-                    status_message,
-                )
+                save(edit_data)
             } else {
-                let key_action = save_as(edit_data, maybe_term, textarea, saved, status_message)?;
+                let key_action = save_as(edit_data)?;
                 Ok(key_action)
             }
         }
         key!(ctrl - l) => {
             // Toggle popup
-            *popup = !*popup;
+            edit_data.popup = !edit_data.popup;
             Ok(KeyAction::TogglePopup)
         }
         key!(f3) => {
@@ -1144,16 +1255,16 @@ pub fn script_key_handler(
         }
         key!(f4) => {
             // Clear textarea
-            textarea.select_all();
-            textarea.cut();
+            edit_data.textarea.select_all();
+            edit_data.textarea.cut();
             Ok(KeyAction::Continue)
         }
         key!(f5) => {
             // Clear textarea and wipe from history
-            if textarea.is_empty() {
+            if edit_data.textarea.is_empty() {
                 return Ok(KeyAction::Continue);
             }
-            wipe_textarea(edit_data, textarea, history_path.as_ref())?;
+            wipe_textarea(edit_data)?;
             Ok(KeyAction::Continue)
         }
         key!(f6) => {
@@ -1163,50 +1274,45 @@ pub fn script_key_handler(
         }
         key!(f7) => {
             // Scroll up in history
-            prev_hist(edit_data, textarea, history_path.as_ref())?;
+            prev_hist(edit_data)?;
             Ok(KeyAction::Continue)
         }
         key!(f8) => {
             // Scroll down in history
-            next_hist(edit_data, textarea);
+            next_hist(edit_data);
             Ok(KeyAction::Continue)
         }
         _ => {
             // Update the `TextArea` with the input from the key event
-            textarea.input(Input::from(key_event)); // Input derived from Event
+            edit_data.textarea.input(Input::from(key_event)); // Input derived from Event
             Ok(KeyAction::Continue)
         }
     }
 }
 
 #[profiled]
-fn next_hist(edit_data: &mut EditData<'_>, textarea: &mut TextArea<'_>) {
+fn next_hist(edit_data: &mut EditData<'_>) {
     if let Some(ref mut hist) = edit_data.history {
-        // save_if_changed(hist, textarea, &history_path)?;
         if let Some(entry) = hist.get_next() {
             debug_log!("F8 found entry {entry:?}");
-            paste_to_textarea(textarea, entry);
+            paste_to_textarea(&mut edit_data.textarea, entry);
         }
     }
 }
 
 #[profiled]
-fn prev_hist(
-    edit_data: &mut EditData<'_>,
-    textarea: &mut TextArea<'_>,
-    history_path: Option<&PathBuf>,
-) -> ThagResult<()> {
+fn prev_hist(edit_data: &mut EditData<'_>) -> ThagResult<()> {
     if let Some(ref mut hist) = edit_data.history {
-        if hist.at_end() && textarea.is_empty() {
+        if hist.at_end() && edit_data.textarea.is_empty() {
             if let Some(entry) = &hist.get_last() {
                 debug_log!("F7 (1) found entry {entry:?}");
-                paste_to_textarea(textarea, entry);
+                paste_to_textarea(&mut edit_data.textarea, entry);
             }
         } else {
-            save_if_changed(hist, textarea, history_path)?;
+            save_if_changed(hist, &mut edit_data.textarea, edit_data.history_path)?;
             if let Some(entry) = &hist.get_previous() {
                 debug_log!("F7 (2) found entry {entry:?}");
-                paste_to_textarea(textarea, entry);
+                paste_to_textarea(&mut edit_data.textarea, entry);
             }
         }
     }
@@ -1214,17 +1320,13 @@ fn prev_hist(
 }
 
 #[profiled]
-fn wipe_textarea(
-    edit_data: &mut EditData<'_>,
-    textarea: &mut TextArea<'_>,
-    history_path: Option<&PathBuf>,
-) -> ThagResult<()> {
+fn wipe_textarea(edit_data: &mut EditData<'_>) -> ThagResult<()> {
     if let Some(ref mut hist) = edit_data.history {
         let _in_hist = !&hist.at_end();
-        let textarea_contents = textarea.lines().to_vec().join("\n");
-        textarea.select_all();
-        textarea.cut();
-        let yank_text = textarea.yank_text();
+        let textarea_contents = edit_data.textarea.lines().to_vec().join("\n");
+        edit_data.textarea.select_all();
+        edit_data.textarea.cut();
+        let yank_text = edit_data.textarea.yank_text();
         assert_eq!(yank_text, textarea_contents);
         if let Some(current_hist_entry) = &hist.get_current() {
             assert_eq!(yank_text, current_hist_entry.contents());
@@ -1233,7 +1335,7 @@ fn wipe_textarea(
             hist.entries
                 .retain(|f| f.contents().trim() != textarea_contents);
         }
-        if let Some(hist_path) = history_path {
+        if let Some(hist_path) = edit_data.history_path {
             hist.save_to_file(hist_path)?;
         }
     }
@@ -1241,14 +1343,8 @@ fn wipe_textarea(
 }
 
 #[profiled]
-fn save_as(
-    edit_data: &mut EditData<'_>,
-    maybe_term: Option<&mut ManagedTerminal<'_>>,
-    textarea: &mut TextArea<'_>,
-    saved: &mut bool,
-    status_message: &mut String,
-) -> ThagResult<KeyAction> {
-    if let Some(term) = maybe_term {
+fn save_as(edit_data: &mut EditData<'_>) -> ThagResult<KeyAction> {
+    if let Some(ref mut term) = edit_data.maybe_term {
         let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 20, DialogMode::Save)?;
         save_dialog.open();
         let mut status = Status::Incomplete;
@@ -1259,51 +1355,52 @@ fn save_as(
             }
         }
 
-        status_message.clear();
+        edit_data.status_message.clear();
         if let Some(ref to_rs_path) = save_dialog.selected_file {
-            save_source_file(to_rs_path, textarea, saved)?;
-            let _ = write!(status_message, "Saved to {}", to_rs_path.display());
+            save_source_file(to_rs_path, &mut edit_data.textarea, &mut edit_data.saved)?;
+            let _ = write!(
+                edit_data.status_message,
+                "Saved to {}",
+                to_rs_path.display()
+            );
             edit_data.save_path = Some(to_rs_path.clone());
             Ok(KeyAction::Save)
         } else {
-            let _ = write!(status_message, "Failed to save file");
+            let _ = write!(edit_data.status_message, "Failed to save file");
             Ok(KeyAction::Continue)
         }
     } else {
-        let _ = write!(status_message, "No terminal to display file save dialog");
+        let _ = write!(
+            edit_data.status_message,
+            "No terminal to display file save dialog"
+        );
         Ok(KeyAction::Continue)
     }
 }
 
 #[profiled]
-fn save(
-    edit_data: &mut EditData<'_>,
-    history_path: Option<&PathBuf>,
-    textarea: &mut TextArea<'_>,
-    saved: &mut bool,
-    status_message: &mut String,
-) -> ThagResult<KeyAction> {
+fn save(edit_data: &mut EditData<'_>) -> ThagResult<KeyAction> {
     if let Some(ref save_path) = edit_data.save_path {
-        if let Some(hist_path) = history_path {
+        if let Some(hist_path) = edit_data.history_path {
             let history = &mut edit_data.history;
             if let Some(hist) = history {
-                preserve(textarea, hist, hist_path)?;
+                preserve(&mut edit_data.textarea, hist, hist_path)?;
             }
         }
-        let result = save_source_file(save_path, textarea, saved);
+        let result = save_source_file(save_path, &mut edit_data.textarea, &mut edit_data.saved);
         // eprintln!("result={result:?}");
         match result {
             Ok(()) => {
-                status_message.clear();
-                let _ = write!(status_message, "Saved to {}", save_path.display());
+                edit_data.status_message.clear();
+                let _ = write!(edit_data.status_message, "Saved to {}", save_path.display());
                 Ok(KeyAction::Save)
             }
             Err(e) => Err(e),
         }
     } else {
-        status_message.clear();
+        edit_data.status_message.clear();
         let _ = write!(
-            status_message,
+            edit_data.status_message,
             "No save path: edit_data.save_path={:?}",
             edit_data.save_path
         );
@@ -1312,15 +1409,11 @@ fn save(
 }
 
 #[profiled]
-fn save_and_submit(
-    history_path: Option<&PathBuf>,
-    edit_data: &mut EditData<'_>,
-    textarea: &mut TextArea<'_>,
-) -> ThagResult<KeyAction> {
-    if let Some(hist_path) = history_path {
+fn save_and_submit(edit_data: &mut EditData<'_>) -> ThagResult<KeyAction> {
+    if let Some(hist_path) = edit_data.history_path {
         let history = &mut edit_data.history;
         if let Some(hist) = history {
-            preserve(textarea, hist, hist_path)?;
+            preserve(&mut edit_data.textarea, hist, hist_path)?;
         }
     }
     Ok(KeyAction::Submit)

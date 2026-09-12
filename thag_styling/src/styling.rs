@@ -1346,7 +1346,7 @@ pub fn style_for_theme_and_role(theme: &Theme, role: Role) -> Style {
 // New structures for Themes
 
 /// Defines the role (purpose and relative prominence) of a piece of text
-#[derive(Debug, Clone, Copy, EnumIter, Display, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, Default, EnumIter, Display, PartialEq, Eq, Hash)]
 pub enum Role {
     /// Primary heading, highest prominence
     Heading1,
@@ -1369,6 +1369,7 @@ pub enum Role {
     /// Code snippets or commands
     Code,
     /// Standard text, default prominence
+    #[default]
     Normal,
     /// De-emphasized but clearly visible text
     Subtle,

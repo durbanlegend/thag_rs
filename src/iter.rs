@@ -7,7 +7,7 @@ use crate::{
     key, lazy_static_var,
     manifest::extract,
     tui_editor::{
-        EditData, Entry, History, KeyAction, KeyDisplay, ManagedTerminal, RataStyle,
+        EditData, EditorMode, Entry, History, KeyAction, KeyDisplay, PopupScrollState, RataStyle,
         script_key_handler, tui_edit,
     },
 };
@@ -689,47 +689,39 @@ fn tui(
     };
 
     let event_reader = CrosstermEventReader;
-    let mut edit_data = EditData {
-        return_text: true,
-        initial_content: &initial_content,
-        save_path: Some(save_path.to_path_buf()),
-        history_path: Some(&history_path),
-        history: Some(history),
-    };
+
     let add_keys = [
         KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
 
-    let display = KeyDisplay {
-        title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: RataStyle::themed(Role::HD2),
-        remove_keys: &[""; 0],
-        add_keys: &add_keys,
-    };
-    let (key_action, maybe_text) = tui_edit(
-        &event_reader,
-        &mut edit_data,
-        &display,
-        |key_event,
-         maybe_term,
-         /*maybe_save_file,*/ textarea,
-         edit_data,
-         popup,
-         saved,
-         status_message| {
-            script_key_handler(
-                key_event,
-                maybe_term, // maybe_save_file,
-                textarea,
-                edit_data,
-                popup,
-                saved,
-                status_message,
-            )
+    let mut edit_data = EditData {
+        return_text: true,
+        initial_content: &initial_content,
+        save_path: Some(save_path.to_path_buf()),
+        history_path: Some(&history_path),
+        history: Some(history),
+        textarea: TextArea::from(initial_content.lines()),
+        maybe_term: None,
+        popup: false,
+        saved: false,
+        tui_highlight_fg: Role::EMPH,
+        popup_scroll: PopupScrollState::default(),
+        status_message: String::new(),
+        adjusted_mappings: vec![],
+        display: KeyDisplay {
+            title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
+            title_style: RataStyle::themed(Role::HD2),
+            remove_keys: &[""; 0],
+            add_keys: &add_keys,
         },
-    )?;
+        key_handler: Some(Box::new(script_key_handler)),
+        mode: EditorMode::Vim,
+        last_char: None,
+    };
+
+    let (key_action, maybe_text) = tui_edit(&event_reader, &mut edit_data)?;
     let _ = match key_action {
         // KeyAction::Quit(_saved) => false,
         KeyAction::Save
@@ -799,39 +791,37 @@ pub fn edit_history<R: EventReader + Debug>(
     staging_path: &Path,
     event_reader: &R,
 ) -> ThagResult<bool> {
+    let binding = [
+        KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
+        // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
+    ];
+
     let mut edit_data = EditData {
         return_text: false,
         initial_content,
         save_path: Some(staging_path.to_path_buf()),
         history_path: None,
         history: None::<History>,
-    };
-    let binding = [
-        KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
-        // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
-    ];
-    let display = KeyDisplay {
-        title: "Enter / paste / edit iterator history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: RataStyle::themed(Role::HD2),
-        remove_keys: &["F7", "F8"],
-        add_keys: &binding,
-    };
-    let (key_action, _maybe_text) = tui_edit(
-        event_reader,
-        &mut edit_data,
-        &display,
-        |key_event, maybe_term, textarea, edit_data, popup, saved, status_message| {
-            history_key_handler(
-                key_event,
-                maybe_term, // maybe_save_file,
-                textarea,
-                edit_data,
-                popup,
-                saved,
-                status_message,
-            )
+        textarea: TextArea::from(initial_content.lines()),
+        maybe_term: None,
+        popup: false,
+        saved: false,
+        tui_highlight_fg: Role::EMPH,
+        popup_scroll: PopupScrollState::default(),
+        status_message: String::new(),
+        adjusted_mappings: vec![],
+        display: KeyDisplay {
+            title: "Enter / paste / edit iterator history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
+            title_style: RataStyle::themed(Role::HD2),
+            remove_keys: &["F7", "F8"],
+            add_keys: &binding,
         },
-    )?;
+        key_handler: Some(Box::new(script_key_handler)),
+        mode: EditorMode::Vim,
+        last_char: None,
+    };
+
+    let (key_action, _maybe_text) = tui_edit(event_reader, &mut edit_data)?;
     Ok(match key_action {
         KeyAction::Quit(saved) => saved,
         KeyAction::Save
@@ -855,16 +845,7 @@ pub fn edit_history<R: EventReader + Debug>(
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[profiled]
-pub fn history_key_handler(
-    key_event: KeyEvent,
-    _maybe_term: Option<&mut ManagedTerminal>,
-    // maybe_save_path: &mut Option<&mut PathBuf>,
-    textarea: &mut TextArea,
-    edit_data: &mut EditData,
-    popup: &mut bool,
-    saved: &mut bool,
-    status_message: &mut String,
-) -> ThagResult<KeyAction> {
+pub fn history_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> ThagResult<KeyAction> {
     // Make sure for Windows
     if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
@@ -874,25 +855,25 @@ pub fn history_key_handler(
 
     match key_combination {
         #[allow(clippy::unnested_or_patterns)]
-        key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
+        key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(edit_data.saved)),
         key!(ctrl - d) => {
             // Save logic
-            save_file(maybe_save_path.as_ref(), textarea)?;
+            save_file(maybe_save_path.as_ref(), &edit_data.textarea)?;
             // println!("Saved");
             Ok(KeyAction::SaveAndExit)
         }
         key!(ctrl - s) => {
             // Save logic
-            let save_file = save_file(maybe_save_path.as_ref(), textarea)?;
+            let save_file = save_file(maybe_save_path.as_ref(), &edit_data.textarea)?;
             // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
-            *saved = true;
-            status_message.clear();
-            let _ = write!(status_message, "Saved to {save_file}");
+            edit_data.saved = true;
+            edit_data.status_message.clear();
+            let _ = write!(edit_data.status_message, "Saved to {save_file}");
             Ok(KeyAction::Save)
         }
         key!(ctrl - l) => {
             // Toggle popup
-            *popup = !*popup;
+            edit_data.popup = !edit_data.popup;
             Ok(KeyAction::TogglePopup)
         }
         key!(f3) => {
@@ -901,7 +882,7 @@ pub fn history_key_handler(
         }
         _ => {
             // Update the textarea with the input from the key event
-            textarea.input(Input::from(key_event)); // Input derived from Event
+            edit_data.textarea.input(Input::from(key_event)); // Input derived from Event
             Ok(KeyAction::Continue)
         }
     }

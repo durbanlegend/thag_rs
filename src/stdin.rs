@@ -1,8 +1,11 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::{
-    debug_log,
-    tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay},
-    vprtln, CrosstermEventReader, EventReader, Role, ThagError, ThagResult, V,
+    CrosstermEventReader, EventReader, Role, ThagError, ThagResult, V, debug_log,
+    tui_editor::{
+        EditData, EditorMode, History, KeyAction, KeyDisplay, PopupScrollState, script_key_handler,
+        tui_edit,
+    },
+    vprtln,
 };
 use edit::edit_file;
 use ratatui::style::Style;
@@ -14,6 +17,7 @@ use std::{
 };
 use thag_profiler::{enable_profiling, profiled};
 use thag_styling::ThemedStyle;
+use tui_textarea::TextArea;
 
 #[allow(dead_code)]
 #[enable_profiling]
@@ -79,34 +83,30 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         save_path: None,
         history_path: Some(&history_path),
         history: Some(history),
+        textarea: TextArea::from(initial_content.lines()),
+        maybe_term: None,
+        popup: false,
+        saved: false,
+        tui_highlight_fg: Role::EMPH,
+        popup_scroll: PopupScrollState::default(),
+        status_message: String::new(),
+        adjusted_mappings: vec![],
+        display: KeyDisplay {
+            title: "Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting",
+            title_style: Style::themed(Role::Heading3),
+            remove_keys: &[""; 0],
+            add_keys: &[],
+        },
+        key_handler: Some(Box::new(script_key_handler)),
+        mode: EditorMode::Vim,
+        last_char: None,
     };
     // let add_keys = [
     //     KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),
     //     KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
     //     // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     // ];
-    let display = KeyDisplay {
-        title: "Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting",
-        title_style: Style::themed(Role::Heading3),
-        remove_keys: &[""; 0],
-        add_keys: &[],
-    };
-    let (key_action, maybe_text) = tui_edit(
-        event_reader,
-        &mut edit_data,
-        &display,
-        |key_event, maybe_term, textarea, edit_data, popup, saved, status_message| {
-            script_key_handler(
-                key_event,
-                maybe_term, // maybe_save_file,
-                textarea,
-                edit_data,
-                popup,
-                saved,
-                status_message,
-            )
-        },
-    )?;
+    let (key_action, maybe_text) = tui_edit(event_reader, &mut edit_data)?;
     match key_action {
         KeyAction::Quit(_saved) => Ok(vec![]),
         KeyAction::AbandonChanges => Ok(vec![]),
@@ -133,7 +133,10 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 #[profiled]
 pub fn read() -> Result<String, std::io::Error> {
     if std::io::stdin().is_terminal() {
-        vprtln!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+        vprtln!(
+            V::N,
+            "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done"
+        );
     }
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)

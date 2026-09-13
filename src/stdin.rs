@@ -92,13 +92,17 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         status_message: String::new(),
         adjusted_mappings: vec![],
         display: KeyDisplay {
-            title: "Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting",
-            title_style: Style::themed(Role::Heading3),
+            edit_title: "Enter / paste / edit Rust script.  ^d: submit  ^q: quit  ^l: keys  ^t: toggle highlighting  ^g: Vim mode",
+            vim_title: "Enter / paste / edit Rust script.  ^q: quit  ^g: Edit mode",
+            title_style: match EditorMode::default() {
+                EditorMode::Edit => Style::themed(Role::Heading3),
+                EditorMode::Vim => Style::themed(Role::Warning),
+            },
             remove_keys: &[""; 0],
             add_keys: &[],
         },
         key_handler: Some(Box::new(script_key_handler)),
-        mode: EditorMode::Vim,
+        mode: EditorMode::default(),
         last_char: None,
     };
     // let add_keys = [

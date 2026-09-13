@@ -3,20 +3,26 @@
 ratatui = "0.29"
 */
 
+use ratatui::Terminal;
 /// Published basic `vim` editor example from crate `tui-textarea`. Mildly tweaked
 /// to use `ratatui::crossterm` re-exports instead of `crossterm` directly.
+///
+/// E.g.:
+/// `thag demo/tui_ta_vim.rs -- myfile.txt`
+///
 //# Purpose: Demo TUI `vim` editor and featured crates, including `crossterm`.
+//
+//
 ///
 /// Not suitable for running from a URL.
 //# Categories: crates, tui
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use ratatui::crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::widgets::{Block, Borders};
-use ratatui::Terminal;
 use std::env;
 use std::fmt;
 use std::fs;
@@ -40,7 +46,7 @@ impl Mode {
             Self::Visual => "type y to yank, type d to delete, type Esc to back to normal mode",
             Self::Operator(_) => "move cursor to apply operator",
         };
-        let title = format!("{} MODE ({})", self, help);
+        let title = format!("{self} MODE ({help})");
         Block::default().borders(Borders::ALL).title(title)
     }
 

@@ -638,6 +638,7 @@ impl<'a> EditData<'a> {
                 // In Insert mode, Esc drops back to Normal/Nav mode
                 if key_event.code == KeyCode::Esc {
                     self.mode = EditorMode::Vim;
+                    self.display.title_style = RataStyle::themed(Role::Warning);
                 } else {
                     // log::debug_log!("key_event={key_event:#?}");
                     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
@@ -665,6 +666,10 @@ impl<'a> EditData<'a> {
                     // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.
                     #[allow(clippy::unnested_or_patterns)]
                     match key_combination {
+                        key!(ctrl - g) => {
+                            self.mode = EditorMode::Vim;
+                            self.display.title_style = RataStyle::themed(Role::Warning);
+                        }
                         key!(ctrl - h) | key!(backspace) => {
                             self.textarea.delete_char();
                         }
@@ -765,7 +770,7 @@ impl<'a> EditData<'a> {
                             self.textarea.set_block(
                                 Block::default()
                                     .borders(Borders::NONE)
-                                    .title(self.display.title)
+                                    .title(self.display.edit_title)
                                     .title_style(self.display.title_style),
                             );
                         }
@@ -780,7 +785,7 @@ impl<'a> EditData<'a> {
                             self.textarea.set_block(
                                 Block::default()
                                     .borders(Borders::ALL)
-                                    .title(self.display.title)
+                                    .title(self.display.edit_title)
                                     .title_style(self.display.title_style),
                             );
                         }
@@ -878,13 +883,13 @@ impl<'a> EditData<'a> {
                 }
             }
             EditorMode::Vim => {
-                self.handle_normal_mode(key_event);
+                return self.handle_normal_mode(key_event);
             }
         }
         return Ok(KeyAction::Continue);
     }
 
-    fn handle_normal_mode(&mut self, key: KeyEvent) {
+    fn handle_normal_mode(&mut self, key: KeyEvent) -> ThagResult<KeyAction> {
         // If we are waiting for a sequence (like 'g' prefix)
         if let Some('g') = self.last_char {
             self.last_char = None; // Reset prefix tracker
@@ -894,13 +899,23 @@ impl<'a> EditData<'a> {
                 KeyCode::Char('j') => self.textarea.move_cursor(CursorMove::Bottom), // Helix 'gj'
                 _ => {}
             }
-            return;
+            return Ok(KeyAction::Continue);
         }
 
         match (key.code, key.modifiers) {
             // Mode switching: press 'i' to enter typing mode
-            (KeyCode::Char('i'), KeyModifiers::NONE) => {
+            (KeyCode::Char('i'), KeyModifiers::NONE)
+            | (KeyCode::Char('g'), KeyModifiers::CONTROL) => {
                 self.mode = EditorMode::Edit;
+                self.display.title_style = RataStyle::themed(Role::Heading3);
+            }
+
+            // --- Control functions ---
+            // (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
+            //     return save_and_submit(self);
+            // }
+            (KeyCode::Char('q'), KeyModifiers::CONTROL) => {
+                return Ok(KeyAction::Quit(self.saved));
             }
 
             // --- Micro-Navigation ---
@@ -910,6 +925,8 @@ impl<'a> EditData<'a> {
             (KeyCode::Char('l'), KeyModifiers::NONE) => {
                 self.textarea.move_cursor(CursorMove::Forward)
             }
+            (KeyCode::Char('^'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::Head),
+            (KeyCode::Char('$'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::End),
 
             // --- Large Jumps ---
             (KeyCode::Char('g'), KeyModifiers::NONE) => {
@@ -943,14 +960,17 @@ impl<'a> EditData<'a> {
 
             _ => {}
         }
+        Ok(KeyAction::Continue)
     }
 }
 
 /// Struct to hold display-related parameters for the TUI editor
 #[derive(Debug, Default)]
 pub struct KeyDisplay<'a> {
-    /// The title to display at the top of the editor
-    pub title: &'a str,
+    /// The title to display at the top of the editor in edit mode
+    pub edit_title: &'a str,
+    /// The title to display at the top of the editor in vim mode
+    pub vim_title: &'a str,
     /// The style to apply to the title text
     pub title_style: RataStyle,
     /// Keys to remove from the default key mappings display
@@ -1022,14 +1042,6 @@ where
     edit_data.textarea.set_hard_tab_indent(true);
     // eprintln!("edit_data.textarea.tab_length()={}", edit_data.textarea.tab_length());
 
-    // Set up the display parameters for the `TextArea`
-    edit_data.textarea.set_block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(edit_data.display.title)
-            .title_style(edit_data.display.title_style),
-    );
-
     edit_data
         .textarea
         .set_line_number_style(RataStyle::themed(Role::Hint));
@@ -1076,6 +1088,21 @@ where
             event_reader.read_event()?
         } else {
             // Real-world interaction
+            // Set up the display parameters for the `TextArea`
+            edit_data.textarea.set_block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(match edit_data.mode {
+                        EditorMode::Edit => edit_data.display.edit_title,
+                        EditorMode::Vim => edit_data.display.vim_title,
+                    })
+                    .title_style(edit_data.display.title_style),
+            );
+            edit_data.textarea.set_style(match edit_data.mode {
+                EditorMode::Edit => RataStyle::themed(Role::Normal),
+                EditorMode::Vim => RataStyle::themed(Role::Hint),
+            });
+
             edit_data.maybe_term.as_mut().map_or_else(
                 || Err("Logic issue unwrapping term we wrapped ourselves".into()),
                 |term| {

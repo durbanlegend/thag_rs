@@ -210,11 +210,37 @@ impl Profilee {
     }
 }
 
-// /// Retrieve profiled root module holder
-// #[cfg(feature = "time_profiling")]
-// pub fn get_profilee() -> Option<&'static Profilee> {
-//     PROFILEE.get()
-// }
+/// A guard to drop profiles automatically without needing wrapper code to do so.
+pub struct ProfileGuard {
+    profile: Option<Profile>,
+}
+
+impl ProfileGuard {
+    /// Create a new `ProfileGuard` with an optional `Profile` to manage.
+    pub fn new(profile: Option<Profile>) -> Self {
+        Self { profile: profile }
+    }
+}
+
+impl Drop for ProfileGuard {
+    fn drop(&mut self) {
+        #[cfg(not(feature = "full_profiling"))]
+        if let Some(profile) = self.profile.take() {
+            drop(profile);
+        }
+
+        #[cfg(feature = "full_profiling")]
+        {
+            let was_already_using_sys = compare_exchange_using_system(false, true).is_err();
+            if let Some(profile) = self.profile.take() {
+                drop(profile);
+            }
+            if !was_already_using_sys {
+                set_using_system(false);
+            }
+        }
+    }
+}
 
 /// Retrieve profiled root module
 #[cfg(feature = "time_profiling")]

@@ -148,26 +148,6 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    // #[cfg(not(feature = "full_profiling"))]
-    // let profile_drop = quote! {
-    //     drop(profile);
-    // };
-
-    // #[cfg(feature = "full_profiling")]
-    // let profile_drop = quote! {
-    //     ::thag_profiler::safe_alloc! {
-    //         drop(profile);
-    //     };
-    // };
-
-    // #[cfg(not(feature = "full_profiling"))]
-    // let import_mem_tracking = quote! {};
-
-    // #[cfg(feature = "full_profiling")]
-    // let import_mem_tracking = quote! {
-    //     use thag_profiler::mem_tracking::{self, compare_exchange_using_system, set_using_system};
-    // };
-
     let ctx = FunctionContext {
         vis: &input.vis,
         fn_name,
@@ -178,9 +158,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         body: &input.block,
         attrs: &input.attrs,
         profile_new,
-        // profile_drop,
         is_test_fn,
-        // import_mem_tracking,
     };
 
     if is_async {
@@ -202,15 +180,12 @@ fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
         body,
         attrs,
         profile_new,
-        // profile_drop,
         is_test_fn: _,
-        // import_mem_tracking,
     }: &FunctionContext<'_> = ctx;
 
     quote! {
         #(#attrs)*
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
-            // #import_mem_tracking
 
             // We pass None for the name as we rely on the backtrace to identify the function
             let profile = #profile_new;
@@ -218,10 +193,7 @@ fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
             // The guard owns the profile and cleans it up on function exit.
             let _profile_guard = ::thag_profiler::ProfileGuard::new(profile);
 
-            // let result = { #body };
             #body
-            // #profile_drop
-            // result
         }
     }
 }
@@ -237,9 +209,7 @@ fn generate_async_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
         body,
         attrs,
         profile_new,
-        // profile_drop,
         is_test_fn,
-        // import_mem_tracking,
     } = ctx;
 
     // For test functions or functions with _test suffix, create a clone
@@ -279,7 +249,6 @@ fn generate_async_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
             use std::future::Future;
             use std::pin::Pin;
             use std::task::{Context, Poll};
-            // #import_mem_tracking;
 
             struct ProfiledFuture<F> {
                 inner: F,
@@ -292,12 +261,6 @@ fn generate_async_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
                 fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
                     let this = unsafe { self.as_mut().get_unchecked_mut() };
                     let result = unsafe { Pin::new_unchecked(&mut this.inner) }.poll(cx);
-                    // if result.is_ready() {
-                    //     // Take the profile out so we can explicitly drop it with the System allocator
-                    //     if let Some(profile) = this._profile.take() {
-                    //         #profile_drop
-                    //     }
-                    // }
                     result
                 }
             }
@@ -337,10 +300,6 @@ struct FunctionContext<'a> {
     attrs: &'a Vec<Attribute>,
     /// Profile instantiation, avoiding allocation tracking if memory profiling
     profile_new: proc_macro2::TokenStream,
-    /// Profile drop, avoiding allocation tracking if memory profiling
-    // profile_drop: proc_macro2::TokenStream,
     /// Is this a test function (either by name convention or explicit flag)
     is_test_fn: bool,
-    // /// Import `mem_tracking` for `safe_alloc` if memory profiling
-    // import_mem_tracking: proc_macro2::TokenStream,
 }

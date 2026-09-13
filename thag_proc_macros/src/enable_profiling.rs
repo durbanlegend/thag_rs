@@ -335,24 +335,6 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     };
 
     #[cfg(not(feature = "full_profiling"))]
-    let profile_drop = if profile_this_fn {
-        quote! {
-            drop(profile);
-        }
-    } else {
-        quote! {}
-    };
-
-    #[cfg(feature = "full_profiling")]
-    let profile_drop = if profile_this_fn {
-        quote! {
-            ::thag_profiler::safe_alloc!(drop(profile););
-        }
-    } else {
-        quote! {}
-    };
-
-    #[cfg(not(feature = "full_profiling"))]
     let profile_init = match args.mode {
         ProfilingMode::Runtime => {
             quote! {
@@ -401,10 +383,6 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         ProfilingMode::Runtime => {
             quote! {
                 if should_profile {
-                    // Drop the profile explicitly at the end
-                    if let Some(profile) = maybe_profile {
-                        #profile_drop
-                    }
 
                     // Finalize profiling
                     finalize_profiling();  // Already uses safe_alloc(... internally
@@ -413,8 +391,6 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         }
         ProfilingMode::Enabled => {
             quote! {
-                // Drop the profile explicitly at the end
-                #profile_drop
 
                 // Finalize profiling
                 finalize_profiling();  // Already uses safe_alloc(... internally
@@ -489,6 +465,9 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             let profile_clause = if profile_this_fn {
                 quote! {
                     let profile = #profile_new;
+
+                    // The guard owns the profile and cleans it up on function exit.
+                    let _profile_guard = ::thag_profiler::ProfileGuard::new(profile);
                 }
             } else {
                 quote! {}
@@ -542,6 +521,9 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                     let profile = ::thag_profiler::safe_alloc! {
                         #profile_new
                     };
+
+                    // The guard owns the profile and cleans it up on function exit.
+                    let _profile_guard = ::thag_profiler::ProfileGuard::new(profile);
                 }
             } else {
                 quote! {}

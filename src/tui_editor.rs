@@ -582,7 +582,7 @@ impl History {
 
 type KeyHandlerClosure = dyn Fn(KeyEvent, &mut EditData) -> ThagResult<KeyAction>;
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 /// Define `vim`-style editor states
 pub enum EditorMode {
     /// Text editing mode (tui-textarea consumes text input)
@@ -613,7 +613,7 @@ pub struct EditData<'a> {
     pub popup: bool,
     /// Saved flag
     pub saved: bool,
-    /// The user_selected styling message role for text highlighting
+    /// The user-selected styling message role for text highlighting
     pub tui_highlight_fg: Role,
     /// The popup scroll state tracker
     pub popup_scroll: PopupScrollState,
@@ -631,7 +631,8 @@ pub struct EditData<'a> {
     pub last_char: Option<char>,
 }
 
-impl<'a> EditData<'a> {
+impl EditData<'_> {
+    #[allow(clippy::too_many_lines)]
     fn handle_key_event(&mut self, key_event: KeyEvent) -> ThagResult<KeyAction> {
         match self.mode {
             EditorMode::Edit => {
@@ -883,23 +884,25 @@ impl<'a> EditData<'a> {
                 }
             }
             EditorMode::Vim => {
-                return self.handle_normal_mode(key_event);
+                return Ok(self.handle_normal_mode(key_event));
             }
         }
-        return Ok(KeyAction::Continue);
+        Ok(KeyAction::Continue)
     }
 
-    fn handle_normal_mode(&mut self, key: KeyEvent) -> ThagResult<KeyAction> {
+    fn handle_normal_mode(&mut self, key: KeyEvent) -> KeyAction {
         // If we are waiting for a sequence (like 'g' prefix)
-        if let Some('g') = self.last_char {
+        if self.last_char == Some('g') {
             self.last_char = None; // Reset prefix tracker
             match key.code {
-                KeyCode::Char('g') => self.textarea.move_cursor(CursorMove::Top), // Vim 'gg'
-                KeyCode::Char('k') => self.textarea.move_cursor(CursorMove::Top), // Helix 'gk'
+                KeyCode::Char('g' | 'k') => {
+                    // Vim 'gg', Helix 'gk'
+                    self.textarea.move_cursor(CursorMove::Top);
+                }
                 KeyCode::Char('j') => self.textarea.move_cursor(CursorMove::Bottom), // Helix 'gj'
                 _ => {}
             }
-            return Ok(KeyAction::Continue);
+            return KeyAction::Continue;
         }
 
         // self.status_message.clear();
@@ -921,7 +924,7 @@ impl<'a> EditData<'a> {
             //     return save_and_submit(self);
             // }
             (KeyCode::Char('q'), KeyModifiers::CONTROL) => {
-                return Ok(KeyAction::Quit(self.saved));
+                return KeyAction::Quit(self.saved);
             }
             (KeyCode::Char('u'), KeyModifiers::NONE) => {
                 self.textarea.undo();
@@ -935,16 +938,16 @@ impl<'a> EditData<'a> {
             (KeyCode::Char('j'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::Down),
             (KeyCode::Char('k'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::Up),
             (KeyCode::Char('l'), KeyModifiers::NONE) => {
-                self.textarea.move_cursor(CursorMove::Forward)
+                self.textarea.move_cursor(CursorMove::Forward);
             }
             (KeyCode::Char('w'), KeyModifiers::NONE) => {
-                self.textarea.move_cursor(CursorMove::WordForward)
+                self.textarea.move_cursor(CursorMove::WordForward);
             }
             (KeyCode::Char('e'), KeyModifiers::NONE) => {
-                self.textarea.move_cursor(CursorMove::WordEnd)
+                self.textarea.move_cursor(CursorMove::WordEnd);
             }
             (KeyCode::Char('b'), KeyModifiers::NONE) => {
-                self.textarea.move_cursor(CursorMove::WordBack)
+                self.textarea.move_cursor(CursorMove::WordBack);
             }
             (KeyCode::Char('^'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::Head),
             (KeyCode::Char('$'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::End),
@@ -1010,7 +1013,7 @@ impl<'a> EditData<'a> {
 
             _ => {}
         }
-        Ok(KeyAction::Continue)
+        KeyAction::Continue
     }
 }
 

@@ -217,8 +217,9 @@ pub struct ProfileGuard {
 
 impl ProfileGuard {
     /// Create a new `ProfileGuard` with an optional `Profile` to manage.
-    pub fn new(profile: Option<Profile>) -> Self {
-        Self { profile: profile }
+    #[must_use]
+    pub const fn new(profile: Option<Profile>) -> Self {
+        Self { profile }
     }
 }
 

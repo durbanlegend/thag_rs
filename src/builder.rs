@@ -60,8 +60,6 @@ use cargo_toml::Manifest;
 use regex::Regex;
 use side_by_side_diff::create_side_by_side_diff;
 use std::env;
-#[cfg(feature = "build")]
-use std::u16;
 use std::{
     fs::{self, OpenOptions},
     io::Write,

@@ -45,7 +45,7 @@ use thag_common::{debug_log, re};
 use thag_styling::{Role, ThemedStyle};
 // import without risk of name clashing
 use thag_profiler::profiled;
-use tui_textarea::{CursorMove, Input, TextArea};
+use tui_textarea::{CursorMove, Input, Scrolling, TextArea};
 
 /// Title displayed at the top of the key bindings popup
 pub const TITLE_TOP: &str = "Key bindings - subject to your terminal settings";
@@ -902,6 +902,12 @@ impl<'a> EditData<'a> {
             return Ok(KeyAction::Continue);
         }
 
+        // self.status_message.clear();
+        // let _ = writeln!(
+        //     self.status_message,
+        //     "key.code={}, key.modifiers={}",
+        //     key.code, key.modifiers
+        // );
         match (key.code, key.modifiers) {
             // Mode switching: press 'i' to enter typing mode
             (KeyCode::Char('i'), KeyModifiers::NONE)
@@ -917,6 +923,12 @@ impl<'a> EditData<'a> {
             (KeyCode::Char('q'), KeyModifiers::CONTROL) => {
                 return Ok(KeyAction::Quit(self.saved));
             }
+            (KeyCode::Char('u'), KeyModifiers::NONE) => {
+                self.textarea.undo();
+            }
+            (KeyCode::Char('r'), KeyModifiers::NONE) => {
+                self.textarea.redo();
+            }
 
             // --- Micro-Navigation ---
             (KeyCode::Char('h'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::Back),
@@ -925,8 +937,46 @@ impl<'a> EditData<'a> {
             (KeyCode::Char('l'), KeyModifiers::NONE) => {
                 self.textarea.move_cursor(CursorMove::Forward)
             }
+            (KeyCode::Char('w'), KeyModifiers::NONE) => {
+                self.textarea.move_cursor(CursorMove::WordForward)
+            }
+            (KeyCode::Char('e'), KeyModifiers::NONE) => {
+                self.textarea.move_cursor(CursorMove::WordEnd)
+            }
+            (KeyCode::Char('b'), KeyModifiers::NONE) => {
+                self.textarea.move_cursor(CursorMove::WordBack)
+            }
             (KeyCode::Char('^'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::Head),
             (KeyCode::Char('$'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::End),
+
+            (KeyCode::Char('a'), KeyModifiers::NONE) => {
+                self.textarea.move_cursor(CursorMove::Forward);
+                self.mode = EditorMode::Edit;
+                self.display.title_style = RataStyle::themed(Role::Heading3);
+            }
+            (KeyCode::Char('A'), KeyModifiers::SHIFT) => {
+                self.textarea.move_cursor(CursorMove::End);
+                self.mode = EditorMode::Edit;
+                self.display.title_style = RataStyle::themed(Role::Heading3);
+            }
+            (KeyCode::Char('o'), KeyModifiers::NONE) => {
+                self.textarea.move_cursor(CursorMove::End);
+                self.textarea.insert_newline();
+                self.mode = EditorMode::Edit;
+                self.display.title_style = RataStyle::themed(Role::Heading3);
+            }
+            (KeyCode::Char('O'), KeyModifiers::SHIFT) => {
+                self.textarea.move_cursor(CursorMove::Head);
+                self.textarea.insert_newline();
+                self.textarea.move_cursor(CursorMove::Up);
+                self.mode = EditorMode::Edit;
+                self.display.title_style = RataStyle::themed(Role::Heading3);
+            }
+            (KeyCode::Char('I'), KeyModifiers::SHIFT) => {
+                self.textarea.move_cursor(CursorMove::Head);
+                self.mode = EditorMode::Edit;
+                self.display.title_style = RataStyle::themed(Role::Heading3);
+            }
 
             // --- Large Jumps ---
             (KeyCode::Char('g'), KeyModifiers::NONE) => {
@@ -944,18 +994,18 @@ impl<'a> EditData<'a> {
                 self.textarea.move_cursor(CursorMove::ParagraphForward);
             }
 
-            // --- Paging (Ctrl-u / Ctrl-d) ---
+            // --- Paging (Ctrl-u / Ctrl-d / Ctrl-b / Ctrl-f) ---
             (KeyCode::Char('u'), KeyModifiers::CONTROL) => {
-                // tui-textarea doesn't have a native 'page' command,
-                // but you can loop standard jumps or use custom window logic
-                for _ in 0..15 {
-                    self.textarea.move_cursor(CursorMove::Up);
-                }
+                self.textarea.scroll(Scrolling::HalfPageUp);
             }
             (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
-                for _ in 0..15 {
-                    self.textarea.move_cursor(CursorMove::Down);
-                }
+                self.textarea.scroll(Scrolling::HalfPageDown);
+            }
+            (KeyCode::Char('b'), KeyModifiers::CONTROL) => {
+                self.textarea.scroll(Scrolling::PageUp);
+            }
+            (KeyCode::Char('f'), KeyModifiers::CONTROL) => {
+                self.textarea.scroll(Scrolling::PageDown);
             }
 
             _ => {}
@@ -1171,8 +1221,8 @@ where
             edit_data.textarea.insert_str(normalize_newlines(data));
         } else if let Event::Mouse(mouse_event) = event {
             // Handle mouse scrolling in popup
+            use ratatui::crossterm::event::MouseEventKind;
             if edit_data.popup {
-                use ratatui::crossterm::event::MouseEventKind;
                 match mouse_event.kind {
                     MouseEventKind::ScrollDown => {
                         if edit_data.popup_scroll.scroll_offset + 1
@@ -1186,6 +1236,18 @@ where
                             edit_data.popup_scroll.scroll_offset.saturating_sub(1);
                     }
                     _ => {}
+                }
+            } else {
+                match mouse_event.kind {
+                    MouseEventKind::ScrollUp => {
+                        // Scroll up by 1 line (negative row offset)
+                        edit_data.textarea.scroll((-1, 0));
+                    }
+                    MouseEventKind::ScrollDown => {
+                        // Scroll down by 1 line (positive row offset)
+                        edit_data.textarea.scroll((1, 0));
+                    }
+                    _ => {} // Ignore other mouse clicks/movements if not needed
                 }
             }
         } else if let Event::Key(key_event) = event {

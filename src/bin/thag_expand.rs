@@ -84,6 +84,7 @@ fn main() -> Result<()> {
 
 #[allow(clippy::too_many_lines)]
 fn expand_script() -> Result<()> {
+    let args: Vec<String> = args().collect();
     let input_path = match get_script_mode() {
         ScriptMode::Stdin => {
             eprintln!(
@@ -93,7 +94,6 @@ fn expand_script() -> Result<()> {
         }
         ScriptMode::File => {
             // Get the file path from args
-            let args: Vec<String> = args().collect();
             PathBuf::from(args[1].clone())
         }
         ScriptMode::Interactive => {
@@ -113,7 +113,7 @@ fn expand_script() -> Result<()> {
 
     // Get expanded source using cargo-expand - this can be slow, so only do it once
     let start = std::time::Instant::now();
-    let expanded_source = run_cargo_expand(&input_path)
+    let expanded_source = run_cargo_expand(&input_path, &args)
         .context("Failed to run cargo-expand. Is it installed? (cargo install cargo-expand)")?;
     let expand_duration = start.elapsed();
 
@@ -320,12 +320,19 @@ fn expand_script() -> Result<()> {
 }
 
 /// Run cargo-expand on the input file and return the expanded output
-fn run_cargo_expand(input_path: &Path) -> Result<String> {
-    let input_path_str = input_path.to_str().ok_or_else(|| anyhow!("Invalid path"))?;
+fn run_cargo_expand(input_path: &Path, args: &Vec<String>) -> Result<String> {
+    let _input_path_str = input_path.to_str().ok_or_else(|| anyhow!("Invalid path"))?;
     // Run cargo-expand
     let mut binding = Command::new("thag");
+    let mut cmd_args = vec!["--cargo"];
+
+    // Pick up arguments excluding 0 = executing program.
+    cmd_args.extend_from_slice(&(args[1..].iter().map(|s| s.as_str()).collect::<Vec<&str>>()));
+    cmd_args.push("--");
+    cmd_args.push("expand");
+
     let cmd = binding
-        .args(["--cargo", input_path_str, "--", "expand"])
+        .args(cmd_args)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 

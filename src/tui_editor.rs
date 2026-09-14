@@ -47,8 +47,6 @@ use thag_styling::{Role, ThemedStyle};
 use thag_profiler::profiled;
 use tui_textarea::{CursorMove, Input, Scrolling, TextArea};
 
-/// Title displayed at the top of the key bindings popup
-pub const TITLE_TOP: &str = "Key bindings - subject to your terminal settings";
 /// Title displayed at the bottom of the key bindings popup
 pub const TITLE_BOTTOM: &str = "Ctrl+l to hide";
 
@@ -613,16 +611,16 @@ pub struct EditData<'a> {
     pub popup: bool,
     /// Saved flag
     pub saved: bool,
-    /// The user-selected styling message role for text highlighting
-    pub tui_highlight_fg: Role,
+    /// The user-selected styling message role for highlighting selected text in edit mode
+    pub selection_highlight_fg: Role,
     /// The popup scroll state tracker
     pub popup_scroll: PopupScrollState,
     /// The edit status message
     pub status_message: String,
-    /// The preconfigured key display lines
-    pub adjusted_mappings: Vec<KeyDisplayLine>,
-    /// The display-related parameters for the TUI editor
-    pub display: KeyDisplay<'a>,
+    /// The preconfigured key display lines for the currrent editor mode
+    pub key_display_lines: Vec<KeyDisplayLine>,
+    /// The display-related parameters for the currrent editor mode
+    pub key_display_parms: KeyDisplayParms<'a>,
     /// A preconfigured key event handler to use in the current context
     pub key_handler: Option<Box<KeyHandlerClosure>>,
     /// The `vim`-style navigation or text editing mode.
@@ -639,14 +637,14 @@ impl EditData<'_> {
                 // In Insert mode, Esc drops back to Normal/Nav mode
                 if key_event.code == KeyCode::Esc {
                     self.mode = EditorMode::Vim;
-                    self.display.title_style = RataStyle::themed(Role::Warning);
+                    self.key_display_parms.title_style = RataStyle::themed(Role::Warning);
                 } else {
                     // log::debug_log!("key_event={key_event:#?}");
                     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
                     // Handle scrolling in popup before normal editor keys
                     if self.popup {
-                        let max_scroll = self.adjusted_mappings.len().saturating_sub(10);
+                        let max_scroll = self.key_display_lines.len().saturating_sub(10);
 
                         match key_combination {
                             key!(up) => {
@@ -669,7 +667,7 @@ impl EditData<'_> {
                     match key_combination {
                         key!(ctrl - g) => {
                             self.mode = EditorMode::Vim;
-                            self.display.title_style = RataStyle::themed(Role::Warning);
+                            self.key_display_parms.title_style = RataStyle::themed(Role::Warning);
                         }
                         key!(ctrl - h) | key!(backspace) => {
                             self.textarea.delete_char();
@@ -771,8 +769,8 @@ impl EditData<'_> {
                             self.textarea.set_block(
                                 Block::default()
                                     .borders(Borders::NONE)
-                                    .title(self.display.edit_title)
-                                    .title_style(self.display.title_style),
+                                    .title(self.key_display_parms.edit_title)
+                                    .title_style(self.key_display_parms.title_style),
                             );
                         }
                         key!(f10) => {
@@ -786,8 +784,8 @@ impl EditData<'_> {
                             self.textarea.set_block(
                                 Block::default()
                                     .borders(Borders::ALL)
-                                    .title(self.display.edit_title)
-                                    .title_style(self.display.title_style),
+                                    .title(self.key_display_parms.edit_title)
+                                    .title_style(self.key_display_parms.title_style),
                             );
                         }
                         key!(alt - '<') | key!(ctrl - alt - p) => {
@@ -847,7 +845,7 @@ impl EditData<'_> {
                         }
                         key!(ctrl - t) => {
                             // Toggle highlighting colours
-                            self.tui_highlight_fg = match self.tui_highlight_fg {
+                            self.selection_highlight_fg = match self.selection_highlight_fg {
                                 Role::Emphasis => Role::Info,
                                 Role::Info => Role::Error,
                                 Role::Error => Role::Warning,
@@ -862,7 +860,7 @@ impl EditData<'_> {
                                     term.draw(|_| {
                                         highlight_selection(
                                             &mut self.textarea,
-                                            self.tui_highlight_fg,
+                                            self.selection_highlight_fg,
                                         );
                                     })?;
                                 }
@@ -916,7 +914,7 @@ impl EditData<'_> {
             (KeyCode::Char('i'), KeyModifiers::NONE)
             | (KeyCode::Char('g'), KeyModifiers::CONTROL) => {
                 self.mode = EditorMode::Edit;
-                self.display.title_style = RataStyle::themed(Role::Heading3);
+                self.key_display_parms.title_style = RataStyle::themed(Role::Heading3);
             }
 
             // --- Control functions ---
@@ -925,6 +923,10 @@ impl EditData<'_> {
             // }
             (KeyCode::Char('q'), KeyModifiers::CONTROL) => {
                 return KeyAction::Quit(self.saved);
+            }
+            (KeyCode::Char('l'), KeyModifiers::CONTROL) => {
+                self.popup = !self.popup;
+                return KeyAction::TogglePopup;
             }
             (KeyCode::Char('u'), KeyModifiers::NONE) => {
                 self.textarea.undo();
@@ -955,30 +957,30 @@ impl EditData<'_> {
             (KeyCode::Char('a'), KeyModifiers::NONE) => {
                 self.textarea.move_cursor(CursorMove::Forward);
                 self.mode = EditorMode::Edit;
-                self.display.title_style = RataStyle::themed(Role::Heading3);
+                self.key_display_parms.title_style = RataStyle::themed(Role::Heading3);
             }
             (KeyCode::Char('A'), KeyModifiers::SHIFT) => {
                 self.textarea.move_cursor(CursorMove::End);
                 self.mode = EditorMode::Edit;
-                self.display.title_style = RataStyle::themed(Role::Heading3);
+                self.key_display_parms.title_style = RataStyle::themed(Role::Heading3);
             }
             (KeyCode::Char('o'), KeyModifiers::NONE) => {
                 self.textarea.move_cursor(CursorMove::End);
                 self.textarea.insert_newline();
                 self.mode = EditorMode::Edit;
-                self.display.title_style = RataStyle::themed(Role::Heading3);
+                self.key_display_parms.title_style = RataStyle::themed(Role::Heading3);
             }
             (KeyCode::Char('O'), KeyModifiers::SHIFT) => {
                 self.textarea.move_cursor(CursorMove::Head);
                 self.textarea.insert_newline();
                 self.textarea.move_cursor(CursorMove::Up);
                 self.mode = EditorMode::Edit;
-                self.display.title_style = RataStyle::themed(Role::Heading3);
+                self.key_display_parms.title_style = RataStyle::themed(Role::Heading3);
             }
             (KeyCode::Char('I'), KeyModifiers::SHIFT) => {
                 self.textarea.move_cursor(CursorMove::Head);
                 self.mode = EditorMode::Edit;
-                self.display.title_style = RataStyle::themed(Role::Heading3);
+                self.key_display_parms.title_style = RataStyle::themed(Role::Heading3);
             }
 
             // --- Large Jumps ---
@@ -1019,7 +1021,7 @@ impl EditData<'_> {
 
 /// Struct to hold display-related parameters for the TUI editor
 #[derive(Debug, Default)]
-pub struct KeyDisplay<'a> {
+pub struct KeyDisplayParms<'a> {
     /// The title to display at the top of the editor in edit mode
     pub edit_title: &'a str,
     /// The title to display at the top of the editor in vim mode
@@ -1106,31 +1108,29 @@ where
     }
 
     // Apply initial highlights
-    highlight_selection(&mut edit_data.textarea, edit_data.tui_highlight_fg);
+    highlight_selection(&mut edit_data.textarea, edit_data.selection_highlight_fg);
 
-    let remove = edit_data.display.remove_keys;
-    let add = edit_data.display.add_keys;
+    let remove = edit_data.key_display_parms.remove_keys;
+    let add = edit_data.key_display_parms.add_keys;
     // Track popup scroll state
     // let mut popup_scroll = PopupScrollState::default();
 
     // Can't make these OnceLock values, since their configuration depends on the `remove`
     // and `add` values passed in by the caller.
-    edit_data.adjusted_mappings = MAPPINGS
+    let mut edit_mode_keys: Vec<KeyDisplayLine> = EDIT_MODE_KEYS
         .iter()
         .filter(|&row| !remove.contains(&row.keys))
         .chain(add.iter())
         .cloned()
         .collect();
-    edit_data.adjusted_mappings.sort();
-    let (max_key_len, max_desc_len) =
-        edit_data
-            .adjusted_mappings
-            .iter()
-            .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
-                let key_len = row.keys.len().try_into().unwrap();
-                let desc_len = row.desc.len().try_into().unwrap();
-                (max_key.max(key_len), max_desc.max(desc_len))
-            });
+    edit_mode_keys.sort();
+    let mut vim_mode_keys: Vec<KeyDisplayLine> = VIM_MAPPINGS.iter().cloned().collect();
+    vim_mode_keys.sort();
+
+    edit_data.key_display_lines = match edit_data.mode {
+        EditorMode::Edit => edit_mode_keys.clone(),
+        EditorMode::Vim => vim_mode_keys.clone(),
+    };
 
     // Event loop for handling key events
     loop {
@@ -1146,15 +1146,20 @@ where
                 Block::default()
                     .borders(Borders::ALL)
                     .title(match edit_data.mode {
-                        EditorMode::Edit => edit_data.display.edit_title,
-                        EditorMode::Vim => edit_data.display.vim_title,
+                        EditorMode::Edit => edit_data.key_display_parms.edit_title,
+                        EditorMode::Vim => edit_data.key_display_parms.vim_title,
                     })
-                    .title_style(edit_data.display.title_style),
+                    .title_style(edit_data.key_display_parms.title_style),
             );
             edit_data.textarea.set_style(match edit_data.mode {
                 EditorMode::Edit => RataStyle::themed(Role::Normal),
                 EditorMode::Vim => RataStyle::themed(Role::Hint),
             });
+
+            edit_data.key_display_lines = match edit_data.mode {
+                EditorMode::Edit => edit_mode_keys.clone(),
+                EditorMode::Vim => vim_mode_keys.clone(),
+            };
 
             edit_data.maybe_term.as_mut().map_or_else(
                 || Err("Logic issue unwrapping term we wrapped ourselves".into()),
@@ -1181,7 +1186,7 @@ where
                                 .borders(Borders::ALL)
                                 .title("Status")
                                 .style(RataStyle::themed(Role::Success))
-                                .title_style(edit_data.display.title_style)
+                                .title_style(edit_data.key_display_parms.title_style)
                                 .padding(ratatui::widgets::Padding::horizontal(1));
 
                             let status_text =
@@ -1191,10 +1196,24 @@ where
 
                             f.render_widget(status_text, chunks[1]);
 
+                            let (max_key_len, max_desc_len) =
+                                edit_data
+                                    .key_display_lines
+                                    .iter()
+                                    .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
+                                        let key_len = row.keys.len().try_into().unwrap();
+                                        let desc_len = row.desc.len().try_into().unwrap();
+                                        (max_key.max(key_len), max_desc.max(desc_len))
+                                    });
+
+
                             if edit_data.popup {
                                 display_popup(
-                                    &edit_data.adjusted_mappings,
-                                    TITLE_TOP,
+                                    &edit_data.key_display_lines,
+                                    match edit_data.mode {
+                                        EditorMode::Edit => "Edit mode key bindings - subject to your terminal settings",
+                                        EditorMode::Vim => "Vim mode key bindings",
+                                    },
                                     TITLE_BOTTOM,
                                     max_key_len,
                                     max_desc_len,
@@ -1204,7 +1223,7 @@ where
                             }
                             highlight_selection(
                                 &mut edit_data.textarea,
-                                edit_data.tui_highlight_fg,
+                                edit_data.selection_highlight_fg,
                             );
                             // status_message = String::new();
                         }
@@ -1229,7 +1248,7 @@ where
                 match mouse_event.kind {
                     MouseEventKind::ScrollDown => {
                         if edit_data.popup_scroll.scroll_offset + 1
-                            < edit_data.adjusted_mappings.len()
+                            < edit_data.key_display_lines.len()
                         {
                             edit_data.popup_scroll.scroll_offset += 1;
                         }
@@ -1572,7 +1591,7 @@ pub fn display_popup(
         .fg(Color::themed(Role::HD1));
 
     #[allow(clippy::cast_possible_truncation)]
-    let area = centered_rect(max_key_len + max_desc_len + 5, content_height + 5, f.area());
+    let area = centered_rect(max_key_len + max_desc_len + 5, content_height + 2, f.area());
 
     let inner = area.inner(Margin {
         vertical: 2,
@@ -1900,8 +1919,9 @@ macro_rules! key_mappings {
 }
 
 /// Key mappings for display purposes via (Ctrl-l) in TUI editor and file dialog.
-pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
+pub const EDIT_MODE_KEYS: &[KeyDisplayLine] = key_mappings![
     (10, "Key bindings", "Description"),
+    (15, "Esc, Ctrl+g", "Switch to Vim mode"),
     (
         20,
         "Shift+arrow keys",
@@ -1975,6 +1995,51 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     ),
     (440, "F10", "Exit `copy to system clipboard` mode"),
     (450, "F12", "Save as..."),
+];
+
+/// Key mappings for display purposes via (Ctrl-l) in TUI editor and file dialog.
+pub const VIM_MAPPINGS: &[KeyDisplayLine] = key_mappings![
+    (10, "Key bindings", "Description"),
+    (20, "i, Ctrl+g", "Switch to edit mode"),
+    (30, "Ctrl+q", "Cancel and quit"),
+    (40, "gg", "Move cursor to top of file"),
+    (50, "G", "Move cursor to bottom of file"),
+    (60, "h", "Move cursor backward one character"),
+    (70, "j", "Move cursor down one line"),
+    (80, "k", "Move cursor up one line"),
+    (90, "l", "Move cursor forward one character"),
+    (100, "w", "Move cursor forward one word"),
+    (110, "e", "Move cursor to next word end"),
+    (120, "b", "Move cursor backward one word"),
+    (130, "^", "Move cursor to start of line"),
+    (140, "$", "Move cursor to end of line"),
+    (150, "{", "Move cursor up one paragraph"),
+    (160, "}", "Move cursor down one paragraph"),
+    (170, "gg, gk", "Move cursor to top of file"),
+    (180, "Clrl+u", "Half page up"),
+    (190, "Clrl+d", "Half page down"),
+    (200, "Clrl+b", "Page up"),
+    (210, "Clrl+f", "Page down"),
+    (
+        220,
+        "a",
+        "Move cursor forward one character and switch to edit mode"
+    ),
+    (
+        230,
+        "A",
+        "Move cursor to end of line and switch to edit mode"
+    ),
+    (240, "o", "Insert line below and switch to edit mode"),
+    (250, "O", "Insert line above and switch to edit mode"),
+    (
+        260,
+        "I",
+        "Move cursor to start of line and switch to edit mode"
+    ),
+    (270, "u", "Undo"),
+    (280, "r", "Redo"),
+    (290, "Ctrl+l", "Toggle keys display (this screen)"),
 ];
 
 #[derive(Clone, Debug, PartialEq, Eq)]

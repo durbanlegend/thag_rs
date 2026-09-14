@@ -7,8 +7,8 @@ use crate::{
     key, lazy_static_var,
     manifest::extract,
     tui_editor::{
-        EditData, EditorMode, Entry, History, KeyAction, KeyDisplay, PopupScrollState, RataStyle,
-        script_key_handler, tui_edit,
+        EditData, EditorMode, Entry, History, KeyAction, KeyDisplayParms, PopupScrollState,
+        RataStyle, script_key_handler, tui_edit,
     },
 };
 use clap::{CommandFactory, Parser};
@@ -706,11 +706,11 @@ fn tui(
         maybe_term: None,
         popup: false,
         saved: false,
-        tui_highlight_fg: Role::EMPH,
+        selection_highlight_fg: Role::EMPH,
         popup_scroll: PopupScrollState::default(),
         status_message: String::new(),
-        adjusted_mappings: vec![],
-        display: KeyDisplay {
+        key_display_lines: vec![],
+        key_display_parms: KeyDisplayParms {
             edit_title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting  ^g: Vim mode",
             vim_title: "Edit TUI script.  ^q: quit  ^g: Edit mode",
             title_style: match EditorMode::default() {
@@ -810,11 +810,11 @@ pub fn edit_history<R: EventReader + Debug>(
         maybe_term: None,
         popup: false,
         saved: false,
-        tui_highlight_fg: Role::EMPH,
+        selection_highlight_fg: Role::EMPH,
         popup_scroll: PopupScrollState::default(),
         status_message: String::new(),
-        adjusted_mappings: vec![],
-        display: KeyDisplay {
+        key_display_lines: vec![],
+        key_display_parms: KeyDisplayParms {
             edit_title: "Enter / paste / edit iterator history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting  ^g: Vim mode",
             vim_title: "Enter / paste / edit iterator history.  ^q: quit  ^g: Edit mode",
             title_style: RataStyle::themed(Role::HD2),

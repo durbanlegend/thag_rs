@@ -2,8 +2,8 @@
 use crate::{
     CrosstermEventReader, EventReader, Role, ThagError, ThagResult, V, debug_log,
     tui_editor::{
-        EditData, EditorMode, History, KeyAction, KeyDisplay, PopupScrollState, script_key_handler,
-        tui_edit,
+        EditData, EditorMode, History, KeyAction, KeyDisplayParms, PopupScrollState,
+        script_key_handler, tui_edit,
     },
     vprtln,
 };
@@ -87,11 +87,11 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         maybe_term: None,
         popup: false,
         saved: false,
-        tui_highlight_fg: Role::EMPH,
+        selection_highlight_fg: Role::EMPH,
         popup_scroll: PopupScrollState::default(),
         status_message: String::new(),
-        adjusted_mappings: vec![],
-        display: KeyDisplay {
+        key_display_lines: vec![],
+        key_display_parms: KeyDisplayParms {
             edit_title: "Enter / paste / edit Rust script.  ^d: submit  ^q: quit  ^l: keys  ^t: toggle highlighting  ^g: Vim mode",
             vim_title: "Enter / paste / edit Rust script.  ^q: quit  ^g: Edit mode",
             title_style: match EditorMode::default() {

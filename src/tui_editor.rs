@@ -588,6 +588,47 @@ pub enum EditorMode {
     Vim,
 }
 
+/// The navigation state
+pub struct NavigationState {
+    /// The `vim`-style navigation or regular text editing mode.
+    pub mode: EditorMode,
+    /// Tracks a possible multi-digit line number being entered for a Vim-mode
+    /// go-to-line request (`<n...n>G` or `<n...n>gg`).
+    pub count: Option<usize>,
+    /// Tracks multi-key sequences like `gg` for top of file.
+    pub pending_g: bool,
+}
+
+impl NavigationState {
+    /// Create a new navigation state
+    #[must_use]
+    pub const fn new(mode: EditorMode) -> Self {
+        Self {
+            mode,
+            count: None,
+            pending_g: false,
+        }
+    }
+
+    /// Push a digit to the count prefix
+    pub fn push_digit(&mut self, digit: usize) {
+        let current = self.count.unwrap_or(0);
+        self.count = Some(current.saturating_mul(10).saturating_add(digit));
+    }
+
+    /// Get the current count prefix
+    #[must_use]
+    pub fn get_count(&self) -> usize {
+        self.count.unwrap_or(1)
+    }
+
+    /// Reset the count prefix and the pending `g`
+    pub const fn reset_prefix(&mut self) {
+        self.count = None;
+        self.pending_g = false;
+    }
+}
+
 #[allow(dead_code)]
 /// Struct to hold data-related parameters for the TUI editor
 pub struct EditData<'a> {
@@ -621,19 +662,21 @@ pub struct EditData<'a> {
     pub key_display_parms: KeyDisplayParms<'a>,
     /// A preconfigured key event handler to use in the current context
     pub key_handler: Option<Box<KeyHandlerClosure>>,
-    /// The `vim`-style navigation or text editing mode.
-    pub mode: EditorMode,
-    /// Tracks multi-key sequences like `gg` for top of file.
-    pub last_char: Option<char>,
-    /// Tracks a possible multi-digit line number being entered for a Vim-mode
-    /// go-to-line request (`<n...n>G` or `<n...n>gg`).
-    pub line_num_buf: Option<u16>,
+    /// The navigation state machine.
+    pub navigation: NavigationState,
+    // /// The `vim`-style navigation or regular text editing mode.
+    // pub mode: EditorMode,
+    // /// Tracks multi-key sequences like `gg` for top of file.
+    // pub last_char: Option<char>,
+    // /// Tracks a possible multi-digit line number being entered for a Vim-mode
+    // /// go-to-line request (`<n...n>G` or `<n...n>gg`).
+    // pub line_num_buf: Option<u16>,
 }
 
 impl EditData<'_> {
     #[allow(clippy::too_many_lines)]
     fn handle_key_event(&mut self, key_event: KeyEvent) -> ThagResult<KeyAction> {
-        match self.mode {
+        match self.navigation.mode {
             EditorMode::Edit => {
                 // In Insert mode, Esc drops back to Normal/Nav mode
                 if key_event.code == KeyCode::Esc {
@@ -883,13 +926,14 @@ impl EditData<'_> {
                 }
             }
             EditorMode::Vim => {
-                return Ok(self.handle_normal_mode(key_event));
+                return Ok(self.handle_vim_mode(key_event));
             }
         }
         Ok(KeyAction::Continue)
     }
 
-    fn handle_normal_mode(&mut self, key: KeyEvent) -> KeyAction {
+    #[allow(clippy::too_many_lines)]
+    fn handle_vim_mode(&mut self, key: KeyEvent) -> KeyAction {
         // debug_log!(
         //     "key.code={}, key.modifiers={}, self.last_char={:?}, self.line_num_buf={:?}",
         //     key.code,
@@ -899,34 +943,33 @@ impl EditData<'_> {
         // );
 
         // If we are waiting for a sequence (like 'g' prefix)
-        if self.last_char == Some('g') {
-            self.last_char = None; // Reset prefix tracker
+        if self.navigation.pending_g {
             match key.code {
                 // Vim 'gg', Helix 'gk'
-                KeyCode::Char('g' | 'k') => match self.line_num_buf {
-                    Some(line_num) => {
-                        self.line_num_buf = None;
-                        self.textarea
-                            .move_cursor(CursorMove::Jump(line_num.saturating_sub(1), 0));
-                    }
-                    None => {
-                        self.textarea.move_cursor(CursorMove::Top);
-                    }
-                },
+                // Action: [n]gg/[n]gk -> Go to line n (1-indexed in Vim), or top of file if no count
+                KeyCode::Char('g' | 'k') => {
+                    let target_row = self.navigation.count.map_or(0, |n| n.saturating_sub(1));
+                    safe_jump(&mut self.textarea, target_row, 0);
+                }
                 KeyCode::Char('j') => self.textarea.move_cursor(CursorMove::Bottom), // Helix 'gj'
                 _ => {}
             }
+            self.navigation.reset_prefix(); // Reset prefix tracker
             return KeyAction::Continue;
         }
 
-        // Cleear line number buffer if char is not part of a valid go-to-line sequence
-        if self.line_num_buf.is_some()
-            && key
-                .code
-                .as_char()
-                .is_some_and(|c| c != 'g' && c != 'G' && !c.is_digit(10))
+        // Cleear line number buffer if char (currently) does not support a numeric prefix
+        if self.navigation.count.is_some()
+            && key.code.as_char().is_some_and(|c| match key.modifiers {
+                KeyModifiers::NONE => {
+                    !c.is_ascii_digit()
+                        && !['b', 'e', 'g', 'G', 'h', 'k', 'l', 'w', '{', '}'].contains(&c)
+                }
+                KeyModifiers::CONTROL => !['b', 'd', 'f', 'u'].contains(&c),
+                _ => false,
+            })
         {
-            self.line_num_buf = None;
+            self.navigation.reset_prefix();
         }
 
         // self.status_message.clear();
@@ -944,36 +987,39 @@ impl EditData<'_> {
             }
 
             (
-                KeyCode::Char('0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'),
+                // Accumulate multiplier counts (Vim counts can't start with 0)
+                KeyCode::Char(c),
                 KeyModifiers::NONE,
-            ) => {
-                self.last_char = None; // Reset prefix tracker
-                let digit = key
-                    .code
-                    .as_char()
-                    .and_then(|c| c.to_digit(10))
-                    .map(|d| d as u16) // Converts char to Option<u32>
-                    .unwrap_or_default();
+            ) if c.is_ascii_digit() && !(c == '0' && self.navigation.count.is_none()) => {
+                let digit = c.to_digit(10).unwrap() as usize;
+                self.navigation.push_digit(digit);
 
-                self.line_num_buf = Some(match self.line_num_buf {
-                    Some(n) => n.saturating_mul(10).saturating_add(digit),
-                    None => digit,
-                });
+                // KeyCode::Char('0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'),
+                // self.last_char = None; // Reset prefix tracker
+                // let digit = key
+                //     .code
+                //     .as_char()
+                //     .and_then(|c| c.to_digit(10))
+                //     .map(|d| d as u16) // Converts char to Option<u32>
+                //     .unwrap_or_default();
+
+                // self.line_num_buf = Some(match self.line_num_buf {
+                //     Some(n) => n.saturating_mul(10).saturating_add(digit),
+                //     None => digit,
+                // });
                 return KeyAction::Continue;
             }
 
-            // --- Specific line number ---
+            // --- Specific line number or bottom ---
             (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
-                match self.line_num_buf {
-                    Some(line_num) => {
-                        self.line_num_buf = None;
-                        self.textarea
-                            .move_cursor(CursorMove::Jump(line_num.saturating_sub(1), 0));
-                    }
-                    None => {
-                        self.textarea.move_cursor(CursorMove::Bottom); // Vim style Bottom
-                    }
-                }
+                // Action: [n]G -> Go to line n, or the very last line if no count provided
+                let last_line_idx = self.textarea.lines().len().saturating_sub(1);
+                let target_row = self
+                    .navigation
+                    .count
+                    .map_or(last_line_idx, |n| n.saturating_sub(1));
+                safe_jump(&mut self.textarea, target_row, 0);
+                self.navigation.reset_prefix();
             }
 
             // --- Control functions ---
@@ -995,24 +1041,56 @@ impl EditData<'_> {
             }
 
             // --- Micro-Navigation ---
-            (KeyCode::Char('h'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::Back),
-            (KeyCode::Char('j'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::Down),
-            (KeyCode::Char('k'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::Up),
-            (KeyCode::Char('l'), KeyModifiers::NONE) => {
-                self.textarea.move_cursor(CursorMove::Forward);
+            // 3. Horizontal Movements
+            (KeyCode::Char('h'), KeyModifiers::NONE) => {
+                let n = self.navigation.get_count();
+                move_vim_horizontal(&mut self.textarea, n, false);
+                self.navigation.reset_prefix();
             }
+            (KeyCode::Char('l'), KeyModifiers::NONE) => {
+                let n = self.navigation.get_count();
+                move_vim_horizontal(&mut self.textarea, n, true);
+                self.navigation.reset_prefix();
+            }
+
+            // 4. Vertical Movements (snapping safely to row bounds)
+            (KeyCode::Char('j'), KeyModifiers::NONE) => {
+                let n = self.navigation.get_count();
+                move_vim_vertical(&mut self.textarea, n, true);
+                self.navigation.reset_prefix();
+            }
+            (KeyCode::Char('k'), KeyModifiers::NONE) => {
+                let n = self.navigation.get_count();
+                move_vim_vertical(&mut self.textarea, n, false);
+                self.navigation.reset_prefix();
+            }
+
             (KeyCode::Char('w'), KeyModifiers::NONE) => {
-                self.textarea.move_cursor(CursorMove::WordForward);
+                let n = self.navigation.get_count();
+                for _ in 0..n {
+                    self.textarea.move_cursor(CursorMove::WordForward);
+                }
+                self.navigation.reset_prefix();
             }
             (KeyCode::Char('e'), KeyModifiers::NONE) => {
-                self.textarea.move_cursor(CursorMove::WordEnd);
+                let n = self.navigation.get_count();
+                for _ in 0..n {
+                    self.textarea.move_cursor(CursorMove::WordEnd);
+                }
+                self.navigation.reset_prefix();
             }
             (KeyCode::Char('b'), KeyModifiers::NONE) => {
-                self.textarea.move_cursor(CursorMove::WordBack);
+                let n = self.navigation.get_count();
+                for _ in 0..n {
+                    self.textarea.move_cursor(CursorMove::WordBack);
+                }
+                self.navigation.reset_prefix();
             }
+
             (KeyCode::Char('^'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::Head),
             (KeyCode::Char('$'), KeyModifiers::NONE) => self.textarea.move_cursor(CursorMove::End),
 
+            // --- Mode Switches ---
             (KeyCode::Char('a'), KeyModifiers::NONE) => {
                 self.textarea.move_cursor(CursorMove::Forward);
                 self.switch_to_mode(EditorMode::Edit);
@@ -1044,29 +1122,53 @@ impl EditData<'_> {
 
             // --- Large Jumps ---
             (KeyCode::Char('g'), KeyModifiers::NONE) => {
-                self.last_char = Some('g'); // Stash 'g' to await the next keystroke
+                // self.last_char = Some('g');
+                // Register pending 'g' to await the next keystroke
+                self.navigation.pending_g = true;
             }
 
             // --- Paragraph Jumping (Empty line boundaries) ---
             (KeyCode::Char('{'), KeyModifiers::NONE) => {
-                self.textarea.move_cursor(CursorMove::ParagraphBack);
+                // self.textarea.move_cursor(CursorMove::ParagraphBack);
+                let n = self.navigation.get_count();
+                move_vim_paragraph(&mut self.textarea, n, false);
+                self.navigation.reset_prefix();
             }
             (KeyCode::Char('}'), KeyModifiers::NONE) => {
-                self.textarea.move_cursor(CursorMove::ParagraphForward);
+                // self.textarea.move_cursor(CursorMove::ParagraphForward);
+                let n = self.navigation.get_count();
+                move_vim_paragraph(&mut self.textarea, n, true);
+                self.navigation.reset_prefix();
             }
 
             // --- Paging (Ctrl-u / Ctrl-d / Ctrl-b / Ctrl-f) ---
             (KeyCode::Char('u'), KeyModifiers::CONTROL) => {
-                self.textarea.scroll(Scrolling::HalfPageUp);
+                let n = self.navigation.get_count();
+                for _ in 0..n {
+                    self.textarea.scroll(Scrolling::HalfPageUp);
+                }
+                self.navigation.reset_prefix();
             }
             (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
-                self.textarea.scroll(Scrolling::HalfPageDown);
+                let n = self.navigation.get_count();
+                for _ in 0..n {
+                    self.textarea.scroll(Scrolling::HalfPageDown);
+                }
+                self.navigation.reset_prefix();
             }
             (KeyCode::Char('b'), KeyModifiers::CONTROL) => {
-                self.textarea.scroll(Scrolling::PageUp);
+                let n = self.navigation.get_count();
+                for _ in 0..n {
+                    self.textarea.scroll(Scrolling::PageUp);
+                }
+                self.navigation.reset_prefix();
             }
             (KeyCode::Char('f'), KeyModifiers::CONTROL) => {
-                self.textarea.scroll(Scrolling::PageDown);
+                let n = self.navigation.get_count();
+                for _ in 0..n {
+                    self.textarea.scroll(Scrolling::PageDown);
+                }
+                self.navigation.reset_prefix();
             }
 
             _ => {}
@@ -1076,9 +1178,103 @@ impl EditData<'_> {
 
     fn switch_to_mode(&mut self, editor_mode: EditorMode) {
         self.status_message.clear();
-        self.mode = editor_mode;
-        let _ = writeln!(self.status_message, "Switched to {:?} mode", self.mode);
+        self.navigation.mode = editor_mode;
+        let _ = writeln!(
+            self.status_message,
+            "Switched to {:?} mode",
+            self.navigation.mode
+        );
     }
+}
+
+#[allow(clippy::cast_possible_truncation)]
+fn safe_jump(textarea: &mut TextArea, row: usize, col: usize) {
+    // Clamp the usize coordinates to the maximum capacity of a u16
+    let target_row = row.min(u16::MAX as usize) as u16;
+    let target_col = col.min(u16::MAX as usize) as u16;
+
+    textarea.move_cursor(CursorMove::Jump(target_row, target_col));
+}
+
+fn move_vim_horizontal(textarea: &mut TextArea, n: usize, forward: bool) {
+    let (row, col) = textarea.cursor();
+    if let Some(line) = textarea.lines().get(row) {
+        let line_len = line.chars().count();
+        let max_col = line_len.saturating_sub(1);
+        let target_col = if forward {
+            col.saturating_add(n).min(max_col)
+        } else {
+            col.saturating_sub(n)
+        };
+
+        // Call the conversion helper
+        safe_jump(textarea, row, target_col);
+    }
+}
+
+fn move_vim_vertical(textarea: &mut TextArea, n: usize, forward: bool) {
+    let (row, col) = textarea.cursor();
+    let total_lines = textarea.lines().len();
+
+    let target_row = if forward {
+        // [n]j movement
+        let max_row = total_lines.saturating_sub(1);
+        row.saturating_add(n).min(max_row)
+    } else {
+        // [n]k movement
+        row.saturating_sub(n)
+    };
+
+    // tui-textarea will automatically clamp 'col' to the line length safely
+    safe_jump(textarea, target_row, col);
+}
+
+// We could use CursorMove::ParagraphForward and CursorMove::ParagraphBack, but this way
+// does multiple loops in Rust space without invoking repeated textarea overhead.
+fn move_vim_paragraph(textarea: &mut TextArea, n: usize, forward: bool) {
+    let (current_row, _) = textarea.cursor();
+    let lines = textarea.lines();
+    let total_lines = lines.len();
+
+    if current_row >= total_lines {
+        return;
+    }
+
+    let mut target_row = current_row;
+    let mut found_text = false;
+
+    for _ in 0..n {
+        if forward {
+            // Step forward line-by-line
+            while target_row < total_lines - 1 {
+                target_row += 1;
+                let is_empty = lines[target_row].trim().is_empty();
+
+                if !is_empty {
+                    found_text = true;
+                } else if found_text && is_empty {
+                    // We transitioned from text to a blank line: this is our paragraph stop
+                    break;
+                }
+            }
+        } else {
+            // Step backward line-by-line
+            while target_row > 0 {
+                target_row -= 1;
+                let is_empty = lines[target_row].trim().is_empty();
+
+                if !is_empty {
+                    found_text = true;
+                } else if found_text && is_empty {
+                    // We transitioned from text to a blank line: this is our paragraph stop
+                    break;
+                }
+            }
+        }
+    }
+
+    // Jump to the beginning of the target row
+    safe_jump(textarea, target_row, 0);
 }
 
 /// Struct to hold display-related parameters for the TUI editor
@@ -1186,10 +1382,10 @@ where
         .cloned()
         .collect();
     edit_mode_keys.sort();
-    let mut vim_mode_keys: Vec<KeyDisplayLine> = VIM_MODE_KEYS.iter().cloned().collect();
+    let mut vim_mode_keys: Vec<KeyDisplayLine> = VIM_MODE_KEYS.to_vec();
     vim_mode_keys.sort();
 
-    edit_data.key_display_lines = match edit_data.mode {
+    edit_data.key_display_lines = match edit_data.navigation.mode {
         EditorMode::Edit => edit_mode_keys.clone(),
         EditorMode::Vim => vim_mode_keys.clone(),
     };
@@ -1207,18 +1403,20 @@ where
             edit_data.textarea.set_block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(match edit_data.mode {
+                    .title(match edit_data.navigation.mode {
                         EditorMode::Edit => edit_data.key_display_parms.edit_title,
                         EditorMode::Vim => edit_data.key_display_parms.vim_title,
                     })
                     .title_style(edit_data.key_display_parms.title_style),
             );
-            edit_data.textarea.set_style(match edit_data.mode {
-                EditorMode::Edit => RataStyle::themed(Role::Normal),
-                EditorMode::Vim => RataStyle::themed(Role::Debug),
-            });
+            edit_data
+                .textarea
+                .set_style(match edit_data.navigation.mode {
+                    EditorMode::Edit => RataStyle::themed(Role::Normal),
+                    EditorMode::Vim => RataStyle::themed(Role::Debug),
+                });
 
-            edit_data.key_display_lines = match edit_data.mode {
+            edit_data.key_display_lines = match edit_data.navigation.mode {
                 EditorMode::Edit => edit_mode_keys.clone(),
                 EditorMode::Vim => vim_mode_keys.clone(),
             };
@@ -1272,7 +1470,7 @@ where
                             if edit_data.popup {
                                 display_popup(
                                     &edit_data.key_display_lines,
-                                    match edit_data.mode {
+                                    match edit_data.navigation.mode {
                                         EditorMode::Edit => "Edit mode key bindings - subject to your terminal settings",
                                         EditorMode::Vim => "Vim mode key bindings",
                                     },
@@ -1365,7 +1563,7 @@ where
                 }
                 KeyAction::ShowHelp => todo!(),
             }
-        } else if edit_data.mode == EditorMode::Edit {
+        } else if edit_data.navigation.mode == EditorMode::Edit {
             // Otherwise, tui-textarea handles typing natively
             let input = tui_textarea::Input::from(event);
             edit_data.textarea.input(input);
@@ -1465,11 +1663,11 @@ pub fn script_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> Thag
 
 #[profiled]
 fn next_hist(edit_data: &mut EditData<'_>) {
-    if let Some(ref mut hist) = edit_data.history {
-        if let Some(entry) = hist.get_next() {
-            // debug_log!("F8 found entry {entry:?}");
-            paste_to_textarea(&mut edit_data.textarea, entry);
-        }
+    if let Some(ref mut hist) = edit_data.history
+        && let Some(entry) = hist.get_next()
+    {
+        // debug_log!("F8 found entry {entry:?}");
+        paste_to_textarea(&mut edit_data.textarea, entry);
     }
 }
 
@@ -1653,7 +1851,7 @@ pub fn display_popup(
         .fg(Color::themed(Role::HD1));
 
     #[allow(clippy::cast_possible_truncation)]
-    let area = centered_rect(max_key_len + max_desc_len + 5, content_height + 2, f.area());
+    let area = centered_rect(max_key_len + max_desc_len + 5, content_height + 4, f.area());
 
     let inner = area.inner(Margin {
         vertical: 2,
@@ -2064,25 +2262,30 @@ pub const VIM_MODE_KEYS: &[KeyDisplayLine] = key_mappings![
     (10, "Key bindings", "Description"),
     (20, "i, Ctrl+g", "Switch to edit mode"),
     (30, "Ctrl+q", "Cancel and quit"),
-    (40, "gg,gk", "Move cursor to top of file"),
-    (50, "G", "Move cursor to bottom of file"),
-    (60, "<n>G, <n>gg", "Go to line <n> (1 to 65535)"),
-    (70, "h", "Move cursor backward one character"),
-    (80, "j", "Move cursor down one line"),
-    (90, "k", "Move cursor up one line"),
-    (100, "l", "Move cursor forward one character"),
-    (110, "w", "Move cursor forward one word"),
-    (120, "e", "Move cursor to next word end"),
-    (130, "b", "Move cursor backward one word"),
+    (
+        60,
+        "[n]G, [n]gg, [n]gk",
+        "Go to line [n] (defaults to end/start of file)"
+    ),
+    (70, "[n]h", "Move cursor left [n] characters (e.g., 5h)"),
+    (80, "[n]j", "Move cursor down [n] lines"),
+    (90, "[n]k", "Move cursor up [n] lines"),
+    (100, "[n]l", "Move cursor right [n] characters"),
+    (110, "[n]w", "Move cursor forward [n] words"),
+    (
+        120,
+        "[n]e",
+        "Move cursor forward to the end of the [n]-th word"
+    ),
+    (130, "[n]b", "Move cursor backward [n] words"),
     (140, "^", "Move cursor to start of line"),
     (150, "$", "Move cursor to end of line"),
-    (160, "{", "Move cursor up one paragraph"),
-    (170, "}", "Move cursor down one paragraph"),
-    (180, "gg, gk", "Move cursor to top of file"),
-    (190, "Clrl+u", "Half page up"),
-    (200, "Clrl+d", "Half page down"),
-    (210, "Clrl+b", "Page up"),
-    (220, "Clrl+f", "Page down"),
+    (160, "[n]{", "Move cursor up [n]] paragraphs"),
+    (170, "[n]}", "Move cursor down [n] paragraphs"),
+    (190, "[n]Clrl+u", "[n] half-pages up"),
+    (200, "[n]Clrl+d", "[n] half-pages down"),
+    (210, "[n]Clrl+b", "[n] pages up"),
+    (220, "[n]Clrl+f", "[n] pages down"),
     (
         220,
         "a",

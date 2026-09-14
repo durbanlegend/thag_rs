@@ -7,8 +7,8 @@ use crate::{
     key, lazy_static_var,
     manifest::extract,
     tui_editor::{
-        EditData, EditorMode, Entry, History, KeyAction, KeyDisplayParms, PopupScrollState,
-        RataStyle, script_key_handler, tui_edit,
+        EditData, EditorMode, Entry, History, KeyAction, KeyDisplayParms, NavigationState,
+        PopupScrollState, RataStyle, script_key_handler, tui_edit,
     },
 };
 use clap::{CommandFactory, Parser};
@@ -721,9 +721,7 @@ fn tui(
             add_keys: &add_keys,
         },
         key_handler: Some(Box::new(script_key_handler)),
-        mode: EditorMode::default(),
-        last_char: None,
-        line_num_buf: None,
+        navigation: NavigationState::new(EditorMode::default()),
     };
 
     let (key_action, maybe_text) = tui_edit(&event_reader, &mut edit_data)?;
@@ -823,9 +821,7 @@ pub fn edit_history<R: EventReader + Debug>(
             add_keys: &binding,
         },
         key_handler: Some(Box::new(script_key_handler)),
-        mode: EditorMode::Vim,
-        last_char: None,
-        line_num_buf: None,
+        navigation: NavigationState::new(EditorMode::default()),
     };
 
     let (key_action, _maybe_text) = tui_edit(event_reader, &mut edit_data)?;

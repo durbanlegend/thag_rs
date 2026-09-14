@@ -711,8 +711,8 @@ fn tui(
         status_message: String::new(),
         key_display_lines: vec![],
         key_display_parms: KeyDisplayParms {
-            edit_title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting  ^g: Vim mode",
-            vim_title: "Edit TUI script.  ^q: quit  ^g: Edit mode",
+            edit_title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting  ^g: Switch to Vim mode",
+            vim_title: "Edit TUI script.  ^q: quit  ^g: Switch to Edit mode",
             title_style: match EditorMode::default() {
                 EditorMode::Edit => RataStyle::themed(Role::Heading3),
                 EditorMode::Vim => RataStyle::themed(Role::Warning),
@@ -723,6 +723,7 @@ fn tui(
         key_handler: Some(Box::new(script_key_handler)),
         mode: EditorMode::default(),
         last_char: None,
+        line_num_buf: None,
     };
 
     let (key_action, maybe_text) = tui_edit(&event_reader, &mut edit_data)?;
@@ -816,7 +817,7 @@ pub fn edit_history<R: EventReader + Debug>(
         key_display_lines: vec![],
         key_display_parms: KeyDisplayParms {
             edit_title: "Enter / paste / edit iterator history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting  ^g: Vim mode",
-            vim_title: "Enter / paste / edit iterator history.  ^q: quit  ^g: Edit mode",
+            vim_title: "Enter / paste / edit iterator history.  ^q: quit  ^g: Switch to Edit mode",
             title_style: RataStyle::themed(Role::HD2),
             remove_keys: &["F7", "F8"],
             add_keys: &binding,
@@ -824,6 +825,7 @@ pub fn edit_history<R: EventReader + Debug>(
         key_handler: Some(Box::new(script_key_handler)),
         mode: EditorMode::Vim,
         last_char: None,
+        line_num_buf: None,
     };
 
     let (key_action, _maybe_text) = tui_edit(event_reader, &mut edit_data)?;

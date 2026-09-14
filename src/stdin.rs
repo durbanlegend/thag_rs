@@ -92,8 +92,8 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         status_message: String::new(),
         key_display_lines: vec![],
         key_display_parms: KeyDisplayParms {
-            edit_title: "Enter / paste / edit Rust script.  ^d: submit  ^q: quit  ^l: keys  ^t: toggle highlighting  ^g: Vim mode",
-            vim_title: "Enter / paste / edit Rust script.  ^q: quit  ^g: Edit mode",
+            edit_title: "Enter / paste / edit Rust script.  ^d: submit  ^q: quit  ^l: keys  ^t: toggle highlighting  ^g: Switch to Vim mode",
+            vim_title: "Enter / paste / edit Rust script.  ^q: quit  ^g: Switch to Edit mode",
             title_style: match EditorMode::default() {
                 EditorMode::Edit => Style::themed(Role::Heading3),
                 EditorMode::Vim => Style::themed(Role::Warning),
@@ -104,13 +104,16 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         key_handler: Some(Box::new(script_key_handler)),
         mode: EditorMode::default(),
         last_char: None,
+        line_num_buf: None,
     };
     // let add_keys = [
     //     KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),
     //     KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
     //     // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     // ];
-    let (key_action, maybe_text) = tui_edit(event_reader, &mut edit_data)?;
+    let tui_edit = tui_edit(event_reader, &mut edit_data);
+    // log::debug!("tui_edit={tui_edit:?}");
+    let (key_action, maybe_text) = tui_edit?;
     match key_action {
         KeyAction::Quit(_saved) => Ok(vec![]),
         KeyAction::AbandonChanges => Ok(vec![]),

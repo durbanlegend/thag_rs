@@ -250,7 +250,7 @@ impl History {
             |_| Self::default(),
             |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
         );
-        debug_log!("Loaded history={history:?}");
+        // debug_log!("Loaded history={history:?}");
         // Remove any blanks - TODO they shouldn't be saved in the first place
         history.entries.retain(|e| !e.contents().trim().is_empty());
 
@@ -263,7 +263,7 @@ impl History {
         } else {
             history.current_index = Some(history.entries.len() - 1);
         }
-        debug_log!("history={history:?}");
+        // debug_log!("history={history:?}");
         debug_log!(
             "load_from_file({path:?}); current index={:?}",
             history.current_index
@@ -312,8 +312,8 @@ impl History {
 
         // Update current_index to point to the most recent entry (the front)
         self.current_index = Some(self.entries.len() - 1);
-        debug_log!("add_entry({text}); current index={:?}", self.current_index);
-        debug_log!("history={self:?}");
+        // debug_log!("add_entry({text}); current index={:?}", self.current_index);
+        // debug_log!("history={self:?}");
     }
 
     /// Updates an existing entry in the history or adds a new one if it doesn't exist.
@@ -326,11 +326,9 @@ impl History {
     pub fn update_entry(&mut self, index: usize, text: &str) {
         debug_log!("update_entry for index {index}...");
         // Get a mutable reference to the entry at the specified index
-        let current_index = self.current_index;
         if let Some(entry) = self.get_mut(index) {
             // Update the lines if the entry exists
             entry.lines = text.lines().map(String::from).collect::<Vec<String>>();
-            debug_log!("... update_entry({entry:?}); current index={current_index:?}");
         } else {
             // If the entry doesn't exist, add it
             self.add_entry(text);
@@ -366,7 +364,7 @@ impl History {
     pub fn save_to_file(&mut self, path: &PathBuf) -> ThagResult<()> {
         self.reassign_indices();
         if let Ok(data) = serde_json::to_string(&self) {
-            debug_log!("About to write data=({data}");
+            // debug_log!("About to write data=({data}");
             if let Ok(metadata) = std::fs::metadata(path) {
                 debug_log!("File permissions: {:?}", metadata.permissions());
             }
@@ -387,7 +385,7 @@ impl History {
             // file.sync_all()?;
             file.sync_data()?;
         } else {
-            debug_log!("Could not serialise history: {self:?}");
+            // debug_log!("Could not serialise history: {self:?}");
         }
         debug_log!("save_to_file({path:?}");
         Ok(())
@@ -430,14 +428,14 @@ impl History {
             return None;
         }
         self.current_index = Some(index);
-        debug_log!(
-            "...get({:?}); current index={:?}",
-            self.entries.get(index),
-            self.current_index
-        );
+        // debug_log!(
+        //     "...get({:?}); current index={:?}",
+        //     self.entries.get(index),
+        //     self.current_index
+        // );
 
         let entry = self.entries.get(index);
-        debug_log!("... returning {entry:?}");
+        // debug_log!("... returning {entry:?}");
         entry
     }
 
@@ -459,14 +457,14 @@ impl History {
         }
 
         self.current_index = Some(index);
-        debug_log!(
-            "...get_mut({:?}); current index={:?}",
-            self.entries.get(index),
-            self.current_index
-        );
+        // debug_log!(
+        //     "...get_mut({:?}); current index={:?}",
+        //     self.entries.get(index),
+        //     self.current_index
+        // );
 
         let entry = self.entries.get_mut(index);
-        debug_log!("... returning {entry:?}");
+        // debug_log!("... returning {entry:?}");
 
         entry
     }
@@ -506,7 +504,7 @@ impl History {
             },
             |index| {
                 let entry = self.get(index);
-                debug_log!("get_previous; new current index={index:?}, entry={entry:?}");
+                // debug_log!("get_previous; new current index={index:?}, entry={entry:?}");
                 entry
             },
         )
@@ -548,7 +546,7 @@ impl History {
             },
             |index| {
                 let entry = self.get(index);
-                debug_log!("get_next(); current index={index:?}, entry={entry:?}");
+                // debug_log!("get_next(); current index={index:?}, entry={entry:?}");
                 entry
             },
         )
@@ -627,6 +625,9 @@ pub struct EditData<'a> {
     pub mode: EditorMode,
     /// Tracks multi-key sequences like `gg` for top of file.
     pub last_char: Option<char>,
+    /// Tracks a possible multi-digit line number being entered for a Vim-mode
+    /// go-to-line request (`<n...n>G` or `<n...n>gg`).
+    pub line_num_buf: Option<u16>,
 }
 
 impl EditData<'_> {
@@ -636,7 +637,7 @@ impl EditData<'_> {
             EditorMode::Edit => {
                 // In Insert mode, Esc drops back to Normal/Nav mode
                 if key_event.code == KeyCode::Esc {
-                    self.mode = EditorMode::Vim;
+                    self.switch_to_mode(EditorMode::Vim);
                     self.key_display_parms.title_style = RataStyle::themed(Role::Warning);
                 } else {
                     // log::debug_log!("key_event={key_event:#?}");
@@ -666,7 +667,7 @@ impl EditData<'_> {
                     #[allow(clippy::unnested_or_patterns)]
                     match key_combination {
                         key!(ctrl - g) => {
-                            self.mode = EditorMode::Vim;
+                            self.switch_to_mode(EditorMode::Vim);
                             self.key_display_parms.title_style = RataStyle::themed(Role::Warning);
                         }
                         key!(ctrl - h) | key!(backspace) => {
@@ -889,18 +890,43 @@ impl EditData<'_> {
     }
 
     fn handle_normal_mode(&mut self, key: KeyEvent) -> KeyAction {
+        // debug_log!(
+        //     "key.code={}, key.modifiers={}, self.last_char={:?}, self.line_num_buf={:?}",
+        //     key.code,
+        //     key.modifiers,
+        //     self.last_char,
+        //     self.line_num_buf
+        // );
+
         // If we are waiting for a sequence (like 'g' prefix)
         if self.last_char == Some('g') {
             self.last_char = None; // Reset prefix tracker
             match key.code {
-                KeyCode::Char('g' | 'k') => {
-                    // Vim 'gg', Helix 'gk'
-                    self.textarea.move_cursor(CursorMove::Top);
-                }
+                // Vim 'gg', Helix 'gk'
+                KeyCode::Char('g' | 'k') => match self.line_num_buf {
+                    Some(line_num) => {
+                        self.line_num_buf = None;
+                        self.textarea
+                            .move_cursor(CursorMove::Jump(line_num.saturating_sub(1), 0));
+                    }
+                    None => {
+                        self.textarea.move_cursor(CursorMove::Top);
+                    }
+                },
                 KeyCode::Char('j') => self.textarea.move_cursor(CursorMove::Bottom), // Helix 'gj'
                 _ => {}
             }
             return KeyAction::Continue;
+        }
+
+        // Cleear line number buffer if char is not part of a valid go-to-line sequence
+        if self.line_num_buf.is_some()
+            && key
+                .code
+                .as_char()
+                .is_some_and(|c| c != 'g' && c != 'G' && !c.is_digit(10))
+        {
+            self.line_num_buf = None;
         }
 
         // self.status_message.clear();
@@ -913,8 +939,41 @@ impl EditData<'_> {
             // Mode switching: press 'i' to enter typing mode
             (KeyCode::Char('i'), KeyModifiers::NONE)
             | (KeyCode::Char('g'), KeyModifiers::CONTROL) => {
-                self.mode = EditorMode::Edit;
+                self.switch_to_mode(EditorMode::Edit);
                 self.key_display_parms.title_style = RataStyle::themed(Role::Heading3);
+            }
+
+            (
+                KeyCode::Char('0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'),
+                KeyModifiers::NONE,
+            ) => {
+                self.last_char = None; // Reset prefix tracker
+                let digit = key
+                    .code
+                    .as_char()
+                    .and_then(|c| c.to_digit(10))
+                    .map(|d| d as u16) // Converts char to Option<u32>
+                    .unwrap_or_default();
+
+                self.line_num_buf = Some(match self.line_num_buf {
+                    Some(n) => n.saturating_mul(10).saturating_add(digit),
+                    None => digit,
+                });
+                return KeyAction::Continue;
+            }
+
+            // --- Specific line number ---
+            (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
+                match self.line_num_buf {
+                    Some(line_num) => {
+                        self.line_num_buf = None;
+                        self.textarea
+                            .move_cursor(CursorMove::Jump(line_num.saturating_sub(1), 0));
+                    }
+                    None => {
+                        self.textarea.move_cursor(CursorMove::Bottom); // Vim style Bottom
+                    }
+                }
             }
 
             // --- Control functions ---
@@ -956,39 +1015,36 @@ impl EditData<'_> {
 
             (KeyCode::Char('a'), KeyModifiers::NONE) => {
                 self.textarea.move_cursor(CursorMove::Forward);
-                self.mode = EditorMode::Edit;
+                self.switch_to_mode(EditorMode::Edit);
                 self.key_display_parms.title_style = RataStyle::themed(Role::Heading3);
             }
             (KeyCode::Char('A'), KeyModifiers::SHIFT) => {
                 self.textarea.move_cursor(CursorMove::End);
-                self.mode = EditorMode::Edit;
+                self.switch_to_mode(EditorMode::Edit);
                 self.key_display_parms.title_style = RataStyle::themed(Role::Heading3);
             }
             (KeyCode::Char('o'), KeyModifiers::NONE) => {
                 self.textarea.move_cursor(CursorMove::End);
                 self.textarea.insert_newline();
-                self.mode = EditorMode::Edit;
+                self.switch_to_mode(EditorMode::Edit);
                 self.key_display_parms.title_style = RataStyle::themed(Role::Heading3);
             }
             (KeyCode::Char('O'), KeyModifiers::SHIFT) => {
                 self.textarea.move_cursor(CursorMove::Head);
                 self.textarea.insert_newline();
                 self.textarea.move_cursor(CursorMove::Up);
-                self.mode = EditorMode::Edit;
+                self.switch_to_mode(EditorMode::Edit);
                 self.key_display_parms.title_style = RataStyle::themed(Role::Heading3);
             }
             (KeyCode::Char('I'), KeyModifiers::SHIFT) => {
                 self.textarea.move_cursor(CursorMove::Head);
-                self.mode = EditorMode::Edit;
+                self.switch_to_mode(EditorMode::Edit);
                 self.key_display_parms.title_style = RataStyle::themed(Role::Heading3);
             }
 
             // --- Large Jumps ---
             (KeyCode::Char('g'), KeyModifiers::NONE) => {
                 self.last_char = Some('g'); // Stash 'g' to await the next keystroke
-            }
-            (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
-                self.textarea.move_cursor(CursorMove::Bottom); // Vim style Bottom
             }
 
             // --- Paragraph Jumping (Empty line boundaries) ---
@@ -1016,6 +1072,12 @@ impl EditData<'_> {
             _ => {}
         }
         KeyAction::Continue
+    }
+
+    fn switch_to_mode(&mut self, editor_mode: EditorMode) {
+        self.status_message.clear();
+        self.mode = editor_mode;
+        let _ = writeln!(self.status_message, "Switched to {:?} mode", self.mode);
     }
 }
 
@@ -1124,7 +1186,7 @@ where
         .cloned()
         .collect();
     edit_mode_keys.sort();
-    let mut vim_mode_keys: Vec<KeyDisplayLine> = VIM_MAPPINGS.iter().cloned().collect();
+    let mut vim_mode_keys: Vec<KeyDisplayLine> = VIM_MODE_KEYS.iter().cloned().collect();
     vim_mode_keys.sort();
 
     edit_data.key_display_lines = match edit_data.mode {
@@ -1153,7 +1215,7 @@ where
             );
             edit_data.textarea.set_style(match edit_data.mode {
                 EditorMode::Edit => RataStyle::themed(Role::Normal),
-                EditorMode::Vim => RataStyle::themed(Role::Hint),
+                EditorMode::Vim => RataStyle::themed(Role::Debug),
             });
 
             edit_data.key_display_lines = match edit_data.mode {
@@ -1405,7 +1467,7 @@ pub fn script_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> Thag
 fn next_hist(edit_data: &mut EditData<'_>) {
     if let Some(ref mut hist) = edit_data.history {
         if let Some(entry) = hist.get_next() {
-            debug_log!("F8 found entry {entry:?}");
+            // debug_log!("F8 found entry {entry:?}");
             paste_to_textarea(&mut edit_data.textarea, entry);
         }
     }
@@ -1416,13 +1478,13 @@ fn prev_hist(edit_data: &mut EditData<'_>) -> ThagResult<()> {
     if let Some(ref mut hist) = edit_data.history {
         if hist.at_end() && edit_data.textarea.is_empty() {
             if let Some(entry) = &hist.get_last() {
-                debug_log!("F7 (1) found entry {entry:?}");
+                // debug_log!("F7 (1) found entry {entry:?}");
                 paste_to_textarea(&mut edit_data.textarea, entry);
             }
         } else {
             save_if_changed(hist, &mut edit_data.textarea, edit_data.history_path)?;
             if let Some(entry) = &hist.get_previous() {
-                debug_log!("F7 (2) found entry {entry:?}");
+                // debug_log!("F7 (2) found entry {entry:?}");
                 paste_to_textarea(&mut edit_data.textarea, entry);
             }
         }
@@ -1539,7 +1601,7 @@ fn save_and_submit(edit_data: &mut EditData<'_>) -> ThagResult<KeyAction> {
 #[profiled]
 pub fn maybe_enable_raw_mode() -> ThagResult<()> {
     let test_env = &var("TEST_ENV");
-    debug_log!("test_env={test_env:?}");
+    // debug_log!("test_env={test_env:?}");
     if !test_env.is_ok() && !is_raw_mode_enabled()? {
         // Check if stdout is a terminal before enabling raw mode
         if std::io::IsTerminal::is_terminal(&std::io::stdout()) {
@@ -1867,7 +1929,7 @@ pub fn save_history(
     history: Option<&mut History>,
     history_path: Option<&PathBuf>,
 ) -> ThagResult<()> {
-    debug_log!("save_history...{history:?}");
+    // debug_log!("save_history...{history:?}");
     if let Some(hist) = history
         && let Some(hist_path) = history_path
     {
@@ -1998,28 +2060,29 @@ pub const EDIT_MODE_KEYS: &[KeyDisplayLine] = key_mappings![
 ];
 
 /// Key mappings for display purposes via (Ctrl-l) in TUI editor and file dialog.
-pub const VIM_MAPPINGS: &[KeyDisplayLine] = key_mappings![
+pub const VIM_MODE_KEYS: &[KeyDisplayLine] = key_mappings![
     (10, "Key bindings", "Description"),
     (20, "i, Ctrl+g", "Switch to edit mode"),
     (30, "Ctrl+q", "Cancel and quit"),
-    (40, "gg", "Move cursor to top of file"),
+    (40, "gg,gk", "Move cursor to top of file"),
     (50, "G", "Move cursor to bottom of file"),
-    (60, "h", "Move cursor backward one character"),
-    (70, "j", "Move cursor down one line"),
-    (80, "k", "Move cursor up one line"),
-    (90, "l", "Move cursor forward one character"),
-    (100, "w", "Move cursor forward one word"),
-    (110, "e", "Move cursor to next word end"),
-    (120, "b", "Move cursor backward one word"),
-    (130, "^", "Move cursor to start of line"),
-    (140, "$", "Move cursor to end of line"),
-    (150, "{", "Move cursor up one paragraph"),
-    (160, "}", "Move cursor down one paragraph"),
-    (170, "gg, gk", "Move cursor to top of file"),
-    (180, "Clrl+u", "Half page up"),
-    (190, "Clrl+d", "Half page down"),
-    (200, "Clrl+b", "Page up"),
-    (210, "Clrl+f", "Page down"),
+    (60, "<n>G, <n>gg", "Go to line <n> (1 to 65535)"),
+    (70, "h", "Move cursor backward one character"),
+    (80, "j", "Move cursor down one line"),
+    (90, "k", "Move cursor up one line"),
+    (100, "l", "Move cursor forward one character"),
+    (110, "w", "Move cursor forward one word"),
+    (120, "e", "Move cursor to next word end"),
+    (130, "b", "Move cursor backward one word"),
+    (140, "^", "Move cursor to start of line"),
+    (150, "$", "Move cursor to end of line"),
+    (160, "{", "Move cursor up one paragraph"),
+    (170, "}", "Move cursor down one paragraph"),
+    (180, "gg, gk", "Move cursor to top of file"),
+    (190, "Clrl+u", "Half page up"),
+    (200, "Clrl+d", "Half page down"),
+    (210, "Clrl+b", "Page up"),
+    (220, "Clrl+f", "Page down"),
     (
         220,
         "a",

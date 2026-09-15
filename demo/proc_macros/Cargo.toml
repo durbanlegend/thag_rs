@@ -27,3 +27,6 @@ expand = []
 default = ["expand"]
 
 [workspace]
+
+[lints.clippy]
+workspace = true

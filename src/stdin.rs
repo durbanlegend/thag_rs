@@ -2,7 +2,7 @@
 use crate::{
     CrosstermEventReader, EventReader, Role, ThagError, ThagResult, V, debug_log,
     tui_editor::{
-        EditData, EditorMode, History, KeyAction, KeyDisplayParms, NavigationState,
+        EditData, EditorMode, History, KeyAction, KeyDisplayParms, NavigationState, PopupMode,
         PopupScrollState, script_key_handler, tui_edit,
     },
     vprtln,
@@ -85,7 +85,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         history: Some(history),
         textarea: TextArea::from(initial_content.lines()),
         maybe_term: None,
-        popup: false,
+        popup: PopupMode::None,
         saved: false,
         selection_highlight_fg: Role::EMPH,
         popup_scroll: PopupScrollState::default(),

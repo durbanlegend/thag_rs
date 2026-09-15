@@ -48,7 +48,24 @@ use thag_profiler::profiled;
 use tui_textarea::{CursorMove, Input, Scrolling, TextArea};
 
 /// Title displayed at the bottom of the key bindings popup
-pub const TITLE_BOTTOM: &str = "Ctrl+l to hide";
+pub const KEYS_TITLE_BOTTOM: &str = "Ctrl+l to hide";
+
+/// Help popup title
+pub const HELP_TITLE: &str = "TUI Editor Help";
+/// Help text
+pub const HELP_CONTENT: &str = r"Welcome to the thag TUI editor
+
+The editor now offers a Vim navigation mode for improved navigation.
+
+Use `Ctrl-g` to toggle between modes.
+Alternatively `Esc` switches from Edit to Vim mode and Vim insertion commands
+(i, I, a, A, o, O, switch from Vim to Edit mode.
+
+`Ctrl-l` toggles a display of the key bindings for the current mode.
+`F1` toggles a display of the this help screen.";
+
+/// Title displayed at the bottom of the help popup
+pub const HELP_TITLE_BOTTOM: &str = "F1 to hide";
 
 /// Type alias for the crossterm backend with stdout lock
 pub type BackEnd<'a> = CrosstermBackend<std::io::StdoutLock<'a>>;
@@ -578,6 +595,18 @@ impl History {
 
 type KeyHandlerClosure = dyn Fn(KeyEvent, &mut EditData) -> ThagResult<KeyAction>;
 
+/// The popup mode for the editor, tracking whether to display help, key bindings or neither
+#[derive(Debug, Default, PartialEq, Eq)]
+pub enum PopupMode {
+    /// Keys popup mode
+    Keys,
+    /// Help popup mode
+    Help,
+    #[default]
+    /// Display no popup
+    None,
+}
+
 #[derive(Debug, Default, PartialEq, Eq)]
 /// Define `vim`-style editor states
 pub enum EditorMode {
@@ -589,6 +618,7 @@ pub enum EditorMode {
 }
 
 /// The navigation state
+#[derive(Debug)]
 pub struct NavigationState {
     /// The `vim`-style navigation or regular text editing mode.
     pub mode: EditorMode,
@@ -647,7 +677,7 @@ pub struct EditData<'a> {
     /// The wrapped terminal instance
     pub maybe_term: Option<ManagedTerminal<'a>>,
     /// Popup active flag
-    pub popup: bool,
+    pub popup: PopupMode,
     /// Saved flag
     pub saved: bool,
     /// The user-selected styling message role for highlighting selected text in edit mode
@@ -683,11 +713,11 @@ impl EditData<'_> {
                     self.switch_to_mode(EditorMode::Vim);
                     self.key_display_parms.title_style = RataStyle::themed(Role::Warning);
                 } else {
-                    // log::debug_log!("key_event={key_event:#?}");
+                    debug_log!("key_event={key_event:#?}");
                     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
                     // Handle scrolling in popup before normal editor keys
-                    if self.popup {
+                    if self.popup == PopupMode::Keys {
                         let max_scroll = self.key_display_lines.len().saturating_sub(10);
 
                         match key_combination {
@@ -789,7 +819,7 @@ impl EditData<'_> {
                             }
                             self.textarea.move_cursor(CursorMove::WordBack);
                         }
-                        key!(alt - p) | key!(alt - ')') | key!(f1) => {
+                        key!(alt - p) | key!(alt - ')') => {
                             if self.textarea.is_selecting() {
                                 self.textarea.cancel_selection();
                             }
@@ -1030,8 +1060,18 @@ impl EditData<'_> {
                 return KeyAction::Quit(self.saved);
             }
             (KeyCode::Char('l'), KeyModifiers::CONTROL) => {
-                self.popup = !self.popup;
-                return KeyAction::TogglePopup;
+                self.popup = match self.popup {
+                    PopupMode::Keys => PopupMode::None,
+                    _ => PopupMode::Keys,
+                };
+                return KeyAction::ToggleKeyPopup;
+            }
+            (KeyCode::F(1), KeyModifiers::NONE) => {
+                self.popup = match self.popup {
+                    PopupMode::Help => PopupMode::None,
+                    _ => PopupMode::Help,
+                };
+                return KeyAction::ToggleHelpPopup;
             }
             (KeyCode::Char('u'), KeyModifiers::NONE) => {
                 self.textarea.undo();
@@ -1177,13 +1217,16 @@ impl EditData<'_> {
     }
 
     fn switch_to_mode(&mut self, editor_mode: EditorMode) {
-        self.status_message.clear();
+        let mode_desc = if editor_mode == EditorMode::Edit {
+            "text editing"
+        } else {
+            "Vim navigation"
+        };
+
         self.navigation.mode = editor_mode;
-        let _ = writeln!(
-            self.status_message,
-            "Switched to {:?} mode",
-            self.navigation.mode
-        );
+
+        self.status_message.clear();
+        let _ = writeln!(self.status_message, "Switched to {mode_desc} mode");
     }
 }
 
@@ -1315,16 +1358,16 @@ pub enum KeyAction {
     Save,
     /// Save the current content and then exit the editor
     SaveAndExit,
-    /// Show the help screen with key bindings
-    ShowHelp,
     /// Save the current content and submit it (e.g., for iterator execution)
     SaveAndSubmit,
     /// Submit the current content without necessarily saving to file
     Submit,
+    /// Toggle display of the popup help screen
+    ToggleHelpPopup,
     /// Toggle the syntax highlighting colors
     ToggleHighlight,
-    /// Toggle the visibility of the popup help screen
-    TogglePopup,
+    /// Toggle display of the popup key bindings screen
+    ToggleKeyPopup,
 }
 
 /// Edit content with a TUI
@@ -1466,20 +1509,26 @@ where
                                         (max_key.max(key_len), max_desc.max(desc_len))
                                     });
 
-
-                            if edit_data.popup {
-                                display_popup(
+                            debug_log!("edit_data.popup={:?}", edit_data.popup);
+                            if edit_data.popup == PopupMode::Keys {
+                                display_keys_popup(
                                     &edit_data.key_display_lines,
                                     match edit_data.navigation.mode {
                                         EditorMode::Edit => "Edit mode key bindings - subject to your terminal settings",
                                         EditorMode::Vim => "Vim mode key bindings",
                                     },
-                                    TITLE_BOTTOM,
+                                    KEYS_TITLE_BOTTOM,
                                     max_key_len,
                                     max_desc_len,
                                     &mut edit_data.popup_scroll,
                                     f,
                                 );
+                            } else if edit_data.popup == PopupMode::Help {
+                                edit_data.status_message.clear();
+                                let _ = write!(edit_data.status_message, "edit_data.popup == PopupMode::Help");
+
+
+                                display_help_popup(HELP_CONTENT, HELP_TITLE, "Bottom title here", f);
                             }
                             highlight_selection(
                                 &mut edit_data.textarea,
@@ -1504,7 +1553,7 @@ where
         } else if let Event::Mouse(mouse_event) = event {
             // Handle mouse scrolling in popup
             use ratatui::crossterm::event::MouseEventKind;
-            if edit_data.popup {
+            if edit_data.popup == PopupMode::Keys {
                 match mouse_event.kind {
                     MouseEventKind::ScrollDown => {
                         if edit_data.popup_scroll.scroll_offset + 1
@@ -1539,6 +1588,10 @@ where
             }
 
             let key_action = edit_data.handle_key_event(key_event)?;
+            debug_log!(
+                "key_action={key_action:?}, edit_data.popup={:?}",
+                edit_data.popup
+            );
             match key_action {
                 KeyAction::AbandonChanges => {
                     return Ok((key_action, None::<Vec<String>>));
@@ -1555,13 +1608,18 @@ where
                     return Ok((key_action, maybe_text));
                 }
                 KeyAction::Continue | KeyAction::Save | KeyAction::ToggleHighlight => (),
-                KeyAction::TogglePopup => {
+                KeyAction::ToggleKeyPopup => {
                     // Reset scroll position when popup is opened
-                    if edit_data.popup {
+                    if edit_data.popup == PopupMode::Keys {
                         edit_data.popup_scroll.scroll_offset = 0;
                     }
                 }
-                KeyAction::ShowHelp => todo!(),
+                KeyAction::ToggleHelpPopup => {
+                    // edit_data.popup = match edit_data.popup {
+                    //     PopupMode::Help => PopupMode::None,
+                    //     _ => PopupMode::Help,
+                    // };
+                }
             }
         } else if edit_data.navigation.mode == EditorMode::Edit {
             // Otherwise, tui-textarea handles typing natively
@@ -1617,8 +1675,19 @@ pub fn script_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> Thag
         }
         key!(ctrl - l) => {
             // Toggle popup
-            edit_data.popup = !edit_data.popup;
-            Ok(KeyAction::TogglePopup)
+            edit_data.popup = match edit_data.popup {
+                PopupMode::Keys => PopupMode::None,
+                _ => PopupMode::Keys,
+            };
+            Ok(KeyAction::ToggleKeyPopup)
+        }
+        key!(f1) => {
+            // Toggle popup
+            edit_data.popup = match edit_data.popup {
+                PopupMode::Help => PopupMode::None,
+                _ => PopupMode::Help,
+            };
+            Ok(KeyAction::ToggleHelpPopup)
         }
         key!(f3) => {
             // Ask to revert
@@ -1663,11 +1732,11 @@ pub fn script_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> Thag
 
 #[profiled]
 fn next_hist(edit_data: &mut EditData<'_>) {
-    if let Some(ref mut hist) = edit_data.history
-        && let Some(entry) = hist.get_next()
-    {
-        // debug_log!("F8 found entry {entry:?}");
-        paste_to_textarea(&mut edit_data.textarea, entry);
+    if let Some(ref mut hist) = edit_data.history {
+        if let Some(entry) = hist.get_next() {
+            // debug_log!("F8 found entry {entry:?}");
+            paste_to_textarea(&mut edit_data.textarea, entry);
+        }
     }
 }
 
@@ -1825,10 +1894,11 @@ pub fn maybe_enable_raw_mode() -> ThagResult<()> {
 /// * `title_bottom` - The title text to display at the bottom of the popup
 /// * `max_key_len` - The maximum length of key strings for column width calculation
 /// * `max_desc_len` - The maximum length of description strings for column width calculation
+/// * `scroll_state` - A tracker for the scroll state of the popup display
 /// * `f` - A mutable reference to the ratatui Frame for rendering
 #[profiled]
 #[allow(clippy::cast_possible_truncation)]
-pub fn display_popup(
+pub fn display_keys_popup(
     mappings: &[KeyDisplayLine],
     title_top: &str,
     title_bottom: &str,
@@ -1913,6 +1983,59 @@ pub fn display_popup(
         }
         f.render_widget(widget, cells[1]);
     }
+}
+
+/// Display a popup with help or other text.
+///
+/// This function renders a centered popup window containing a `TextArea` of help text.
+/// The popup is styled with borders and titles.
+///
+/// # Arguments
+///
+/// * `content` - The content to display
+/// * `title_top` - The title text to display at the top of the popup
+/// * `title_bottom` - The title text to display at the bottom of the popup
+/// * `scroll_state` - A tracker for the scroll state of the popup display
+/// * `f` - A mutable reference to the ratatui Frame for rendering
+#[profiled]
+#[allow(clippy::cast_possible_truncation)]
+pub fn display_help_popup(
+    content: &str,
+    title_top: &str,
+    title_bottom: &str,
+    // scroll_state: &mut PopupScrollState,
+    f: &mut ratatui::prelude::Frame<'_>,
+) {
+    debug_log!("In display_help_popup for `{content}`");
+    // let mut textarea = TextArea::from(content.lines());
+    let total_rows = content.lines().count();
+
+    // Calculate available height for content
+    let max_height = f.area().height.saturating_sub(6); // Reserve space for borders and titles
+    let content_height = max_height.min(total_rows as u16);
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title_top(Line::from(title_top).centered())
+        .title_bottom(Line::from(format!("{title_bottom} (scroll with mouse wheel)")).centered())
+        .padding(ratatui::widgets::Padding::horizontal(1))
+        .add_modifier(Modifier::BOLD)
+        .fg(Color::themed(Role::HD1));
+
+    let area = centered_rect(
+        (content.lines().map(str::len).max().unwrap_or(60) + 5).min(u16::MAX as usize) as u16,
+        content_height + 4,
+        f.area(),
+    );
+
+    // Clear background and render block
+    f.render_widget(Clear, area);
+    f.render_widget(&block, area);
+    let widget = Paragraph::new(content)
+        .block(block)
+        .fg(Color::themed(Role::Normal))
+        .not_bold();
+    f.render_widget(&widget, area);
 }
 
 #[must_use]
@@ -2011,39 +2134,6 @@ pub fn save_if_changed(
     Ok(())
 }
 
-// Save a `TextArea` to history if it has changed.
-//
-// # Errors
-//
-// This function will bubble up any i/o errors encuntered.
-// pub fn remove_current_from_history(
-//     hist: &mut History,
-//     textarea: &mut TextArea<'_>,
-//     history_path: &Option<PathBuf>,
-// ) -> ThagResult<()> {
-//     debug_log!("save_if_changed...");
-//     if textarea.is_empty() {
-//         debug_log!("nothing to save(1)...");
-//         return Ok(());
-//     }
-//     if let Some(entry) = &hist.get_current() {
-//         let index = entry.index;
-//         let copy_text = copy_text(textarea);
-//         // In case they entered blanks
-//         if copy_text.trim().is_empty() {
-//             debug_log!("nothing to save(2)...");
-//             return Ok(());
-//         }
-//         if entry.contents() != copy_text {
-//             hist.update_entry(index, &copy_text);
-//             if let Some(ref hist_path) = history_path {
-//                 hist.save_to_file(hist_path)?;
-//             }
-//         }
-//     }
-//     Ok(())
-// }
-
 /// Paste the contents of a history entry into a text area.
 ///
 /// This function clears the current content of the `TextArea` by selecting all
@@ -2128,11 +2218,11 @@ pub fn save_history(
     history_path: Option<&PathBuf>,
 ) -> ThagResult<()> {
     // debug_log!("save_history...{history:?}");
-    if let Some(hist) = history
-        && let Some(hist_path) = history_path
-    {
-        hist.save_to_file(hist_path)?;
-        debug_log!("... saved to file");
+    if let Some(hist) = history {
+        if let Some(hist_path) = history_path {
+            hist.save_to_file(hist_path)?;
+            debug_log!("... saved to file");
+        }
     }
     Ok(())
 }
@@ -2237,7 +2327,7 @@ pub const EDIT_MODE_KEYS: &[KeyDisplayLine] = key_mappings![
     (330, "Alt+>, Ctrl+Alt+n", "Move cursor to bottom of file"),
     (340, "Ctrl+l", "Toggle keys display (this screen)"),
     (350, "Ctrl+t", "Toggle selection highlight colours"),
-    (360, "Alt+v, PageUp, F1", "Page up"),
+    (360, "Alt+v, PageUp", "Page up"),
     (370, "PageDown, F2", "Page down"),
     (380, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     (

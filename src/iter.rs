@@ -8,7 +8,7 @@ use crate::{
     manifest::extract,
     tui_editor::{
         EditData, EditorMode, Entry, History, KeyAction, KeyDisplayParms, NavigationState,
-        PopupScrollState, RataStyle, script_key_handler, tui_edit,
+        PopupMode, PopupScrollState, RataStyle, script_key_handler, tui_edit,
     },
 };
 use clap::{CommandFactory, Parser};
@@ -704,7 +704,7 @@ fn tui(
         history: Some(history),
         textarea: TextArea::from(initial_content.lines()),
         maybe_term: None,
-        popup: false,
+        popup: PopupMode::None,
         saved: false,
         selection_highlight_fg: Role::EMPH,
         popup_scroll: PopupScrollState::default(),
@@ -728,9 +728,9 @@ fn tui(
     let _ = match key_action {
         // KeyAction::Quit(_saved) => false,
         KeyAction::Save
-        | KeyAction::ShowHelp
+        | KeyAction::ToggleHelpPopup
         | KeyAction::ToggleHighlight
-        | KeyAction::TogglePopup => {
+        | KeyAction::ToggleKeyPopup => {
             return Err(
                 format!("Logic error: {key_action:?} should not return from tui_edit").into(),
             );
@@ -807,7 +807,7 @@ pub fn edit_history<R: EventReader + Debug>(
         history: None::<History>,
         textarea: TextArea::from(initial_content.lines()),
         maybe_term: None,
-        popup: false,
+        popup: PopupMode::None,
         saved: false,
         selection_highlight_fg: Role::EMPH,
         popup_scroll: PopupScrollState::default(),
@@ -828,9 +828,9 @@ pub fn edit_history<R: EventReader + Debug>(
     Ok(match key_action {
         KeyAction::Quit(saved) => saved,
         KeyAction::Save
-        | KeyAction::ShowHelp
+        | KeyAction::ToggleHelpPopup
         | KeyAction::ToggleHighlight
-        | KeyAction::TogglePopup => {
+        | KeyAction::ToggleKeyPopup => {
             return Err(format!("Logic error: {key_action:?} should not return from tui_edit").into())
         }
         KeyAction::SaveAndSubmit => {
@@ -876,8 +876,19 @@ pub fn history_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> Tha
         }
         key!(ctrl - l) => {
             // Toggle popup
-            edit_data.popup = !edit_data.popup;
-            Ok(KeyAction::TogglePopup)
+            edit_data.popup = match edit_data.popup {
+                PopupMode::Keys => PopupMode::None,
+                _ => PopupMode::Keys,
+            };
+            Ok(KeyAction::ToggleKeyPopup)
+        }
+        key!(f1) => {
+            // Toggle popup
+            edit_data.popup = match edit_data.popup {
+                PopupMode::Help => PopupMode::None,
+                _ => PopupMode::Help,
+            };
+            Ok(KeyAction::ToggleKeyPopup)
         }
         key!(f3) => {
             // Ask to revert

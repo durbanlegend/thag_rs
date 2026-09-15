@@ -42,4 +42,4 @@ proc-macro = true
 path = "src/lib.rs"
 
 [lints.clippy]
-uninlined_format_args = "allow"
+workspace = true

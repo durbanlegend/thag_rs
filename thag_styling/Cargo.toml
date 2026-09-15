@@ -121,7 +121,7 @@ serial_test = "3.2"
 supports-color = "3.0"
 
 [lints.clippy]
-uninlined_format_args = "allow"
+workspace = true
 
 # Feature-gated examples
 

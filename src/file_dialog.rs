@@ -2,9 +2,8 @@
 /// Copyright (c) 2023 Philipp Krones
 /// Licence: MIT
 use crate::{
-    key, key_mappings,
-    tui_editor::{self, centered_rect, display_popup, KeyDisplayLine, PopupScrollState},
-    KeyCombination,
+    KeyCombination, key, key_mappings,
+    tui_editor::{self, KeyDisplayLine, PopupScrollState, centered_rect, display_keys_popup},
 };
 use ratatui::crossterm::{
     cursor::{Hide, Show},
@@ -12,11 +11,11 @@ use ratatui::crossterm::{
     execute,
 };
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
     text::Line,
     widgets::{Block, Borders, List, ListItem, ListState},
-    Frame,
 };
 use std::{
     cmp,
@@ -295,8 +294,8 @@ impl FileDialog<'_> {
                     DialogFocus::Input => INPUT_MAPPINGS,
                 };
                 let (max_key_len, max_desc_len) = get_max_lengths(mappings);
-                let title_bottom = tui_editor::TITLE_BOTTOM;
-                display_popup(
+                let title_bottom = tui_editor::KEYS_TITLE_BOTTOM;
+                display_keys_popup(
                     mappings,
                     "Key bindings",
                     title_bottom,

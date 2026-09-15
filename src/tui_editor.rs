@@ -707,270 +707,255 @@ impl EditData<'_> {
     #[allow(clippy::too_many_lines)]
     fn handle_key_event(&mut self, key_event: KeyEvent) -> ThagResult<KeyAction> {
         match self.navigation.mode {
-            EditorMode::Edit => {
-                // In Insert mode, Esc drops back to Normal/Nav mode
-                if key_event.code == KeyCode::Esc {
-                    self.switch_to_mode(EditorMode::Vim);
-                    self.key_display_parms.title_style = RataStyle::themed(Role::Warning);
-                } else {
-                    debug_log!("key_event={key_event:#?}");
-                    let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
+            EditorMode::Edit => self.handle_edit_mode(key_event),
+            EditorMode::Vim => Ok(self.handle_vim_mode(key_event)),
+        }
+    }
 
-                    // Handle scrolling in popup before normal editor keys
-                    if self.popup == PopupMode::Keys {
-                        let max_scroll = self.key_display_lines.len().saturating_sub(10);
+    #[allow(clippy::too_many_lines)]
+    fn handle_edit_mode(&mut self, key_event: KeyEvent) -> ThagResult<KeyAction> {
+        if key_event.code == KeyCode::Esc {
+            self.switch_to_mode(EditorMode::Vim);
+            self.key_display_parms.title_style = RataStyle::themed(Role::Warning);
+            return Ok(KeyAction::Continue);
+        }
+        // debug_log!("key_event={key_event:#?}");
+        let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
-                        match key_combination {
-                            key!(up) => {
-                                self.popup_scroll.scroll_offset =
-                                    self.popup_scroll.scroll_offset.saturating_sub(1);
-                                return Ok(KeyAction::Continue);
-                            }
-                            key!(down) => {
-                                if self.popup_scroll.scroll_offset < max_scroll {
-                                    self.popup_scroll.scroll_offset += 1;
-                                }
-                                return Ok(KeyAction::Continue);
-                            }
-                            _ => {} // Let other keys fall through to toggle popup
-                        }
+        // Handle scrolling in popup before normal editor keys
+        if self.popup == PopupMode::Keys {
+            let max_scroll = self.key_display_lines.len().saturating_sub(10);
+
+            match key_combination {
+                key!(up) => {
+                    self.popup_scroll.scroll_offset =
+                        self.popup_scroll.scroll_offset.saturating_sub(1);
+                    return Ok(KeyAction::Continue);
+                }
+                key!(down) => {
+                    if self.popup_scroll.scroll_offset < max_scroll {
+                        self.popup_scroll.scroll_offset += 1;
                     }
+                    return Ok(KeyAction::Continue);
+                }
+                _ => (), // Let other keys fall through to toggle popup
+            }
+        }
 
-                    // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.
-                    #[allow(clippy::unnested_or_patterns)]
-                    match key_combination {
-                        key!(ctrl - g) => {
-                            self.switch_to_mode(EditorMode::Vim);
-                            self.key_display_parms.title_style = RataStyle::themed(Role::Warning);
-                        }
-                        key!(ctrl - h) | key!(backspace) => {
-                            self.textarea.delete_char();
-                        }
-                        // Not how this works. Intercepting tab and Ctrl-i is counter-productive.
-                        // key!(ctrl - i) | key!(tab) => {
-                        //     textarea.indent();
-                        // }
-                        key!(ctrl - m) | key!(enter) => {
-                            self.textarea.insert_newline();
-                        }
-                        key!(ctrl - k) => {
-                            self.textarea.delete_line_by_end();
-                        }
-                        key!(ctrl - j) => {
-                            self.textarea.delete_line_by_head();
-                        }
-                        key!(ctrl - w) | key!(alt - backspace) => {
-                            self.textarea.delete_word();
-                        }
-                        key!(alt - d) => {
-                            self.textarea.delete_next_word();
-                        }
-                        key!(ctrl - u) => {
-                            self.textarea.undo();
-                        }
-                        key!(ctrl - r) => {
-                            self.textarea.redo();
-                        }
-                        key!(ctrl - c) => {
-                            self.textarea.copy();
-                        }
-                        key!(ctrl - x) => {
-                            self.textarea.cut();
-                        }
-                        key!(ctrl - y) => {
-                            self.textarea.paste();
-                        }
-                        key!(ctrl - f) | key!(right) => {
-                            if self.textarea.is_selecting() {
-                                self.textarea.cancel_selection();
-                            }
-                            self.textarea.move_cursor(CursorMove::Forward);
-                        }
-                        key!(ctrl - b) | key!(left) => {
-                            if self.textarea.is_selecting() {
-                                self.textarea.cancel_selection();
-                            }
-                            self.textarea.move_cursor(CursorMove::Back);
-                        }
-                        key!(ctrl - p) | key!(up) => {
-                            if self.textarea.is_selecting() {
-                                self.textarea.cancel_selection();
-                            }
-                            self.textarea.move_cursor(CursorMove::Up);
-                        }
-                        key!(ctrl - n) | key!(down) => {
-                            if self.textarea.is_selecting() {
-                                self.textarea.cancel_selection();
-                            }
-                            self.textarea.move_cursor(CursorMove::Down);
-                        }
-                        key!(alt - f) => {
-                            if self.textarea.is_selecting() {
-                                self.textarea.cancel_selection();
-                            }
-                            self.textarea.move_cursor(CursorMove::WordForward);
-                        }
-                        key!(alt - shift - f) => {
-                            self.textarea.move_cursor(CursorMove::WordEnd);
-                        }
-                        key!(alt - b) => {
-                            if self.textarea.is_selecting() {
-                                self.textarea.cancel_selection();
-                            }
-                            self.textarea.move_cursor(CursorMove::WordBack);
-                        }
-                        key!(alt - p) | key!(alt - ')') => {
-                            if self.textarea.is_selecting() {
-                                self.textarea.cancel_selection();
-                            }
-                            self.textarea.move_cursor(CursorMove::ParagraphBack);
-                        }
-                        key!(alt - n) | key!(alt - '(') | key!(f2) => {
-                            self.textarea.move_cursor(CursorMove::ParagraphForward);
-                        }
-                        key!(ctrl - e) | key!(end) | key!(ctrl - alt - f) => {
-                            self.textarea.move_cursor(CursorMove::End);
-                        }
-                        key!(ctrl - a) | key!(home) | key!(ctrl - alt - b) => {
-                            self.textarea.move_cursor(CursorMove::Head);
-                        }
-                        key!(f9) => {
-                            ratatui::crossterm::execute!(
-                                std::io::stdout().lock(),
-                                DisableMouseCapture,
-                            )?;
-                            self.textarea.remove_line_number();
-                            self.textarea.set_block(
-                                Block::default()
-                                    .borders(Borders::NONE)
-                                    .title(self.key_display_parms.edit_title)
-                                    .title_style(self.key_display_parms.title_style),
-                            );
-                        }
-                        key!(f10) => {
-                            // eprintln!("key_combination={key_combination:?}");
-                            ratatui::crossterm::execute!(
-                                std::io::stdout().lock(),
-                                EnableMouseCapture,
-                            )?;
-                            self.textarea
-                                .set_line_number_style(RataStyle::themed(Role::Hint));
-                            self.textarea.set_block(
-                                Block::default()
-                                    .borders(Borders::ALL)
-                                    .title(self.key_display_parms.edit_title)
-                                    .title_style(self.key_display_parms.title_style),
-                            );
-                        }
-                        key!(alt - '<') | key!(ctrl - alt - p) => {
-                            self.textarea.move_cursor(CursorMove::Top);
-                        }
-                        key!(alt - '>') | key!(ctrl - alt - n) => {
-                            self.textarea.move_cursor(CursorMove::Bottom);
-                        }
-                        key!(alt - c) => {
-                            if self.textarea.is_selecting() {
-                                self.textarea.cancel_selection();
-                            } else {
-                                self.textarea.start_selection();
-                            }
-                        }
-                        key!(alt - shift - 'h') => {
-                            if !self.textarea.is_selecting() {
-                                self.textarea.start_selection();
-                            }
-                            self.textarea.move_cursor(CursorMove::WordBack);
-                        }
-                        key!(alt - shift - 'j') => {
-                            if !self.textarea.is_selecting() {
-                                self.textarea.start_selection();
-                            }
-                            self.textarea.move_cursor(CursorMove::Down);
-                        }
-                        key!(alt - shift - 'k') => {
-                            if !self.textarea.is_selecting() {
-                                self.textarea.start_selection();
-                            }
-                            self.textarea.move_cursor(CursorMove::Up);
-                        }
-                        key!(alt - shift - 'l') => {
-                            if !self.textarea.is_selecting() {
-                                self.textarea.start_selection();
-                            }
-                            self.textarea.move_cursor(CursorMove::WordEnd);
-                        }
-                        key!(alt - shift - 'p') => {
-                            if !self.textarea.is_selecting() {
-                                self.textarea.start_selection();
-                            }
-                            self.textarea.move_cursor(CursorMove::ParagraphBack);
-                        }
-                        key!(alt - shift - 'n') => {
-                            if !self.textarea.is_selecting() {
-                                self.textarea.start_selection();
-                            }
-                            self.textarea.move_cursor(CursorMove::ParagraphForward);
-                        }
-                        // key!(alt - shift - c) => {
-                        //     textarea.start_selection();
-                        // }
-                        key!(alt - shift - a) => {
-                            self.textarea.select_all();
-                        }
-                        key!(ctrl - t) => {
-                            // Toggle highlighting colours
-                            self.selection_highlight_fg = match self.selection_highlight_fg {
-                                Role::Emphasis => Role::Info,
-                                Role::Info => Role::Error,
-                                Role::Error => Role::Warning,
-                                Role::Warning => Role::Heading1,
-                                Role::Heading1 => Role::Heading2,
-                                Role::Heading2 => Role::Heading3,
-                                _ => Role::Emphasis,
-                            };
-                            if var("TEST_ENV").is_err() {
-                                #[allow(clippy::option_if_let_else)]
-                                if let Some(ref mut term) = self.maybe_term {
-                                    term.draw(|_| {
-                                        highlight_selection(
-                                            &mut self.textarea,
-                                            self.selection_highlight_fg,
-                                        );
-                                    })?;
-                                }
-                            }
-                        }
-                        _ => {
-                            // Call the key_handler closure to process events
-                            // Use `take` to work around the borrow checker
-                            if let Some(handler) = self.key_handler.take() {
-                                let result = handler(key_event, self);
-
-                                self.key_handler = Some(handler);
-
-                                return result;
-                            }
-                            // eprintln!("key_action={key_action:?}");
-                        }
+        // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.
+        #[allow(clippy::unnested_or_patterns)]
+        match key_combination {
+            key!(ctrl - g) => {
+                self.switch_to_mode(EditorMode::Vim);
+                self.key_display_parms.title_style = RataStyle::themed(Role::Warning);
+            }
+            key!(ctrl - h) | key!(backspace) => {
+                self.textarea.delete_char();
+            }
+            // Not how this works. Intercepting tab and Ctrl-i is counter-productive.
+            // key!(ctrl - i) | key!(tab) => {
+            //     textarea.indent();
+            // }
+            key!(ctrl - m) | key!(enter) => {
+                self.textarea.insert_newline();
+            }
+            key!(ctrl - k) => {
+                self.textarea.delete_line_by_end();
+            }
+            key!(ctrl - j) => {
+                self.textarea.delete_line_by_head();
+            }
+            key!(ctrl - w) | key!(alt - backspace) => {
+                self.textarea.delete_word();
+            }
+            key!(alt - d) => {
+                self.textarea.delete_next_word();
+            }
+            key!(ctrl - u) => {
+                self.textarea.undo();
+            }
+            key!(ctrl - r) => {
+                self.textarea.redo();
+            }
+            key!(ctrl - c) => {
+                self.textarea.copy();
+            }
+            key!(ctrl - x) => {
+                self.textarea.cut();
+            }
+            key!(ctrl - y) => {
+                self.textarea.paste();
+            }
+            key!(ctrl - f) | key!(right) => {
+                if self.textarea.is_selecting() {
+                    self.textarea.cancel_selection();
+                }
+                self.textarea.move_cursor(CursorMove::Forward);
+            }
+            key!(ctrl - b) | key!(left) => {
+                if self.textarea.is_selecting() {
+                    self.textarea.cancel_selection();
+                }
+                self.textarea.move_cursor(CursorMove::Back);
+            }
+            key!(ctrl - p) | key!(up) => {
+                if self.textarea.is_selecting() {
+                    self.textarea.cancel_selection();
+                }
+                self.textarea.move_cursor(CursorMove::Up);
+            }
+            key!(ctrl - n) | key!(down) => {
+                if self.textarea.is_selecting() {
+                    self.textarea.cancel_selection();
+                }
+                self.textarea.move_cursor(CursorMove::Down);
+            }
+            key!(alt - f) => {
+                if self.textarea.is_selecting() {
+                    self.textarea.cancel_selection();
+                }
+                self.textarea.move_cursor(CursorMove::WordForward);
+            }
+            key!(alt - shift - f) => {
+                self.textarea.move_cursor(CursorMove::WordEnd);
+            }
+            key!(alt - b) => {
+                if self.textarea.is_selecting() {
+                    self.textarea.cancel_selection();
+                }
+                self.textarea.move_cursor(CursorMove::WordBack);
+            }
+            key!(alt - p) | key!(alt - ')') => {
+                if self.textarea.is_selecting() {
+                    self.textarea.cancel_selection();
+                }
+                self.textarea.move_cursor(CursorMove::ParagraphBack);
+            }
+            key!(alt - n) | key!(alt - '(') | key!(f2) => {
+                self.textarea.move_cursor(CursorMove::ParagraphForward);
+            }
+            key!(ctrl - e) | key!(end) | key!(ctrl - alt - f) => {
+                self.textarea.move_cursor(CursorMove::End);
+            }
+            key!(ctrl - a) | key!(home) | key!(ctrl - alt - b) => {
+                self.textarea.move_cursor(CursorMove::Head);
+            }
+            key!(f9) => {
+                ratatui::crossterm::execute!(std::io::stdout().lock(), DisableMouseCapture,)?;
+                self.textarea.remove_line_number();
+                self.textarea.set_block(
+                    Block::default()
+                        .borders(Borders::NONE)
+                        .title(self.key_display_parms.edit_title)
+                        .title_style(self.key_display_parms.title_style),
+                );
+            }
+            key!(f10) => {
+                // eprintln!("key_combination={key_combination:?}");
+                ratatui::crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
+                self.textarea
+                    .set_line_number_style(RataStyle::themed(Role::Hint));
+                self.textarea.set_block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title(self.key_display_parms.edit_title)
+                        .title_style(self.key_display_parms.title_style),
+                );
+            }
+            key!(alt - '<') | key!(ctrl - alt - p) => {
+                self.textarea.move_cursor(CursorMove::Top);
+            }
+            key!(alt - '>') | key!(ctrl - alt - n) => {
+                self.textarea.move_cursor(CursorMove::Bottom);
+            }
+            key!(alt - c) => {
+                if self.textarea.is_selecting() {
+                    self.textarea.cancel_selection();
+                } else {
+                    self.textarea.start_selection();
+                }
+            }
+            key!(alt - shift - 'h') => {
+                if !self.textarea.is_selecting() {
+                    self.textarea.start_selection();
+                }
+                self.textarea.move_cursor(CursorMove::WordBack);
+            }
+            key!(alt - shift - 'j') => {
+                if !self.textarea.is_selecting() {
+                    self.textarea.start_selection();
+                }
+                self.textarea.move_cursor(CursorMove::Down);
+            }
+            key!(alt - shift - 'k') => {
+                if !self.textarea.is_selecting() {
+                    self.textarea.start_selection();
+                }
+                self.textarea.move_cursor(CursorMove::Up);
+            }
+            key!(alt - shift - 'l') => {
+                if !self.textarea.is_selecting() {
+                    self.textarea.start_selection();
+                }
+                self.textarea.move_cursor(CursorMove::WordEnd);
+            }
+            key!(alt - shift - 'p') => {
+                if !self.textarea.is_selecting() {
+                    self.textarea.start_selection();
+                }
+                self.textarea.move_cursor(CursorMove::ParagraphBack);
+            }
+            key!(alt - shift - 'n') => {
+                if !self.textarea.is_selecting() {
+                    self.textarea.start_selection();
+                }
+                self.textarea.move_cursor(CursorMove::ParagraphForward);
+            }
+            // key!(alt - shift - c) => {
+            //     textarea.start_selection();
+            // }
+            key!(alt - shift - a) => {
+                self.textarea.select_all();
+            }
+            key!(ctrl - t) => {
+                // Toggle highlighting colours
+                self.selection_highlight_fg = match self.selection_highlight_fg {
+                    Role::Emphasis => Role::Info,
+                    Role::Info => Role::Error,
+                    Role::Error => Role::Warning,
+                    Role::Warning => Role::Heading1,
+                    Role::Heading1 => Role::Heading2,
+                    Role::Heading2 => Role::Heading3,
+                    _ => Role::Emphasis,
+                };
+                if var("TEST_ENV").is_err() {
+                    #[allow(clippy::option_if_let_else)]
+                    if let Some(ref mut term) = self.maybe_term {
+                        term.draw(|_| {
+                            highlight_selection(&mut self.textarea, self.selection_highlight_fg);
+                        })?;
                     }
                 }
             }
-            EditorMode::Vim => {
-                return Ok(self.handle_vim_mode(key_event));
+            _ => {
+                // Call the key_handler closure to process events
+                // Use `take` to work around the borrow checker
+                if let Some(handler) = self.key_handler.take() {
+                    let result = handler(key_event, self);
+
+                    self.key_handler = Some(handler);
+
+                    return result;
+                }
+                // eprintln!("key_action={key_action:?}");
             }
         }
-        Ok(KeyAction::Continue)
+        return Ok(KeyAction::Continue);
     }
 
     #[allow(clippy::too_many_lines)]
     fn handle_vim_mode(&mut self, key: KeyEvent) -> KeyAction {
-        // debug_log!(
-        //     "key.code={}, key.modifiers={}, self.last_char={:?}, self.line_num_buf={:?}",
-        //     key.code,
-        //     key.modifiers,
-        //     self.last_char,
-        //     self.line_num_buf
-        // );
+        debug_log!("key.code={}, key.modifiers={}", key.code, key.modifiers,);
 
         // If we are waiting for a sequence (like 'g' prefix)
         if self.navigation.pending_g {
@@ -993,7 +978,7 @@ impl EditData<'_> {
             && key.code.as_char().is_some_and(|c| match key.modifiers {
                 KeyModifiers::NONE => {
                     !c.is_ascii_digit()
-                        && !['b', 'e', 'g', 'G', 'h', 'k', 'l', 'w', '{', '}'].contains(&c)
+                        && !['b', 'e', 'g', 'G', 'h', 'k', 'l', 'w', '{', '}', '|'].contains(&c)
                 }
                 KeyModifiers::CONTROL => !['b', 'd', 'f', 'u'].contains(&c),
                 _ => false,
@@ -1002,12 +987,6 @@ impl EditData<'_> {
             self.navigation.reset_prefix();
         }
 
-        // self.status_message.clear();
-        // let _ = writeln!(
-        //     self.status_message,
-        //     "key.code={}, key.modifiers={}",
-        //     key.code, key.modifiers
-        // );
         match (key.code, key.modifiers) {
             // Mode switching: press 'i' to enter typing mode
             (KeyCode::Char('i'), KeyModifiers::NONE)
@@ -1024,19 +1003,6 @@ impl EditData<'_> {
                 let digit = c.to_digit(10).unwrap() as usize;
                 self.navigation.push_digit(digit);
 
-                // KeyCode::Char('0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'),
-                // self.last_char = None; // Reset prefix tracker
-                // let digit = key
-                //     .code
-                //     .as_char()
-                //     .and_then(|c| c.to_digit(10))
-                //     .map(|d| d as u16) // Converts char to Option<u32>
-                //     .unwrap_or_default();
-
-                // self.line_num_buf = Some(match self.line_num_buf {
-                //     Some(n) => n.saturating_mul(10).saturating_add(digit),
-                //     None => digit,
-                // });
                 return KeyAction::Continue;
             }
 
@@ -1053,9 +1019,6 @@ impl EditData<'_> {
             }
 
             // --- Control functions ---
-            // (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
-            //     return save_and_submit(self);
-            // }
             (KeyCode::Char('q'), KeyModifiers::CONTROL) => {
                 return KeyAction::Quit(self.saved);
             }
@@ -1090,6 +1053,14 @@ impl EditData<'_> {
             (KeyCode::Char('l'), KeyModifiers::NONE) => {
                 let n = self.navigation.get_count();
                 move_vim_horizontal(&mut self.textarea, n, true);
+                self.navigation.reset_prefix();
+            }
+            (KeyCode::Char('|'), KeyModifiers::NONE) => {
+                // Action: [n]! -> Go to column n on the current line
+                let n = self.navigation.get_count();
+                let (row, _col) = self.textarea.cursor();
+                // debug_log!("count={count:?}, row={row}, target_col={n}");
+                safe_jump(&mut self.textarea, row, n.saturating_sub(1));
                 self.navigation.reset_prefix();
             }
 
@@ -1509,7 +1480,7 @@ where
                                         (max_key.max(key_len), max_desc.max(desc_len))
                                     });
 
-                            debug_log!("edit_data.popup={:?}", edit_data.popup);
+                            // debug_log!("edit_data.popup={:?}", edit_data.popup);
                             if edit_data.popup == PopupMode::Keys {
                                 display_keys_popup(
                                     &edit_data.key_display_lines,
@@ -1588,10 +1559,10 @@ where
             }
 
             let key_action = edit_data.handle_key_event(key_event)?;
-            debug_log!(
-                "key_action={key_action:?}, edit_data.popup={:?}",
-                edit_data.popup
-            );
+            // debug_log!(
+            //     "key_action={key_action:?}, edit_data.popup={:?}",
+            //     edit_data.popup
+            // );
             match key_action {
                 KeyAction::AbandonChanges => {
                     return Ok((key_action, None::<Vec<String>>));
@@ -2370,6 +2341,7 @@ pub const VIM_MODE_KEYS: &[KeyDisplayLine] = key_mappings![
     (130, "[n]b", "Move cursor backward [n] words"),
     (140, "^", "Move cursor to start of line"),
     (150, "$", "Move cursor to end of line"),
+    (155, "n|", "Move cursor to column [n] on the current line"),
     (160, "[n]{", "Move cursor up [n]] paragraphs"),
     (170, "[n]}", "Move cursor down [n] paragraphs"),
     (190, "[n]Clrl+u", "[n] half-pages up"),

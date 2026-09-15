@@ -41,5 +41,5 @@ internal_docs = []
 proc-macro = true
 path = "src/lib.rs"
 
-[lints.clippy]
+[lints]
 workspace = true

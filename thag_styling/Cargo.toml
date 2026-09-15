@@ -120,7 +120,7 @@ ratatui = "0.30"
 serial_test = "3.2"
 supports-color = "3.0"
 
-[lints.clippy]
+[lints]
 workspace = true
 
 # Feature-gated examples

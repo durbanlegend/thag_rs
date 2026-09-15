@@ -28,5 +28,5 @@ default = ["expand"]
 
 [workspace]
 
-[lints.clippy]
+[lints]
 workspace = true

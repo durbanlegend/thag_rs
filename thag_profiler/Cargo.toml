@@ -134,5 +134,5 @@ features = [
     "internal_docs",
 ]
 
-[lints.clippy]
+[lints]
 workspace = true

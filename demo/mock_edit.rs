@@ -1,8 +1,7 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28" # Specific version
-thag_rs = { version = "=1.0.1", default-features = false, features = ["tui", "simplelog"] }
-thag_styling = { version = "=1.0.1", features = ["crossterm_support", "color_detect"] }
+# crossterm = "0.28" # Specific version
+thag_rs = { version = "1", default-features = false, features = ["tui", "simplelog"] }
 */
 
 /// Used to debug a doctest.
@@ -13,7 +12,6 @@ use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use mockall::{automock, predicate::str};
 use std::time::Duration;
 use thag_rs::{stdin::edit, EventReader, MockEventReader, ThagResult, ThagError};
-use thag_styling::{ThemedStyle};
 
 pub struct CrosstermEventReader;
 

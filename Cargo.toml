@@ -537,8 +537,8 @@ tui = [
 # or
 # cargo add thag_rs --no-default-features --features="iter,env_logger"
 
-[lints.clippy]
-uninlined_format_args = "allow"
+[lints]
+workspace = true
 
 [profile.dev]
 # opt-level = 1            # Use slightly better optimizations.
@@ -553,6 +553,3 @@ debug = false
 [profile.dist]
 inherits = "release"
 lto = "thin"
-
-[lints.clippy]
-workspace = true

@@ -593,7 +593,7 @@ impl History {
     }
 }
 
-type KeyHandlerClosure = dyn Fn(KeyEvent, &mut EditData) -> ThagResult<KeyAction>;
+type KeyHandlerClosure = dyn Fn(KeyEvent, &mut Editor) -> ThagResult<KeyAction>;
 
 /// The popup mode for the editor, tracking whether to display help, key bindings or neither
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -661,7 +661,7 @@ impl NavigationState {
 
 #[allow(dead_code)]
 /// Struct to hold data-related parameters for the TUI editor
-pub struct EditData<'a> {
+pub struct Editor<'a> {
     /// Whether to return the edited text as part of the result
     pub return_text: bool,
     /// The initial content to display in the editor
@@ -703,7 +703,7 @@ pub struct EditData<'a> {
     // pub line_num_buf: Option<u16>,
 }
 
-impl EditData<'_> {
+impl Editor<'_> {
     #[allow(clippy::too_many_lines)]
     fn handle_key_event(&mut self, key_event: KeyEvent) -> ThagResult<KeyAction> {
         match self.navigation.mode {
@@ -1355,35 +1355,35 @@ pub enum KeyAction {
 #[profiled]
 pub fn tui_edit<R>(
     event_reader: &R,
-    edit_data: &mut EditData,
+    editor: &mut Editor,
 ) -> ThagResult<(KeyAction, Option<Vec<String>>)>
 where
     R: EventReader + Debug,
 {
     // Initialize state variables
-    edit_data.maybe_term = resolve_term()?;
+    editor.maybe_term = resolve_term()?;
 
     // Create the `TextArea` from initial content
-    // let mut textarea = TextArea::from(edit_data.initial_content.lines());
-    // let mut textarea = &edit_data.textarea;
-    edit_data.textarea.set_hard_tab_indent(true);
-    // eprintln!("edit_data.textarea.tab_length()={}", edit_data.textarea.tab_length());
+    // let mut textarea = TextArea::from(editor.initial_content.lines());
+    // let mut textarea = &editor.textarea;
+    editor.textarea.set_hard_tab_indent(true);
+    // eprintln!("editor.textarea.tab_length()={}", editor.textarea.tab_length());
 
-    edit_data
+    editor
         .textarea
         .set_line_number_style(RataStyle::themed(Role::Hint));
-    edit_data.textarea.move_cursor(CursorMove::Bottom);
+    editor.textarea.move_cursor(CursorMove::Bottom);
     // New line with cursor at EOF for usability
-    edit_data.textarea.move_cursor(CursorMove::End);
-    if !edit_data.textarea.is_empty() {
-        edit_data.textarea.insert_newline();
+    editor.textarea.move_cursor(CursorMove::End);
+    if !editor.textarea.is_empty() {
+        editor.textarea.insert_newline();
     }
 
     // Apply initial highlights
-    highlight_selection(&mut edit_data.textarea, edit_data.selection_highlight_fg);
+    highlight_selection(&mut editor.textarea, editor.selection_highlight_fg);
 
-    let remove = edit_data.key_display_parms.remove_keys;
-    let add = edit_data.key_display_parms.add_keys;
+    let remove = editor.key_display_parms.remove_keys;
+    let add = editor.key_display_parms.add_keys;
     // Track popup scroll state
     // let mut popup_scroll = PopupScrollState::default();
 
@@ -1399,7 +1399,7 @@ where
     let mut vim_mode_keys: Vec<KeyDisplayLine> = VIM_MODE_KEYS.to_vec();
     vim_mode_keys.sort();
 
-    edit_data.key_display_lines = match edit_data.navigation.mode {
+    editor.key_display_lines = match editor.navigation.mode {
         EditorMode::Edit => edit_mode_keys.clone(),
         EditorMode::Vim => vim_mode_keys.clone(),
     };
@@ -1414,28 +1414,26 @@ where
         } else {
             // Real-world interaction
             // Set up the display parameters for the `TextArea`
-            edit_data.textarea.set_block(
+            editor.textarea.set_block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(match edit_data.navigation.mode {
-                        EditorMode::Edit => edit_data.key_display_parms.edit_title,
-                        EditorMode::Vim => edit_data.key_display_parms.vim_title,
+                    .title(match editor.navigation.mode {
+                        EditorMode::Edit => editor.key_display_parms.edit_title,
+                        EditorMode::Vim => editor.key_display_parms.vim_title,
                     })
-                    .title_style(edit_data.key_display_parms.title_style),
+                    .title_style(editor.key_display_parms.title_style),
             );
-            edit_data
-                .textarea
-                .set_style(match edit_data.navigation.mode {
-                    EditorMode::Edit => RataStyle::themed(Role::Normal),
-                    EditorMode::Vim => RataStyle::themed(Role::Debug),
-                });
+            editor.textarea.set_style(match editor.navigation.mode {
+                EditorMode::Edit => RataStyle::themed(Role::Normal),
+                EditorMode::Vim => RataStyle::themed(Role::Debug),
+            });
 
-            edit_data.key_display_lines = match edit_data.navigation.mode {
+            editor.key_display_lines = match editor.navigation.mode {
                 EditorMode::Edit => edit_mode_keys.clone(),
                 EditorMode::Vim => vim_mode_keys.clone(),
             };
 
-            edit_data.maybe_term.as_mut().map_or_else(
+            editor.maybe_term.as_mut().map_or_else(
                 || Err("Logic issue unwrapping term we wrapped ourselves".into()),
                 |term| {
                     term.draw(|f| {
@@ -1453,25 +1451,25 @@ where
                                 .split(area);
 
                             // Render the `TextArea` in the first chunk
-                            f.render_widget(&edit_data.textarea, chunks[0]);
+                            f.render_widget(&editor.textarea, chunks[0]);
 
                             // Render the status line in the second chunk
                             let status_block = Block::default()
                                 .borders(Borders::ALL)
                                 .title("Status")
                                 .style(RataStyle::themed(Role::Success))
-                                .title_style(edit_data.key_display_parms.title_style)
+                                .title_style(editor.key_display_parms.title_style)
                                 .padding(ratatui::widgets::Padding::horizontal(1));
 
                             let status_text =
-                                Paragraph::new::<&str>(edit_data.status_message.as_ref())
+                                Paragraph::new::<&str>(editor.status_message.as_ref())
                                     .block(status_block)
                                     .style(RataStyle::themed(Role::Info));
 
                             f.render_widget(status_text, chunks[1]);
 
                             let (max_key_len, max_desc_len) =
-                                edit_data
+                                editor
                                     .key_display_lines
                                     .iter()
                                     .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
@@ -1480,30 +1478,30 @@ where
                                         (max_key.max(key_len), max_desc.max(desc_len))
                                     });
 
-                            // debug_log!("edit_data.popup={:?}", edit_data.popup);
-                            if edit_data.popup == PopupMode::Keys {
+                            // debug_log!("editor.popup={:?}", editor.popup);
+                            if editor.popup == PopupMode::Keys {
                                 display_keys_popup(
-                                    &edit_data.key_display_lines,
-                                    match edit_data.navigation.mode {
+                                    &editor.key_display_lines,
+                                    match editor.navigation.mode {
                                         EditorMode::Edit => "Edit mode key bindings - subject to your terminal settings",
                                         EditorMode::Vim => "Vim mode key bindings",
                                     },
                                     KEYS_TITLE_BOTTOM,
                                     max_key_len,
                                     max_desc_len,
-                                    &mut edit_data.popup_scroll,
+                                    &mut editor.popup_scroll,
                                     f,
                                 );
-                            } else if edit_data.popup == PopupMode::Help {
-                                edit_data.status_message.clear();
-                                let _ = write!(edit_data.status_message, "edit_data.popup == PopupMode::Help");
+                            } else if editor.popup == PopupMode::Help {
+                                editor.status_message.clear();
+                                let _ = write!(editor.status_message, "editor.popup == PopupMode::Help");
 
 
                                 display_help_popup(HELP_CONTENT, HELP_TITLE, "Bottom title here", f);
                             }
                             highlight_selection(
-                                &mut edit_data.textarea,
-                                edit_data.selection_highlight_fg,
+                                &mut editor.textarea,
+                                editor.selection_highlight_fg,
                             );
                             // status_message = String::new();
                         }
@@ -1520,22 +1518,20 @@ where
         };
 
         if let Paste(ref data) = event {
-            edit_data.textarea.insert_str(normalize_newlines(data));
+            editor.textarea.insert_str(normalize_newlines(data));
         } else if let Event::Mouse(mouse_event) = event {
             // Handle mouse scrolling in popup
             use ratatui::crossterm::event::MouseEventKind;
-            if edit_data.popup == PopupMode::Keys {
+            if editor.popup == PopupMode::Keys {
                 match mouse_event.kind {
                     MouseEventKind::ScrollDown => {
-                        if edit_data.popup_scroll.scroll_offset + 1
-                            < edit_data.key_display_lines.len()
-                        {
-                            edit_data.popup_scroll.scroll_offset += 1;
+                        if editor.popup_scroll.scroll_offset + 1 < editor.key_display_lines.len() {
+                            editor.popup_scroll.scroll_offset += 1;
                         }
                     }
                     MouseEventKind::ScrollUp => {
-                        edit_data.popup_scroll.scroll_offset =
-                            edit_data.popup_scroll.scroll_offset.saturating_sub(1);
+                        editor.popup_scroll.scroll_offset =
+                            editor.popup_scroll.scroll_offset.saturating_sub(1);
                     }
                     _ => {}
                 }
@@ -1543,11 +1539,11 @@ where
                 match mouse_event.kind {
                     MouseEventKind::ScrollUp => {
                         // Scroll up by 1 line (negative row offset)
-                        edit_data.textarea.scroll((-1, 0));
+                        editor.textarea.scroll((-1, 0));
                     }
                     MouseEventKind::ScrollDown => {
                         // Scroll down by 1 line (positive row offset)
-                        edit_data.textarea.scroll((1, 0));
+                        editor.textarea.scroll((1, 0));
                     }
                     _ => {} // Ignore other mouse clicks/movements if not needed
                 }
@@ -1558,10 +1554,10 @@ where
                 continue;
             }
 
-            let key_action = edit_data.handle_key_event(key_event)?;
+            let key_action = editor.handle_key_event(key_event)?;
             // debug_log!(
-            //     "key_action={key_action:?}, edit_data.popup={:?}",
-            //     edit_data.popup
+            //     "key_action={key_action:?}, editor.popup={:?}",
+            //     editor.popup
             // );
             match key_action {
                 KeyAction::AbandonChanges => {
@@ -1571,8 +1567,8 @@ where
                 | KeyAction::SaveAndExit
                 | KeyAction::SaveAndSubmit
                 | KeyAction::Submit => {
-                    let maybe_text = if edit_data.return_text {
-                        Some(edit_data.textarea.lines().to_vec())
+                    let maybe_text = if editor.return_text {
+                        Some(editor.textarea.lines().to_vec())
                     } else {
                         None::<Vec<String>>
                     };
@@ -1581,21 +1577,21 @@ where
                 KeyAction::Continue | KeyAction::Save | KeyAction::ToggleHighlight => (),
                 KeyAction::ToggleKeyPopup => {
                     // Reset scroll position when popup is opened
-                    if edit_data.popup == PopupMode::Keys {
-                        edit_data.popup_scroll.scroll_offset = 0;
+                    if editor.popup == PopupMode::Keys {
+                        editor.popup_scroll.scroll_offset = 0;
                     }
                 }
                 KeyAction::ToggleHelpPopup => {
-                    // edit_data.popup = match edit_data.popup {
+                    // editor.popup = match editor.popup {
                     //     PopupMode::Help => PopupMode::None,
                     //     _ => PopupMode::Help,
                     // };
                 }
             }
-        } else if edit_data.navigation.mode == EditorMode::Edit {
+        } else if editor.navigation.mode == EditorMode::Edit {
             // Otherwise, tui-textarea handles typing natively
             let input = tui_textarea::Input::from(event);
-            edit_data.textarea.input(input);
+            editor.textarea.input(input);
         }
     }
 }
@@ -1621,7 +1617,7 @@ pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: Role) 
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[allow(clippy::too_many_lines, clippy::missing_panics_doc)]
 #[profiled]
-pub fn script_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> ThagResult<KeyAction> {
+pub fn script_key_handler(key_event: KeyEvent, editor: &mut Editor) -> ThagResult<KeyAction> {
     if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
     }
@@ -1629,24 +1625,24 @@ pub fn script_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> Thag
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
     // eprintln!("key_combination={key_combination:?}");
 
-    // let history_path = edit_data.history_path.cloned();
+    // let history_path = editor.history_path.cloned();
 
     #[allow(clippy::unnested_or_patterns)]
     match key_combination {
-        key!(esc) | key!(ctrl - q) => Ok(KeyAction::Quit(edit_data.saved)),
-        key!(ctrl - d) => save_and_submit(edit_data),
+        key!(esc) | key!(ctrl - q) => Ok(KeyAction::Quit(editor.saved)),
+        key!(ctrl - d) => save_and_submit(editor),
         key!(ctrl - s) | key!(ctrl - alt - s) | key!(f12) => {
-            if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
+            if matches!(key_combination, key!(ctrl - s)) && editor.save_path.is_some() {
                 // eprintln!("key_combination matches ctrl-s");
-                save(edit_data)
+                save(editor)
             } else {
-                let key_action = save_as(edit_data)?;
+                let key_action = save_as(editor)?;
                 Ok(key_action)
             }
         }
         key!(ctrl - l) => {
             // Toggle popup
-            edit_data.popup = match edit_data.popup {
+            editor.popup = match editor.popup {
                 PopupMode::Keys => PopupMode::None,
                 _ => PopupMode::Keys,
             };
@@ -1654,7 +1650,7 @@ pub fn script_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> Thag
         }
         key!(f1) => {
             // Toggle popup
-            edit_data.popup = match edit_data.popup {
+            editor.popup = match editor.popup {
                 PopupMode::Help => PopupMode::None,
                 _ => PopupMode::Help,
             };
@@ -1666,16 +1662,16 @@ pub fn script_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> Thag
         }
         key!(f4) => {
             // Clear textarea
-            edit_data.textarea.select_all();
-            edit_data.textarea.cut();
+            editor.textarea.select_all();
+            editor.textarea.cut();
             Ok(KeyAction::Continue)
         }
         key!(f5) => {
             // Clear textarea and wipe from history
-            if edit_data.textarea.is_empty() {
+            if editor.textarea.is_empty() {
                 return Ok(KeyAction::Continue);
             }
-            wipe_textarea(edit_data)?;
+            wipe_textarea(editor)?;
             Ok(KeyAction::Continue)
         }
         key!(f6) => {
@@ -1685,45 +1681,45 @@ pub fn script_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> Thag
         }
         key!(f7) => {
             // Scroll up in history
-            prev_hist(edit_data)?;
+            prev_hist(editor)?;
             Ok(KeyAction::Continue)
         }
         key!(f8) => {
             // Scroll down in history
-            next_hist(edit_data);
+            next_hist(editor);
             Ok(KeyAction::Continue)
         }
         _ => {
             // Update the `TextArea` with the input from the key event
-            edit_data.textarea.input(Input::from(key_event)); // Input derived from Event
+            editor.textarea.input(Input::from(key_event)); // Input derived from Event
             Ok(KeyAction::Continue)
         }
     }
 }
 
 #[profiled]
-fn next_hist(edit_data: &mut EditData<'_>) {
-    if let Some(ref mut hist) = edit_data.history {
+fn next_hist(editor: &mut Editor<'_>) {
+    if let Some(ref mut hist) = editor.history {
         if let Some(entry) = hist.get_next() {
             // debug_log!("F8 found entry {entry:?}");
-            paste_to_textarea(&mut edit_data.textarea, entry);
+            paste_to_textarea(&mut editor.textarea, entry);
         }
     }
 }
 
 #[profiled]
-fn prev_hist(edit_data: &mut EditData<'_>) -> ThagResult<()> {
-    if let Some(ref mut hist) = edit_data.history {
-        if hist.at_end() && edit_data.textarea.is_empty() {
+fn prev_hist(editor: &mut Editor<'_>) -> ThagResult<()> {
+    if let Some(ref mut hist) = editor.history {
+        if hist.at_end() && editor.textarea.is_empty() {
             if let Some(entry) = &hist.get_last() {
                 // debug_log!("F7 (1) found entry {entry:?}");
-                paste_to_textarea(&mut edit_data.textarea, entry);
+                paste_to_textarea(&mut editor.textarea, entry);
             }
         } else {
-            save_if_changed(hist, &mut edit_data.textarea, edit_data.history_path)?;
+            save_if_changed(hist, &mut editor.textarea, editor.history_path)?;
             if let Some(entry) = &hist.get_previous() {
                 // debug_log!("F7 (2) found entry {entry:?}");
-                paste_to_textarea(&mut edit_data.textarea, entry);
+                paste_to_textarea(&mut editor.textarea, entry);
             }
         }
     }
@@ -1731,13 +1727,13 @@ fn prev_hist(edit_data: &mut EditData<'_>) -> ThagResult<()> {
 }
 
 #[profiled]
-fn wipe_textarea(edit_data: &mut EditData<'_>) -> ThagResult<()> {
-    if let Some(ref mut hist) = edit_data.history {
+fn wipe_textarea(editor: &mut Editor<'_>) -> ThagResult<()> {
+    if let Some(ref mut hist) = editor.history {
         let _in_hist = !&hist.at_end();
-        let textarea_contents = edit_data.textarea.lines().to_vec().join("\n");
-        edit_data.textarea.select_all();
-        edit_data.textarea.cut();
-        let yank_text = edit_data.textarea.yank_text();
+        let textarea_contents = editor.textarea.lines().to_vec().join("\n");
+        editor.textarea.select_all();
+        editor.textarea.cut();
+        let yank_text = editor.textarea.yank_text();
         assert_eq!(yank_text, textarea_contents);
         if let Some(current_hist_entry) = &hist.get_current() {
             assert_eq!(yank_text, current_hist_entry.contents());
@@ -1746,7 +1742,7 @@ fn wipe_textarea(edit_data: &mut EditData<'_>) -> ThagResult<()> {
             hist.entries
                 .retain(|f| f.contents().trim() != textarea_contents);
         }
-        if let Some(hist_path) = edit_data.history_path {
+        if let Some(hist_path) = editor.history_path {
             hist.save_to_file(hist_path)?;
         }
     }
@@ -1754,8 +1750,8 @@ fn wipe_textarea(edit_data: &mut EditData<'_>) -> ThagResult<()> {
 }
 
 #[profiled]
-fn save_as(edit_data: &mut EditData<'_>) -> ThagResult<KeyAction> {
-    if let Some(ref mut term) = edit_data.maybe_term {
+fn save_as(editor: &mut Editor<'_>) -> ThagResult<KeyAction> {
+    if let Some(ref mut term) = editor.maybe_term {
         let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 20, DialogMode::Save)?;
         save_dialog.open();
         let mut status = Status::Incomplete;
@@ -1766,23 +1762,19 @@ fn save_as(edit_data: &mut EditData<'_>) -> ThagResult<KeyAction> {
             }
         }
 
-        edit_data.status_message.clear();
+        editor.status_message.clear();
         if let Some(ref to_rs_path) = save_dialog.selected_file {
-            save_source_file(to_rs_path, &mut edit_data.textarea, &mut edit_data.saved)?;
-            let _ = write!(
-                edit_data.status_message,
-                "Saved to {}",
-                to_rs_path.display()
-            );
-            edit_data.save_path = Some(to_rs_path.clone());
+            save_source_file(to_rs_path, &mut editor.textarea, &mut editor.saved)?;
+            let _ = write!(editor.status_message, "Saved to {}", to_rs_path.display());
+            editor.save_path = Some(to_rs_path.clone());
             Ok(KeyAction::Save)
         } else {
-            let _ = write!(edit_data.status_message, "Failed to save file");
+            let _ = write!(editor.status_message, "Failed to save file");
             Ok(KeyAction::Continue)
         }
     } else {
         let _ = write!(
-            edit_data.status_message,
+            editor.status_message,
             "No terminal to display file save dialog"
         );
         Ok(KeyAction::Continue)
@@ -1790,41 +1782,41 @@ fn save_as(edit_data: &mut EditData<'_>) -> ThagResult<KeyAction> {
 }
 
 #[profiled]
-fn save(edit_data: &mut EditData<'_>) -> ThagResult<KeyAction> {
-    if let Some(ref save_path) = edit_data.save_path {
-        if let Some(hist_path) = edit_data.history_path {
-            let history = &mut edit_data.history;
+fn save(editor: &mut Editor<'_>) -> ThagResult<KeyAction> {
+    if let Some(ref save_path) = editor.save_path {
+        if let Some(hist_path) = editor.history_path {
+            let history = &mut editor.history;
             if let Some(hist) = history {
-                preserve(&mut edit_data.textarea, hist, hist_path)?;
+                preserve(&mut editor.textarea, hist, hist_path)?;
             }
         }
-        let result = save_source_file(save_path, &mut edit_data.textarea, &mut edit_data.saved);
+        let result = save_source_file(save_path, &mut editor.textarea, &mut editor.saved);
         // eprintln!("result={result:?}");
         match result {
             Ok(()) => {
-                edit_data.status_message.clear();
-                let _ = write!(edit_data.status_message, "Saved to {}", save_path.display());
+                editor.status_message.clear();
+                let _ = write!(editor.status_message, "Saved to {}", save_path.display());
                 Ok(KeyAction::Save)
             }
             Err(e) => Err(e),
         }
     } else {
-        edit_data.status_message.clear();
+        editor.status_message.clear();
         let _ = write!(
-            edit_data.status_message,
-            "No save path: edit_data.save_path={:?}",
-            edit_data.save_path
+            editor.status_message,
+            "No save path: editor.save_path={:?}",
+            editor.save_path
         );
         Ok(KeyAction::Continue)
     }
 }
 
 #[profiled]
-fn save_and_submit(edit_data: &mut EditData<'_>) -> ThagResult<KeyAction> {
-    if let Some(hist_path) = edit_data.history_path {
-        let history = &mut edit_data.history;
+fn save_and_submit(editor: &mut Editor<'_>) -> ThagResult<KeyAction> {
+    if let Some(hist_path) = editor.history_path {
+        let history = &mut editor.history;
         if let Some(hist) = history {
-            preserve(&mut edit_data.textarea, hist, hist_path)?;
+            preserve(&mut editor.textarea, hist, hist_path)?;
         }
     }
     Ok(KeyAction::Submit)

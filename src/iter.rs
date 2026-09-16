@@ -7,8 +7,8 @@ use crate::{
     key, lazy_static_var,
     manifest::extract,
     tui_editor::{
-        EditData, EditorMode, Entry, History, KeyAction, KeyDisplayParms, NavigationState,
-        PopupMode, PopupScrollState, RataStyle, script_key_handler, tui_edit,
+        Editor, EditorMode, Entry, History, KeyAction, KeyDisplayParms, NavigationState, PopupMode,
+        PopupScrollState, RataStyle, script_key_handler, tui_edit,
     },
 };
 use clap::{CommandFactory, Parser};
@@ -696,7 +696,7 @@ fn tui(
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
 
-    let mut edit_data = EditData {
+    let mut editor = Editor {
         return_text: true,
         initial_content: &initial_content,
         save_path: Some(save_path.to_path_buf()),
@@ -724,7 +724,7 @@ fn tui(
         navigation: NavigationState::new(EditorMode::default()),
     };
 
-    let (key_action, maybe_text) = tui_edit(&event_reader, &mut edit_data)?;
+    let (key_action, maybe_text) = tui_edit(&event_reader, &mut editor)?;
     let _ = match key_action {
         // KeyAction::Quit(_saved) => false,
         KeyAction::Save
@@ -799,7 +799,7 @@ pub fn edit_history<R: EventReader + Debug>(
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
 
-    let mut edit_data = EditData {
+    let mut editor = Editor {
         return_text: false,
         initial_content,
         save_path: Some(staging_path.to_path_buf()),
@@ -824,7 +824,7 @@ pub fn edit_history<R: EventReader + Debug>(
         navigation: NavigationState::new(EditorMode::default()),
     };
 
-    let (key_action, _maybe_text) = tui_edit(event_reader, &mut edit_data)?;
+    let (key_action, _maybe_text) = tui_edit(event_reader, &mut editor)?;
     Ok(match key_action {
         KeyAction::Quit(saved) => saved,
         KeyAction::Save
@@ -848,35 +848,35 @@ pub fn edit_history<R: EventReader + Debug>(
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[profiled]
-pub fn history_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> ThagResult<KeyAction> {
+pub fn history_key_handler(key_event: KeyEvent, editor: &mut Editor) -> ThagResult<KeyAction> {
     // Make sure for Windows
     if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
     }
-    let maybe_save_path = &edit_data.save_path;
+    let maybe_save_path = &editor.save_path;
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
     match key_combination {
         #[allow(clippy::unnested_or_patterns)]
-        key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(edit_data.saved)),
+        key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(editor.saved)),
         key!(ctrl - d) => {
             // Save logic
-            save_file(maybe_save_path.as_ref(), &edit_data.textarea)?;
+            save_file(maybe_save_path.as_ref(), &editor.textarea)?;
             // println!("Saved");
             Ok(KeyAction::SaveAndExit)
         }
         key!(ctrl - s) => {
             // Save logic
-            let save_file = save_file(maybe_save_path.as_ref(), &edit_data.textarea)?;
+            let save_file = save_file(maybe_save_path.as_ref(), &editor.textarea)?;
             // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
-            edit_data.saved = true;
-            edit_data.status_message.clear();
-            let _ = write!(edit_data.status_message, "Saved to {save_file}");
+            editor.saved = true;
+            editor.status_message.clear();
+            let _ = write!(editor.status_message, "Saved to {save_file}");
             Ok(KeyAction::Save)
         }
         key!(ctrl - l) => {
             // Toggle popup
-            edit_data.popup = match edit_data.popup {
+            editor.popup = match editor.popup {
                 PopupMode::Keys => PopupMode::None,
                 _ => PopupMode::Keys,
             };
@@ -884,7 +884,7 @@ pub fn history_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> Tha
         }
         key!(f1) => {
             // Toggle popup
-            edit_data.popup = match edit_data.popup {
+            editor.popup = match editor.popup {
                 PopupMode::Help => PopupMode::None,
                 _ => PopupMode::Help,
             };
@@ -896,7 +896,7 @@ pub fn history_key_handler(key_event: KeyEvent, edit_data: &mut EditData) -> Tha
         }
         _ => {
             // Update the textarea with the input from the key event
-            edit_data.textarea.input(Input::from(key_event)); // Input derived from Event
+            editor.textarea.input(Input::from(key_event)); // Input derived from Event
             Ok(KeyAction::Continue)
         }
     }

@@ -2,7 +2,7 @@
 use crate::{
     CrosstermEventReader, EventReader, Role, ThagError, ThagResult, V, debug_log,
     tui_editor::{
-        EditData, EditorMode, History, KeyAction, KeyDisplayParms, NavigationState, PopupMode,
+        Editor, EditorMode, History, KeyAction, KeyDisplayParms, NavigationState, PopupMode,
         PopupScrollState, script_key_handler, tui_edit,
     },
     vprtln,
@@ -77,7 +77,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         history.save_to_file(&history_path)?;
     }
 
-    let mut edit_data = EditData {
+    let mut editor = Editor {
         return_text: true,
         initial_content: &initial_content,
         save_path: None,
@@ -109,7 +109,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     //     KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
     //     // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     // ];
-    let tui_edit = tui_edit(event_reader, &mut edit_data);
+    let tui_edit = tui_edit(event_reader, &mut editor);
     // log::debug!("tui_edit={tui_edit:?}");
     let (key_action, maybe_text) = tui_edit?;
     match key_action {

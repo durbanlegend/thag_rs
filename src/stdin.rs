@@ -3,7 +3,7 @@ use crate::{
     CrosstermEventReader, EventReader, Role, ThagError, ThagResult, V, debug_log,
     tui_editor::{
         Editor, EditorMode, History, KeyAction, KeyDisplayParms, NavigationState, PopupMode,
-        PopupScrollState, script_key_handler, tui_edit,
+        PopupScrollState, SearchBox, script_key_handler, tui_edit,
     },
     vprtln,
 };
@@ -103,6 +103,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         },
         key_handler: Some(Box::new(script_key_handler)),
         navigation: NavigationState::new(EditorMode::default()),
+        search: SearchBox::default(),
     };
     // let add_keys = [
     //     KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),

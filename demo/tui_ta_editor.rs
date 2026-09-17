@@ -3,6 +3,7 @@
 ratatui = "0.29"
 */
 
+use ratatui::Terminal;
 /// Demo a TUI (text user interface) editor based on the featured crates. This editor is locked
 /// down to two files at a time, because it was developed to allow editing of generated code and
 /// cargo.toml from the interactive mode, but was eventually dropped in favour of leaving the user to choose
@@ -20,20 +21,22 @@ use ratatui::crossterm::event::{
     Event::Paste,
 };
 use ratatui::crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
-use ratatui::Terminal;
-use std::borrow::Cow;
-use std::env;
-use std::fmt::Display;
-use std::fs;
-use std::io::{self, BufRead, Write};
-use std::path::PathBuf;
+use std::{
+    borrow::Cow,
+    env,
+    fmt::Display,
+    fs,
+    io::{self, BufRead, Write},
+    iter::repeat_n,
+    path::PathBuf,
+};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 macro_rules! error {
@@ -83,6 +86,11 @@ const MAPPINGS: &[[&str; 2]; 29] = &[
     ["Alt+V, PageUp, Cmd+↑", "Page up"],
 ];
 const NUM_ROWS: usize = MAPPINGS.len();
+const fn min_u16_usize(a: usize, b: usize) -> usize {
+    if a < b { a } else { b }
+}
+#[allow(clippy::cast_possible_truncation)]
+const NUM_ROWS_U16: u16 = min_u16_usize(NUM_ROWS, u16::MAX as usize) as u16;
 
 #[allow(dead_code)]
 struct SearchBox<'a> {
@@ -90,7 +98,7 @@ struct SearchBox<'a> {
     open: bool,
 }
 
-impl<'a> Default for SearchBox<'a> {
+impl Default for SearchBox<'_> {
     fn default() -> Self {
         let mut textarea = TextArea::default();
         textarea.set_block(Block::default().borders(Borders::ALL).title("Search"));
@@ -102,8 +110,8 @@ impl<'a> Default for SearchBox<'a> {
 }
 
 #[allow(dead_code)]
-impl<'a> SearchBox<'a> {
-    fn open(&mut self) {
+impl SearchBox<'_> {
+    const fn open(&mut self) {
         self.open = true;
     }
 
@@ -115,12 +123,8 @@ impl<'a> SearchBox<'a> {
         self.textarea.delete_line_by_head();
     }
 
-    fn height(&self) -> u16 {
-        if self.open {
-            3
-        } else {
-            0
-        }
+    const fn height(&self) -> u16 {
+        if self.open { 3 } else { 0 }
     }
 
     fn input(&mut self, input: Input) -> Option<&'_ str> {
@@ -141,14 +145,15 @@ impl<'a> SearchBox<'a> {
     }
 
     fn set_error(&mut self, err: Option<impl Display>) {
-        let b = if let Some(err) = err {
-            Block::default()
-                .borders(Borders::ALL)
-                .title(format!("Search: {}", err))
-                .style(Style::default().fg(Color::Red))
-        } else {
-            Block::default().borders(Borders::ALL).title("Search")
-        };
+        let b = err.map_or_else(
+            || Block::default().borders(Borders::ALL).title("Search"),
+            |err| {
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(format!("Search: {err}"))
+                    .style(Style::default().fg(Color::Red))
+            },
+        );
         self.textarea.set_block(b);
     }
 }
@@ -161,7 +166,7 @@ struct Buffer<'a> {
 }
 
 #[allow(dead_code)]
-impl<'a> Buffer<'a> {
+impl Buffer<'_> {
     fn new(path: PathBuf) -> io::Result<Self> {
         let mut textarea = if let Ok(md) = path.metadata() {
             if md.is_file() {
@@ -212,7 +217,7 @@ struct Output<'a> {
     modified: bool,
 }
 
-impl<'a> Output<'a> {
+impl Output<'_> {
     fn new() -> Self {
         let mut textarea = TextArea::default();
         textarea.set_style(Style::default().fg(Color::DarkGray));
@@ -242,7 +247,7 @@ pub(crate) struct Editor<'a> {
 }
 
 #[allow(dead_code)]
-impl<'a> Editor<'a> {
+impl Editor<'_> {
     pub(crate) fn new<I>(paths: I) -> io::Result<Self>
     where
         I: Iterator,
@@ -334,49 +339,55 @@ impl<'a> Editor<'a> {
                 let other_path = other_buffer.path.file_name().unwrap().to_string_lossy();
                 let other_filename = format!("{other_path}");
 
-                let message = if let Some(message) = self.message.take() {
-                    Line::from(Span::raw(message))
-                } else if search_height > 0 {
-                    Line::from(vec![
-                        Span::raw("Press "),
-                        Span::styled("Enter", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(" to jump to first match and close, "),
-                        Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(" to close, "),
-                        Span::styled(
-                            "^G or ↓ or ^N",
-                            Style::default().add_modifier(Modifier::BOLD),
-                        ),
-                        Span::raw(" to search next, "),
-                        Span::styled(
-                            "M-G or ↑ or ^P",
-                            Style::default().add_modifier(Modifier::BOLD),
-                        ),
-                        Span::raw(" to search previous"),
-                    ])
-                } else {
-                    Line::from(vec![
-                        // Span::raw("Press "),
-                        Span::styled("^Q", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(" quit, "),
-                        Span::styled("^S", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(" save, "),
-                        Span::styled("^G", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(" search, "),
-                        Span::styled("^T", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(" edit "),
-                        Span::styled(
-                            &other_filename,
-                            Style::default()
-                                .fg(Color::LightCyan)
-                                .bg(Color::Black)
-                                .add_modifier(Modifier::REVERSED), // .bg(Color::Blue),
-                        ),
-                        Span::raw(", "),
-                        Span::styled("^L", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(" show keys"),
-                    ])
-                };
+                let message = self.message.take().map_or_else(
+                    || {
+                        if search_height > 0 {
+                            Line::from(vec![
+                                Span::raw("Press "),
+                                Span::styled(
+                                    "Enter",
+                                    Style::default().add_modifier(Modifier::BOLD),
+                                ),
+                                Span::raw(" to jump to first match and close, "),
+                                Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
+                                Span::raw(" to close, "),
+                                Span::styled(
+                                    "^G or ↓ or ^N",
+                                    Style::default().add_modifier(Modifier::BOLD),
+                                ),
+                                Span::raw(" to search next, "),
+                                Span::styled(
+                                    "M-G or ↑ or ^P",
+                                    Style::default().add_modifier(Modifier::BOLD),
+                                ),
+                                Span::raw(" to search previous"),
+                            ])
+                        } else {
+                            Line::from(vec![
+                                // Span::raw("Press "),
+                                Span::styled("^Q", Style::default().add_modifier(Modifier::BOLD)),
+                                Span::raw(" quit, "),
+                                Span::styled("^S", Style::default().add_modifier(Modifier::BOLD)),
+                                Span::raw(" save, "),
+                                Span::styled("^G", Style::default().add_modifier(Modifier::BOLD)),
+                                Span::raw(" search, "),
+                                Span::styled("^T", Style::default().add_modifier(Modifier::BOLD)),
+                                Span::raw(" edit "),
+                                Span::styled(
+                                    &other_filename,
+                                    Style::default()
+                                        .fg(Color::LightCyan)
+                                        .bg(Color::Black)
+                                        .add_modifier(Modifier::REVERSED), // .bg(Color::Blue),
+                                ),
+                                Span::raw(", "),
+                                Span::styled("^L", Style::default().add_modifier(Modifier::BOLD)),
+                                Span::raw(" show keys"),
+                            ])
+                        }
+                    },
+                    |message| Line::from(Span::raw(message)),
+                );
                 f.render_widget(Paragraph::new(message), chunks[3]);
 
                 // Render output below editor
@@ -527,8 +538,9 @@ impl<'a> Editor<'a> {
     }
 }
 
+#[allow(clippy::needless_collect)]
 fn show_popup(f: &mut ratatui::prelude::Frame) {
-    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.area());
+    let area = centered_rect(90, NUM_ROWS_U16 + 5, f.area());
     let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,
@@ -546,8 +558,7 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
     let row_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints::<Vec<Constraint>>(
-            std::iter::repeat(Constraint::Ratio(1, NUM_ROWS as u32))
-                .take(NUM_ROWS)
+            repeat_n(Constraint::Ratio(1, u32::from(NUM_ROWS_U16)), NUM_ROWS)
                 .collect::<Vec<Constraint>>(),
         );
     let rows = row_layout.split(inner);
@@ -569,7 +580,7 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
     }
 }
 
-impl<'a> Drop for Editor<'a> {
+impl Drop for Editor<'_> {
     fn drop(&mut self) {
         self.term.show_cursor().unwrap();
         disable_raw_mode().unwrap();

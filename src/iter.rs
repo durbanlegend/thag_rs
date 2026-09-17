@@ -8,7 +8,7 @@ use crate::{
     manifest::extract,
     tui_editor::{
         Editor, EditorMode, Entry, History, KeyAction, KeyDisplayParms, NavigationState, PopupMode,
-        PopupScrollState, RataStyle, script_key_handler, tui_edit,
+        PopupScrollState, RataStyle, SearchBox, script_key_handler, tui_edit,
     },
 };
 use clap::{CommandFactory, Parser};
@@ -722,6 +722,7 @@ fn tui(
         },
         key_handler: Some(Box::new(script_key_handler)),
         navigation: NavigationState::new(EditorMode::default()),
+        search: SearchBox::default(),
     };
 
     let (key_action, maybe_text) = tui_edit(&event_reader, &mut editor)?;
@@ -822,6 +823,7 @@ pub fn edit_history<R: EventReader + Debug>(
         },
         key_handler: Some(Box::new(script_key_handler)),
         navigation: NavigationState::new(EditorMode::default()),
+        search: SearchBox::default(),
     };
 
     let (key_action, _maybe_text) = tui_edit(event_reader, &mut editor)?;

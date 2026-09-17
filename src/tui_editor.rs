@@ -24,7 +24,7 @@ use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
 pub use ratatui::style::Style as RataStyle;
 use ratatui::style::{Color, Modifier, Styled, Stylize};
-use ratatui::text::Line;
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::{CompletedFrame, Frame, Terminal};
 use regex::Regex;
@@ -45,7 +45,7 @@ use thag_common::{debug_log, re};
 use thag_styling::{Role, ThemedStyle};
 // import without risk of name clashing
 use thag_profiler::profiled;
-use tui_textarea::{CursorMove, Input, Scrolling, TextArea};
+use tui_textarea::{CursorMove, Input, Key, Scrolling, TextArea};
 
 /// Title displayed at the bottom of the key bindings popup
 pub const KEYS_TITLE_BOTTOM: &str = "Ctrl+l to hide";
@@ -694,13 +694,8 @@ pub struct Editor<'a> {
     pub key_handler: Option<Box<KeyHandlerClosure>>,
     /// The navigation state machine.
     pub navigation: NavigationState,
-    // /// The `vim`-style navigation or regular text editing mode.
-    // pub mode: EditorMode,
-    // /// Tracks multi-key sequences like `gg` for top of file.
-    // pub last_char: Option<char>,
-    // /// Tracks a possible multi-digit line number being entered for a Vim-mode
-    // /// go-to-line request (`<n...n>G` or `<n...n>gg`).
-    // pub line_num_buf: Option<u16>,
+    /// A search box.
+    pub search: SearchBox<'a>,
 }
 
 impl Editor<'_> {
@@ -740,6 +735,41 @@ impl Editor<'_> {
                 }
                 _ => (), // Let other keys fall through to toggle popup
             }
+        }
+
+        if self.search.open {
+            match key_combination {
+                key!(ctrl - g) | key!(ctrl - n) | key!(down) => {
+                    if !self.textarea.search_forward(false) {
+                        self.search.set_error(Some("Pattern not found"));
+                    }
+                }
+                key!(alt - g) | key!(ctrl - p) | key!(up) => {
+                    if !self.textarea.search_back(false) {
+                        self.search.set_error(Some("Pattern not found"));
+                    }
+                }
+                key!(enter) => {
+                    if !self.textarea.search_forward(true) {
+                        self.status_message.clear();
+                        let _ = writeln!(self.status_message, "Pattern not found");
+                    }
+                    self.search.close();
+                    self.textarea.set_search_pattern("").unwrap();
+                }
+                key!(esc) | key!(f3) => {
+                    self.search.close();
+                    self.textarea.set_search_pattern("").unwrap();
+                }
+                _ => {
+                    // let input = read()?;
+                    if let Some(query) = self.search.input(key_event.into()) {
+                        let maybe_err = self.textarea.set_search_pattern(query).err();
+                        self.search.set_error(maybe_err);
+                    }
+                }
+            }
+            return Ok(KeyAction::Continue);
         }
 
         // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.
@@ -840,6 +870,34 @@ impl Editor<'_> {
             key!(ctrl - a) | key!(home) | key!(ctrl - alt - b) => {
                 self.textarea.move_cursor(CursorMove::Head);
             }
+            key!(f3) => {
+                if self.search.open {
+                    self.search.close();
+                    self.textarea.set_block(
+                        Block::default()
+                            .title(self.key_display_parms.edit_title)
+                            .title_style(self.key_display_parms.title_style),
+                    );
+                } else {
+                    self.search.open();
+                    let search_title = Line::from(vec![
+                        Span::raw("Press "),
+                        Span::styled("Enter", RataStyle::themed(Role::Info)),
+                        Span::raw(" to jump to first match and close, "),
+                        Span::styled("F3", RataStyle::themed(Role::Info)),
+                        Span::raw(" to close, "),
+                        Span::styled("^G or ↓ or ^N", RataStyle::themed(Role::Info)),
+                        Span::raw(" to search next, "),
+                        Span::styled("M-G or ↑ or ^P", RataStyle::themed(Role::Info)),
+                        Span::raw(" to search previous"),
+                    ]);
+                    self.textarea.set_block(
+                        Block::default()
+                            .title(search_title)
+                            .title_style(self.key_display_parms.title_style),
+                    );
+                }
+            }
             key!(f9) => {
                 ratatui::crossterm::execute!(std::io::stdout().lock(), DisableMouseCapture,)?;
                 self.textarea.remove_line_number();
@@ -857,7 +915,7 @@ impl Editor<'_> {
                     .set_line_number_style(RataStyle::themed(Role::Hint));
                 self.textarea.set_block(
                     Block::default()
-                        .borders(Borders::ALL)
+                        // .borders(Borders::ALL)
                         .title(self.key_display_parms.edit_title)
                         .title_style(self.key_display_parms.title_style),
                 );
@@ -1341,6 +1399,73 @@ pub enum KeyAction {
     ToggleKeyPopup,
 }
 
+#[allow(dead_code)]
+/// A search box that allows the user to enter a search query and submit it.
+pub struct SearchBox<'a> {
+    textarea: TextArea<'a>,
+    open: bool,
+}
+
+impl Default for SearchBox<'_> {
+    fn default() -> Self {
+        let mut textarea = TextArea::default();
+        textarea.set_block(Block::default().borders(Borders::ALL).title("Search"));
+        Self {
+            textarea,
+            open: false,
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl SearchBox<'_> {
+    const fn open(&mut self) {
+        self.open = true;
+    }
+
+    fn close(&mut self) {
+        self.open = false;
+        // Remove input for next search. Do not recreate `self.textarea` instance to keep undo history so that users can
+        // restore previous input easily.
+        self.textarea.move_cursor(CursorMove::End);
+        self.textarea.delete_line_by_head();
+    }
+
+    const fn height(&self) -> u16 {
+        if self.open { 3 } else { 0 }
+    }
+
+    fn input(&mut self, input: Input) -> Option<&'_ str> {
+        match input {
+            Input {
+                key: Key::Enter, ..
+            }
+            | Input {
+                key: Key::Char('m'),
+                ctrl: true,
+                ..
+            } => None, // Disable shortcuts which inserts a newline. See `single_line` example
+            input => {
+                let modified = self.textarea.input(input);
+                modified.then(|| self.textarea.lines()[0].as_str())
+            }
+        }
+    }
+
+    fn set_error(&mut self, err: Option<impl Display>) {
+        let b = err.map_or_else(
+            || Block::default().borders(Borders::ALL).title("Search"),
+            |err| {
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(format!("Search: {err}"))
+                    .style(RataStyle::themed(Role::Error))
+            },
+        );
+        self.textarea.set_block(b);
+    }
+}
+
 /// Edit content with a TUI
 ///
 /// # Panics
@@ -1368,6 +1493,11 @@ where
     // let mut textarea = &editor.textarea;
     editor.textarea.set_hard_tab_indent(true);
     // eprintln!("editor.textarea.tab_length()={}", editor.textarea.tab_length());
+
+    // Set up the display parameters for the `TextArea`
+    editor
+        .textarea
+        .set_block(Block::default().borders(Borders::NONE));
 
     editor
         .textarea
@@ -1413,12 +1543,35 @@ where
             event_reader.read_event()?
         } else {
             // Real-world interaction
+
+            // Set up the search box
+            let search_height = editor.search.height();
+
+            let search_title = Line::from(vec![
+                Span::raw("Press "),
+                Span::styled("Enter", RataStyle::themed(Role::Info)),
+                Span::raw(" to jump to first match and close, "),
+                Span::styled("F3", RataStyle::themed(Role::Info)),
+                Span::raw(" to close, "),
+                Span::styled("^G or ↓ or ^N", RataStyle::themed(Role::Info)),
+                Span::raw(" to search next, "),
+                Span::styled("M-G or ↑ or ^P", RataStyle::themed(Role::Info)),
+                Span::raw(" to search previous"),
+            ])
+            .to_string();
+
             // Set up the display parameters for the `TextArea`
             editor.textarea.set_block(
                 Block::default()
-                    .borders(Borders::ALL)
                     .title(match editor.navigation.mode {
-                        EditorMode::Edit => editor.key_display_parms.edit_title,
+                        EditorMode::Edit => {
+                            // if editor.search.height() > 0 {
+                            //     search_title
+                            // } else {
+                            // String::from(editor.key_display_parms.edit_title)
+                            // }
+                            editor.key_display_parms.edit_title
+                        }
                         EditorMode::Vim => editor.key_display_parms.vim_title,
                     })
                     .title_style(editor.key_display_parms.title_style),
@@ -1445,15 +1598,27 @@ where
                             let chunks = Layout::default()
                                 .direction(Direction::Vertical)
                                 .constraints::<&[Constraint]>(&[
+                                    Constraint::Length(search_height),
                                     Constraint::Min(area.height - 3), // Editor area takes up the rest
                                     Constraint::Length(3),            // Status line gets 1 line
                                 ])
                                 .split(area);
 
-                            // Render the `TextArea` in the first chunk
-                            f.render_widget(&editor.textarea, chunks[0]);
+                            // Render the search box in the first chunk if applicable
+                            if search_height > 0 {
+                                editor.textarea.set_block(
+                                    Block::default()
+                                        .borders(Borders::NONE)
+                                        .title(search_title)
+                                        .title_style(editor.key_display_parms.title_style),
+                                );
+                                f.render_widget(&editor.search.textarea, chunks[0]);
+                            }
 
-                            // Render the status line in the second chunk
+                            // Render the edit buffer in the second chunk
+                            f.render_widget(&editor.textarea, chunks[1]);
+
+                            // Render the status line in the third chunk
                             let status_block = Block::default()
                                 .borders(Borders::ALL)
                                 .title("Status")
@@ -1466,7 +1631,7 @@ where
                                     .block(status_block)
                                     .style(RataStyle::themed(Role::Info));
 
-                            f.render_widget(status_text, chunks[1]);
+                            f.render_widget(status_text, chunks[2]);
 
                             let (max_key_len, max_desc_len) =
                                 editor
@@ -1656,10 +1821,6 @@ pub fn script_key_handler(key_event: KeyEvent, editor: &mut Editor) -> ThagResul
             };
             Ok(KeyAction::ToggleHelpPopup)
         }
-        key!(f3) => {
-            // Ask to revert
-            Ok(KeyAction::AbandonChanges)
-        }
         key!(f4) => {
             // Clear textarea
             editor.textarea.select_all();
@@ -1688,6 +1849,10 @@ pub fn script_key_handler(key_event: KeyEvent, editor: &mut Editor) -> ThagResul
             // Scroll down in history
             next_hist(editor);
             Ok(KeyAction::Continue)
+        }
+        key!(f11) => {
+            // Ask to revert
+            Ok(KeyAction::AbandonChanges)
         }
         _ => {
             // Update the `TextArea` with the input from the key event
@@ -2292,6 +2457,7 @@ pub const EDIT_MODE_KEYS: &[KeyDisplayLine] = key_mappings![
     (350, "Ctrl+t", "Toggle selection highlight colours"),
     (360, "Alt+v, PageUp", "Page up"),
     (370, "PageDown, F2", "Page down"),
+    (375, "F3", "Toggle search)"),
     (380, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     (
         390,
@@ -2307,7 +2473,8 @@ pub const EDIT_MODE_KEYS: &[KeyDisplayLine] = key_mappings![
         "Enter `copy to system clipboard` mode with mouse selection and OS keys"
     ),
     (440, "F10", "Exit `copy to system clipboard` mode"),
-    (450, "F12", "Save as..."),
+    (450, "F11", "Quit and abandon code changes"),
+    (460, "F12", "Save as..."),
 ];
 
 /// Key mappings for display purposes via (Ctrl-l) in TUI editor and file dialog.

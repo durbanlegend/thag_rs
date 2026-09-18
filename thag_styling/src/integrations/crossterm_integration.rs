@@ -33,6 +33,9 @@ impl ThemedStyle<Self> for ContentStyle {
         if style.dim {
             attributes.push(Attribute::Dim);
         }
+        if style.reverse {
+            attributes.push(Attribute::Reverse);
+        }
         if style.underline {
             attributes.push(Attribute::Underlined);
         }

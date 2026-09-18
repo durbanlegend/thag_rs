@@ -41,8 +41,8 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use thag_styling::{
-    auto_help, find_closest_color, hsl_to_rgb, rgb_to_hsl, ColorSupport, ColorValue, Palette,
-    Style, TermBgLuma, Theme,
+    ColorSupport, ColorValue, Palette, Style, TermBgLuma, Theme, auto_help, find_closest_color,
+    hsl_to_rgb, rgb_to_hsl,
 };
 
 #[derive(Debug, Deserialize)]
@@ -687,6 +687,9 @@ impl BaseTheme {
                     if style.dim {
                         new_style = new_style.dim();
                     }
+                    if style.reverse {
+                        new_style = new_style.reverse();
+                    }
                     if style.underline {
                         new_style = new_style.underline();
                     }
@@ -809,6 +812,9 @@ fn style_to_output(style: &Style, use_256: bool) -> StyleOutput {
     }
     if style.dim {
         style_attrs.push("dim".to_string());
+    }
+    if style.reverse {
+        style_attrs.push("reverse".to_string());
     }
     if style.underline {
         style_attrs.push("underline".to_string());

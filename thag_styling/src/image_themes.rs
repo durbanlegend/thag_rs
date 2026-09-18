@@ -2073,6 +2073,9 @@ pub fn theme_to_toml(theme: &Theme) -> StylingResult<String> {
         if style.dim {
             style_attrs.push(r#""dim""#);
         }
+        if style.reverse {
+            style_attrs.push(r#""reverse""#);
+        }
         if style.underline {
             style_attrs.push(r#""underline""#);
         }

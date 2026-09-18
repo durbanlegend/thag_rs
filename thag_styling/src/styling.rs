@@ -248,6 +248,8 @@ pub struct Style {
     pub italic: bool,
     /// Whether this style should be rendered dimmed/faint
     pub dim: bool,
+    /// Whether this style should be rendered reversed
+    pub reverse: bool,
     /// Whether this style should be rendered with underline
     pub underline: bool,
 }
@@ -261,6 +263,7 @@ impl Style {
             bold: false,
             italic: false,
             dim: false,
+            reverse: false,
             underline: false,
         }
     }
@@ -385,6 +388,13 @@ impl Style {
         self
     }
 
+    /// Returns the Style with reverse formatting enabled
+    #[must_use]
+    pub const fn reverse(mut self) -> Self {
+        self.reverse = true;
+        self
+    }
+
     /// Returns the Style with underline formatting enabled
     #[must_use]
     pub const fn underline(mut self) -> Self {
@@ -398,6 +408,7 @@ impl Style {
         self.bold = false;
         self.italic = false;
         self.dim = false;
+        self.reverse = false;
         self.underline = false;
     }
 
@@ -415,6 +426,7 @@ impl Style {
             && !self.italic
             && !self.underline
             && !self.dim
+            && !self.reverse
             && let Some(ref color_info) = self.foreground
             && color_info.index == 0
         {
@@ -454,6 +466,14 @@ impl Style {
                 reset_string.push_str("\x1b[22m");
             }
         }
+        if self.reverse {
+            result.push_str("\x1b[7m");
+            needs_reset = true;
+            if !full_reset {
+                reset_string.push_str("\x1b[27m");
+            }
+        }
+
         if self.underline {
             result.push_str("\x1b[4m");
             needs_reset = true;
@@ -504,6 +524,9 @@ impl Style {
         }
         if self.dim {
             result.push_str("\x1b[2m");
+        }
+        if self.reverse {
+            result.push_str("\x1b[7m");
         }
         if self.underline {
             result.push_str("\x1b[4m");
@@ -4518,14 +4541,18 @@ mod tests {
         let dim_role = Role::Normal.dim();
         assert!(dim_role.dim);
 
+        let reverse_role = Role::Emphasis.reverse();
+        assert!(reverse_role.reverse);
+
         let underline_role = Role::Emphasis.underline();
         assert!(underline_role.underline);
 
         // Test that chaining works with multiple attributes
-        let multi_attr = Role::Debug.bold().italic().dim().underline();
+        let multi_attr = Role::Debug.bold().italic().dim().underline().reverse();
         assert!(multi_attr.bold);
         assert!(multi_attr.italic);
         assert!(multi_attr.dim);
+        assert!(multi_attr.reverse);
         assert!(multi_attr.underline);
 
         let _output = get_test_output();

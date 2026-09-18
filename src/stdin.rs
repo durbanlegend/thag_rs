@@ -8,7 +8,6 @@ use crate::{
     vprtln,
 };
 use edit::edit_file;
-use ratatui::style::Style;
 use std::{
     fmt::Debug,
     fs::OpenOptions,
@@ -16,7 +15,6 @@ use std::{
     path::PathBuf,
 };
 use thag_profiler::{enable_profiling, profiled};
-use thag_styling::ThemedStyle;
 use tui_textarea::TextArea;
 
 #[allow(dead_code)]
@@ -92,14 +90,11 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         status_message: String::new(),
         key_display_lines: vec![],
         key_display_parms: KeyDisplayParms {
-            edit_title: "Enter / paste / edit Rust script.  ^d: submit  ^q: quit  ^l: keys  ^t: toggle highlighting  ^g: Switch to Vim mode",
-            vim_title: "Enter / paste / edit Rust script.  ^q: quit  ^g: Switch to Edit mode",
-            title_style: match EditorMode::default() {
-                EditorMode::Edit => Style::themed(Role::Heading3),
-                EditorMode::Vim => Style::themed(Role::Warning),
-            },
-            remove_keys: &[""; 0],
-            add_keys: &[],
+            edit_title: "Enter / paste / edit Rust script.  ^d: submit  ^q: quit  ^l: keys  ^t: toggle highlighting  ^g / Esc: Switch to Vim mode",
+            vim_title: "Enter / paste / edit Rust script.  ^q: quit  ^g / Esc: Switch to Edit mode",
+            // remove_keys: &[""; 0],
+            // add_keys: &[],
+            ..Default::default()
         },
         key_handler: Some(Box::new(script_key_handler)),
         navigation: NavigationState::new(EditorMode::default()),

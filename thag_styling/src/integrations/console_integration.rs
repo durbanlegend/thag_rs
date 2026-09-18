@@ -34,6 +34,9 @@ impl ThemedStyle<Self> for ConsoleStyle {
         if style.dim {
             console_style = console_style.dim();
         }
+        if style.reverse {
+            console_style = console_style.reverse();
+        }
         if style.underline {
             console_style = console_style.underlined();
         }

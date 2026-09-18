@@ -61,6 +61,9 @@ impl From<&Style> for RataStyle {
         if style.dim {
             rata_style = rata_style.add_modifier(Modifier::DIM);
         }
+        if style.reverse {
+            rata_style = rata_style.add_modifier(Modifier::REVERSED);
+        }
         if style.underline {
             rata_style = rata_style.add_modifier(Modifier::UNDERLINED);
         }

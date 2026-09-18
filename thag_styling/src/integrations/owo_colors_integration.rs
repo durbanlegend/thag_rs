@@ -32,6 +32,9 @@ impl ThemedStyle<Self> for OwoStyle {
         if style.italic {
             owo_style = owo_style.italic();
         }
+        if style.reverse {
+            owo_style = owo_style.reverse();
+        }
         if style.underline {
             owo_style = owo_style.underline();
         }
@@ -141,6 +144,9 @@ impl OwoColorsStyleExt for OwoStyle {
         }
         if style.italic {
             result = result.italic();
+        }
+        if style.reverse {
+            result = result.reverse();
         }
         if style.underline {
             result = result.underline();

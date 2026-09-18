@@ -537,6 +537,9 @@ impl ThemeEditor {
         if style.dim {
             new_style = new_style.dim();
         }
+        if style.reverse {
+            new_style = new_style.reverse();
+        }
         if style.underline {
             new_style = new_style.underline();
         }

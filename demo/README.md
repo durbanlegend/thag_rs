@@ -1295,8 +1295,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channe
  an alternative to garbage collection.
 
  This is the published example from the `crossbeam-epoch` crate. For a more intuitive
- example, you can try the "Canary" example from https://github.com/ericseppanen/epoch_playground.
- and the associated blog post https://codeandbitters.com/learning-rust-crossbeam-epoch/.
+ example, you can try the `Canary` example from `https://github.com/ericseppanen/epoch_playground`.
+ and the associated blog post `https://codeandbitters.com/learning-rust-crossbeam-epoch/`.
  (Not included here due to implicit copyright). This will need at least a change from
  `rng.gen_range(0, bc_size)` to `rng.gen_range(0..bc_size)`, and optional updates to function naming.
 
@@ -1424,7 +1424,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_event_
 
 **Description:**  Published example from the `crossterm` crate.
 
- Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/key-display.rs
+ Url: `https://github.com/crossterm-rs/crossterm/blob/master/examples/key-display.rs`
  "Demonstrates the display format of key events.
 
  This example demonstrates the display format of key events, which is useful for displaying in
@@ -1778,16 +1778,16 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/derive_deftly.rs
 
 **Description:**  Unescape `\n` and `\\` markers in a string to convert the wall of text to readable lines.
  This is an alternative approach to the original script that ended up as `src/bin/thag_legible.rs`.
- This version using regex may be more reliable than the classic approach using .lines().
+ This version using regex may be more reliable than the classic approach using `.lines()`.
  However, at time of writing, `regex` is a 248kB crate, which makes the binary of this
  module almost 7 times larger than that of `thag_legible` for debug builds and 4 times
  larger for release builds.
 
- Tip: Regex tested using https://rustexp.lpil.uk/.
+ Tip: Regex tested using `https://rustexp.lpil.uk/`.
 
 **Purpose:** Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
 
-**Crates:** `lazy_static`, `regex`
+**Crates:** `regex`
 
 **Type:** Program
 
@@ -2157,6 +2157,36 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/edit_profile.rs
  well.
  See the `md-viewer` crate for a professional quality installable example using `egui_commonmark`
  vendored to address some issues.
+ Help text rendered in the F1 help window.
+ Applies contrast colours to both egui themes; font sizes are always left at
+ egui defaults so toggling never causes a scroll-position jump.
+
+ `enhanced = true`  — high-contrast colours (near-white/near-black text, warm backgrounds).
+ `enhanced = false` — stock egui colours.
+
+ Called once at startup and again whenever the toolbar "Contrast+/-" toggle changes.
+ `image_loading_spinners` is kept `false` in both modes.
+ An entry in the table of contents, derived from one ATX heading in the document.
+ Converts heading text to a URL-safe slug: lowercased, non-alphanumeric runs replaced by `-`.
+ Parses an ATX heading line and returns `(level, plain_text)`.
+ `plain_text` is the heading content with any trailing `{…}` attribute block stripped.
+ Returns `None` for non-heading lines, indented lines, or malformed ATX syntax.
+ Returns the explicit `{#id}` from a heading line, if present.
+ Scans `raw` markdown, builds a `Vec<TocEntry>` from ATX headings, and returns a version
+ of the content with `{#slug}` attributes injected into every heading that lacks one.
+ `byte_start` values in each `TocEntry` are byte offsets into `raw`.
+ Rewrites relative image paths in Markdown to absolute `file://` URIs so they
+ load correctly regardless of platform CWD behaviour.
+
+ Paths that already carry a URI scheme (`http://`, `file://`, `data:`, …) are
+ left untouched. If a relative path cannot be resolved (file does not exist)
+ it is also left untouched so existing error behaviour is preserved.
+
+ Note: processes the raw text, so a path inside a fenced code block is also
+ rewritten if it matches the image syntax — an acceptable trade-off for the
+ cross-platform fix.
+ Converts an absolute `Path` to a `file://` URI that is valid on all platforms.
+ Windows paths (`C:\…`) become `file:///C:/…`; Unix paths become `file:///…`.
  Pending navigation action triggered by the toolbar buttons.
  The state holder for our egui app.
 
@@ -2210,8 +2240,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/enum_select.rs
 **Description:**  Environment Variable Debug
 
  This script directly tests the environment variable parsing for color support
- to debug why THAG_COLOR_MODE=256 isn't working as expected.
- Direct implementation of check_env_color_support for testing
+ to debug why `THAG_COLOR_MODE=256` isn't working as expected.
+ Direct implementation of `check_env_color_support` for testing
 
 **Purpose:** Debug environment variable parsing for color support
 
@@ -2459,7 +2489,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_4784969_cpp_
 ### Script: fib_basic.rs
 
 **Description:**  Fast non-recursive classic Fibonacci calculations for a specific value or an entire sequence.
- I can't recall the exact source, but see for example https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
+ I can't recall the exact source, but see for example `https://users.rust-lang.org/t/fibonacci-sequence-fun/77495`
  for a variety of alternative approaches. The various Fibonacci scripts here in the demo
  directory also show a range of approaches. `demo/fib_basic_ibig.rs` shows the use of
  the `std::iter::Successors` iterator as well as removing the limitations of Rust
@@ -2674,7 +2704,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_classic_ibig
 **Description:**  Fast non-recursive Fibonacci sequence calculation with big integers.
  Should work with default Windows.
 
- Based on discussion https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
+ Based on discussion `https://users.rust-lang.org/t/fibonacci-sequence-fun/77495`
 
  See `https://en.wikipedia.org/wiki/Fibonacci_sequence`.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
@@ -2708,14 +2738,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_dashu_snippe
  changes:
 
  1. Instead of calculating the `Fi` values in descending order as soon as they are
- identified, add them to a list and then calculate them from the list in ascending
- order.
+    identified, add them to a list and then calculate them from the list in ascending
+    order.
 
  2. The list tends to end up containing strings of 3 or more commonly 4 consecutive
- `i` values for which `Fi` must be calculated. For any `i` that is the 3rd or
- subsequent entry in such a consecutive run, that is, for which Fi-2 and Fi-1 have
- already been calculated, compute Fi cheaply as Fi-2 + Fi-1 instead of using the
- normal multiplication formula.
+    `i` values for which `Fi` must be calculated. For any `i` that is the 3rd or
+    subsequent entry in such a consecutive run, that is, for which Fi-2 and Fi-1 have
+    already been calculated, compute Fi cheaply as Fi-2 + Fi-1 instead of using the
+    normal multiplication formula.
 
 **Purpose:** Demo fast efficient Fibonacci with big numbers, no recursion, and memoization.
 
@@ -2938,7 +2968,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_
 
 **Purpose:** Demo fast efficient Fibonacci with big numbers and limited, cached recursion.
 
-**Crates:** `ibig`, `syn`, `thag_demo_proc_macros`
+**Crates:** `ibig`, `thag_demo_proc_macros`
 
 **Type:** Program
 
@@ -4431,6 +4461,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/mintty_color_det
 ### Script: mock_edit.rs
 
 **Description:**  Used to debug a doctest.
+ Stuck on `thag_rs` v1.0.1 due to `mockall` dependency on `syn` v2.
 
 **Purpose:** Debugging script.
 
@@ -5348,10 +5379,10 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ra_ap_syntax_tre
 
 ### Script: ratatui_integration_demo.rs
 
-**Description:**  Simple Ratatui + thag_styling Integration Demo
+**Description:**  Simple Ratatui + `thag_styling` Integration Demo
 
  This demo shows how to create a basic themed TUI application using ratatui
- and thag_styling's semantic role system.
+ and `thag_styling`'s semantic role system.
 
  E.g.:
  ```
@@ -6203,6 +6234,29 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_compl.
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_full.rs
+```
+
+---
+
+### Script: ryo_regex_search.rs
+
+**Description:**  An AI-generated lightweight regex engine using Thompson's NFA (Nondeterministic Finite Automaton)
+ algorithm.
+ "Unlike backtracking engines, an NFA tracks all possible states simultaneously, ensuring linear
+ time complexity \(O(m \times n)\) relative to the text length n and regex length m."
+
+**Purpose:** Prototype for lightweight use avoiding `regex` crate for e.g. WASM.
+
+**Type:** Program
+
+**Categories:** prototype, technique
+
+**Link:** [ryo_regex_search.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ryo_regex_search.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ryo_regex_search.rs
 ```
 
 ---
@@ -8823,6 +8877,10 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_test.r
 **Description:**  Published basic `vim` editor example from crate `tui-textarea`. Mildly tweaked
  to use `ratatui::crossterm` re-exports instead of `crossterm` directly.
 
+ E.g.:
+ `thag demo/tui_ta_vim.rs -- myfile.txt`
+
+
  Not suitable for running from a URL.
 
 **Purpose:** Demo TUI `vim` editor and featured crates, including `crossterm`.
@@ -9279,3 +9337,4 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/windows_detect_p
 ```
 
 ---
+

@@ -252,6 +252,14 @@ pub struct Style {
     pub reverse: bool,
     /// Whether this style should be rendered with underline
     pub underline: bool,
+    /// Whether this style should be rendered blinking slowly
+    pub blink: bool,
+    /// Whether this style should be rendered blinking fast
+    pub blink_fast: bool,
+    /// Whether this style should be rendered struck through
+    pub strikethrough: bool,
+    /// Whether this style should be rendered hidden
+    pub hidden: bool,
 }
 
 impl Style {
@@ -265,6 +273,10 @@ impl Style {
             dim: false,
             reverse: false,
             underline: false,
+            blink: false,
+            blink_fast: false,
+            strikethrough: false,
+            hidden: false,
         }
     }
 
@@ -402,6 +414,34 @@ impl Style {
         self
     }
 
+    /// Returns the Style with blink formatting enabled
+    #[must_use]
+    pub const fn blink(mut self) -> Self {
+        self.blink = true;
+        self
+    }
+
+    /// Returns the Style with blink fast formatting enabled
+    #[must_use]
+    pub const fn blink_fast(mut self) -> Self {
+        self.blink_fast = true;
+        self
+    }
+
+    /// Returns the Style with strikethrough formatting enabled
+    #[must_use]
+    pub const fn strikethrough(mut self) -> Self {
+        self.strikethrough = true;
+        self
+    }
+
+    /// Returns the Style with hidden formatting enabled
+    #[must_use]
+    pub const fn hidden(mut self) -> Self {
+        self.hidden = true;
+        self
+    }
+
     /// Resets all text formatting flags to their default (false) state
     #[allow(clippy::missing_const_for_fn)]
     pub fn reset(&mut self) {
@@ -519,17 +559,29 @@ impl Style {
         if self.bold {
             result.push_str("\x1b[1m");
         }
+        if self.dim {
+            result.push_str("\x1b[2m");
+        }
         if self.italic {
             result.push_str("\x1b[3m");
         }
-        if self.dim {
-            result.push_str("\x1b[2m");
+        if self.underline {
+            result.push_str("\x1b[4m");
+        }
+        if self.blink {
+            result.push_str("\x1b[5m");
+        }
+        if self.blink_fast {
+            result.push_str("\x1b[6m");
         }
         if self.reverse {
             result.push_str("\x1b[7m");
         }
-        if self.underline {
-            result.push_str("\x1b[4m");
+        if self.hidden {
+            result.push_str("\x1b[8m");
+        }
+        if self.strikethrough {
+            result.push_str("\x1b[9m");
         }
 
         result
@@ -3775,6 +3827,20 @@ pub trait Styler {
         self.to_style().dim()
     }
 
+    /// Return a Style with reverse formatting enabled
+    ///
+    /// # Example
+    /// ```ignore
+    /// let styled = Role::Normal.reverse().paint("Reversed text");
+    /// Role::Info.reverse().prtln(format_args!("Reversed info: {}", info));
+    /// ```
+    fn reverse(self) -> Style
+    where
+        Self: Sized,
+    {
+        self.to_style().reverse()
+    }
+
     /// Return a Style with underline formatting enabled
     ///
     /// # Example
@@ -3787,6 +3853,62 @@ pub trait Styler {
         Self: Sized,
     {
         self.to_style().underline()
+    }
+
+    /// Return a Style with blink formatting enabled
+    ///
+    /// # Example
+    /// ```ignore
+    /// let styled = Role::Normal.blink().paint("Blinking text");
+    /// Role::Info.blink().prtln(format_args!("Blinking info: {}", info));
+    /// ```
+    fn blink(self) -> Style
+    where
+        Self: Sized,
+    {
+        self.to_style().blink()
+    }
+
+    /// Return a Style with blink fast formatting enabled
+    ///
+    /// # Example
+    /// ```ignore
+    /// let styled = Role::Normal.blink_fast().paint("Blink fast text");
+    /// Role::Info.blink_fast().prtln(format_args!("Blink fast info: {}", info));
+    /// ```
+    fn blink_fast(self) -> Style
+    where
+        Self: Sized,
+    {
+        self.to_style().blink_fast()
+    }
+
+    /// Return a Style with strikethrough formatting enabled
+    ///
+    /// # Example
+    /// ```ignore
+    /// let styled = Role::Warning.strikethrough().paint("Strikethrough warning");
+    /// Role::Error.strikethrough().prtln(format_args!("Strikethrough error: {}", error));
+    /// ```
+    fn strikethrough(self) -> Style
+    where
+        Self: Sized,
+    {
+        self.to_style().strikethrough()
+    }
+
+    /// Return a Style with hidden formatting enabled
+    ///
+    /// # Example
+    /// ```ignore
+    /// let styled = Role::Normal.hidden().paint("Hidden text");
+    /// Role::Info.hidden().prtln(format_args!("Hidden info: {}", info));
+    /// ```
+    fn hidden(self) -> Style
+    where
+        Self: Sized,
+    {
+        self.to_style().hidden()
     }
 }
 

@@ -23,9 +23,9 @@ impl ThemedStyle<Self> for NuStyle {
             is_italic: style.italic,
             is_underline: style.underline,
             is_reverse: style.reverse,
-            is_blink: false,          // Not supported by thag
-            is_hidden: false,         // Not supported by thag
-            is_strikethrough: false,  // Strikethrough not supported in current Style struct
+            is_blink: style.blink,
+            is_hidden: style.hidden,
+            is_strikethrough: style.strikethrough,
             prefix_with_reset: false, // Use nu-ansi-term default
         }
     }

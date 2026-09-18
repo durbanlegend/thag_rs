@@ -543,6 +543,18 @@ impl ThemeEditor {
         if style.underline {
             new_style = new_style.underline();
         }
+        if style.blink {
+            new_style = new_style.blink();
+        }
+        if style.blink_fast {
+            new_style = new_style.blink_fast();
+        }
+        if style.strikethrough {
+            new_style = new_style.strikethrough();
+        }
+        if style.hidden {
+            new_style = new_style.hidden();
+        }
 
         // Update the palette
         match role {

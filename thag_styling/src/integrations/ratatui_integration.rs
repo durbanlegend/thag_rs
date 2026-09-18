@@ -67,7 +67,18 @@ impl From<&Style> for RataStyle {
         if style.underline {
             rata_style = rata_style.add_modifier(Modifier::UNDERLINED);
         }
-        // Note: Strikethrough not supported in current Style struct
+        if style.blink {
+            rata_style = rata_style.add_modifier(Modifier::SLOW_BLINK);
+        }
+        if style.blink_fast {
+            rata_style = rata_style.add_modifier(Modifier::RAPID_BLINK);
+        }
+        if style.strikethrough {
+            rata_style = rata_style.add_modifier(Modifier::CROSSED_OUT);
+        }
+        if style.hidden {
+            rata_style = rata_style.add_modifier(Modifier::HIDDEN);
+        }
 
         rata_style
     }

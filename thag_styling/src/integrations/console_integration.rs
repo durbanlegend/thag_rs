@@ -40,7 +40,18 @@ impl ThemedStyle<Self> for ConsoleStyle {
         if style.underline {
             console_style = console_style.underlined();
         }
-        // Note: console doesn't support strikethrough
+        if style.blink {
+            console_style = console_style.blink();
+        }
+        if style.blink_fast {
+            console_style = console_style.blink_fast();
+        }
+        if style.strikethrough {
+            console_style = console_style.strikethrough();
+        }
+        if style.hidden {
+            console_style = console_style.hidden();
+        }
 
         console_style
     }

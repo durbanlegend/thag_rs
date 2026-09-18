@@ -622,9 +622,9 @@ pub enum EditorMode {
 impl EditorMode {
     fn title_style(&self) -> RataStyle {
         match self {
-            EditorMode::Edit => RataStyle::themed(Role::Heading3),
-            EditorMode::Search => RataStyle::themed(Role::Heading1),
-            EditorMode::Vim => RataStyle::themed(Role::Heading2),
+            Self::Edit => RataStyle::themed(Role::Heading3),
+            Self::Search => RataStyle::themed(Role::Heading1),
+            Self::Vim => RataStyle::themed(Role::Heading2),
         }
     }
 }
@@ -715,7 +715,7 @@ impl Editor<'_> {
         match self.navigation.mode {
             EditorMode::Edit => self.handle_edit_mode(key_event),
             EditorMode::Vim => Ok(self.handle_vim_mode(key_event)),
-            EditorMode::Search => self.handle_search_mode(key_event),
+            EditorMode::Search => Ok(self.handle_search_mode(key_event)),
         }
     }
 
@@ -985,7 +985,8 @@ impl Editor<'_> {
         );
     }
 
-    fn handle_search_mode(&mut self, key_event: KeyEvent) -> Result<KeyAction, ThagError> {
+    #[allow(clippy::unnested_or_patterns)]
+    fn handle_search_mode(&mut self, key_event: KeyEvent) -> KeyAction {
         let key_combination = KeyCombination::from(key_event);
         match key_combination {
             key!(ctrl - g) | key!(ctrl - n) | key!(down) => {
@@ -1008,7 +1009,7 @@ impl Editor<'_> {
             key!(esc) | key!(f3) => {
                 self.close_search();
             }
-            key!(ctrl - q) => return Ok(KeyAction::Quit(self.saved)),
+            key!(ctrl - q) => return KeyAction::Quit(self.saved),
             _ => {
                 if let Some(query) = self.search.input(key_event.into()) {
                     let maybe_err = self.textarea.set_search_pattern(query).err();
@@ -1016,7 +1017,7 @@ impl Editor<'_> {
                 }
             }
         }
-        Ok(KeyAction::Continue)
+        KeyAction::Continue
     }
 
     #[allow(clippy::too_many_lines, clippy::unnested_or_patterns)]
@@ -1538,7 +1539,7 @@ where
         .set_line_number_style(RataStyle::themed(Role::Hint));
     editor
         .textarea
-        .set_search_style(RataStyle::themed(Role::Emphasis).reversed());
+        .set_search_style(RataStyle::themed(Role::Info).reversed());
     editor.textarea.move_cursor(CursorMove::Bottom);
     // New line with cursor at EOF for usability
     editor.textarea.move_cursor(CursorMove::End);
@@ -1709,6 +1710,8 @@ where
                 },
             )?
         };
+
+        editor.status_message.clear();
 
         if let Paste(ref data) = event {
             editor.textarea.insert_str(normalize_newlines(data));

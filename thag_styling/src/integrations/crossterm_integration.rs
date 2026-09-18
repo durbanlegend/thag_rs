@@ -39,6 +39,18 @@ impl ThemedStyle<Self> for ContentStyle {
         if style.underline {
             attributes.push(Attribute::Underlined);
         }
+        if style.blink {
+            attributes.push(Attribute::SlowBlink);
+        }
+        if style.blink_fast {
+            attributes.push(Attribute::RapidBlink);
+        }
+        if style.strikethrough {
+            attributes.push(Attribute::CrossedOut);
+        }
+        if style.hidden {
+            attributes.push(Attribute::Hidden);
+        }
 
         for attr in attributes {
             content_style.attributes.set(attr);
@@ -199,8 +211,23 @@ pub mod crossterm_helpers {
         if style.attributes.has(Attribute::Dim) {
             writer.queue(SetAttribute(Attribute::Dim))?;
         }
+        if style.attributes.has(Attribute::Reverse) {
+            writer.queue(SetAttribute(Attribute::Reverse))?;
+        }
         if style.attributes.has(Attribute::Underlined) {
             writer.queue(SetAttribute(Attribute::Underlined))?;
+        }
+        if style.attributes.has(Attribute::SlowBlink) {
+            writer.queue(SetAttribute(Attribute::SlowBlink))?;
+        }
+        if style.attributes.has(Attribute::RapidBlink) {
+            writer.queue(SetAttribute(Attribute::RapidBlink))?;
+        }
+        if style.attributes.has(Attribute::CrossedOut) {
+            writer.queue(SetAttribute(Attribute::CrossedOut))?;
+        }
+        if style.attributes.has(Attribute::Hidden) {
+            writer.queue(SetAttribute(Attribute::Hidden))?;
         }
 
         writer.queue(crossterm::style::Print(content))

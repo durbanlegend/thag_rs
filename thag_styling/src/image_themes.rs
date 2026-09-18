@@ -2079,6 +2079,18 @@ pub fn theme_to_toml(theme: &Theme) -> StylingResult<String> {
         if style.underline {
             style_attrs.push(r#""underline""#);
         }
+        if style.blink {
+            style_attrs.push(r#""blink""#);
+        }
+        if style.blink_fast {
+            style_attrs.push(r#""blink_fast""#);
+        }
+        if style.strikethrough {
+            style_attrs.push(r#""strikethrough""#);
+        }
+        if style.hidden {
+            style_attrs.push(r#""hidden""#);
+        }
 
         if !style_attrs.is_empty() {
             let _ = writeln!(toml, "style = [{}]", style_attrs.join(", "));

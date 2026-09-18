@@ -537,6 +537,18 @@ impl BaseTheme {
                     if style.underline {
                         new_style = new_style.underline();
                     }
+                    if style.blink {
+                        new_style = new_style.blink();
+                    }
+                    if style.blink_fast {
+                        new_style = new_style.blink_fast();
+                    }
+                    if style.strikethrough {
+                        new_style = new_style.strikethrough();
+                    }
+                    if style.hidden {
+                        new_style = new_style.hidden();
+                    }
 
                     new_style
                 }
@@ -662,6 +674,18 @@ fn style_to_output(style: &Style, use_256: bool) -> StyleOutput {
     }
     if style.underline {
         style_attrs.push("underline".to_string());
+    }
+    if style.blink {
+        style_attrs.push("blink".to_string());
+    }
+    if style.blink_fast {
+        style_attrs.push("blink_fast".to_string());
+    }
+    if style.strikethrough {
+        style_attrs.push("strikethrough".to_string());
+    }
+    if style.hidden {
+        style_attrs.push("hidden".to_string());
     }
 
     let color = style.foreground.as_ref().map_or(

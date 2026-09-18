@@ -712,10 +712,45 @@ pub struct Editor<'a> {
 impl Editor<'_> {
     #[allow(clippy::too_many_lines)]
     fn handle_key_event(&mut self, key_event: KeyEvent) -> ThagResult<KeyAction> {
+        // Handle scrolling in popups before normal editor keys
+        if self.popup != PopupMode::None {
+            self.handle_popup_scroll_keys(key_event);
+            // return Ok(KeyAction::Continue);
+        }
+
         match self.navigation.mode {
             EditorMode::Edit => self.handle_edit_mode(key_event),
             EditorMode::Vim => Ok(self.handle_vim_mode(key_event)),
             EditorMode::Search => Ok(self.handle_search_mode(key_event)),
+        }
+    }
+
+    fn handle_popup_scroll_keys(&mut self, key_event: KeyEvent) {
+        if self.popup == PopupMode::Keys {
+            let max_scroll = self.key_display_lines.len().saturating_sub(10);
+            let key_combination = KeyCombination::from(key_event);
+            match key_combination {
+                key!(up) => {
+                    self.popup_scroll.scroll_offset =
+                        self.popup_scroll.scroll_offset.saturating_sub(1);
+                }
+                key!(down) => {
+                    if self.popup_scroll.scroll_offset < max_scroll {
+                        self.popup_scroll.scroll_offset += 1;
+                    }
+                }
+                key!(pageup) => {
+                    self.popup_scroll.scroll_offset =
+                        self.popup_scroll.scroll_offset.saturating_sub(10);
+                }
+                key!(pagedown) => {
+                    if self.popup_scroll.scroll_offset < max_scroll {
+                        self.popup_scroll.scroll_offset =
+                            (self.popup_scroll.scroll_offset + 10).min(max_scroll);
+                    }
+                }
+                _ => (), // Let other keys fall through to toggle popup
+            }
         }
     }
 
@@ -728,26 +763,6 @@ impl Editor<'_> {
         }
         // debug_log!("key_event={key_event:#?}");
         let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
-
-        // Handle scrolling in popup before normal editor keys
-        if self.popup == PopupMode::Keys {
-            let max_scroll = self.key_display_lines.len().saturating_sub(10);
-
-            match key_combination {
-                key!(up) => {
-                    self.popup_scroll.scroll_offset =
-                        self.popup_scroll.scroll_offset.saturating_sub(1);
-                    return Ok(KeyAction::Continue);
-                }
-                key!(down) => {
-                    if self.popup_scroll.scroll_offset < max_scroll {
-                        self.popup_scroll.scroll_offset += 1;
-                    }
-                    return Ok(KeyAction::Continue);
-                }
-                _ => (), // Let other keys fall through to toggle popup
-            }
-        }
 
         // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.
         #[allow(clippy::unnested_or_patterns)]
@@ -1564,13 +1579,15 @@ where
         .cloned()
         .collect();
     edit_mode_keys.sort();
+    let mut search_mode_keys: Vec<KeyDisplayLine> = SEARCH_MODE_KEYS.to_vec();
+    search_mode_keys.sort();
     let mut vim_mode_keys: Vec<KeyDisplayLine> = VIM_MODE_KEYS.to_vec();
     vim_mode_keys.sort();
 
     editor.key_display_lines = match editor.navigation.mode {
         EditorMode::Edit => edit_mode_keys.clone(),
         EditorMode::Vim => vim_mode_keys.clone(),
-        EditorMode::Search => vec![],
+        EditorMode::Search => search_mode_keys.clone(),
     };
 
     // Event loop for handling key events
@@ -1590,14 +1607,7 @@ where
             editor.textarea.set_block(
                 Block::default()
                     .title(match editor.navigation.mode {
-                        EditorMode::Edit => {
-                            // if editor.search.height() > 0 {
-                            //     search_title
-                            // } else {
-                            // String::from(editor.key_display_parms.edit_title)
-                            // }
-                            editor.key_display_parms.edit_title
-                        }
+                        EditorMode::Edit => editor.key_display_parms.edit_title,
                         EditorMode::Vim => editor.key_display_parms.vim_title,
                         EditorMode::Search => editor.key_display_parms.search_title,
                     })
@@ -1678,7 +1688,7 @@ where
                                     match editor.navigation.mode {
                                         EditorMode::Edit => "Edit mode key bindings - subject to your terminal settings",
                                         EditorMode::Vim => "Vim mode key bindings",
-                                        EditorMode::Search => "Placeholder",
+                                        EditorMode::Search => "Regex search key bindings",
                                     },
                                     KEYS_TITLE_BOTTOM,
                                     max_key_len,
@@ -1716,9 +1726,23 @@ where
         if let Paste(ref data) = event {
             editor.textarea.insert_str(normalize_newlines(data));
         } else if let Event::Mouse(mouse_event) = event {
-            // Handle mouse scrolling in popup
+            // Handle mouse scrolling
             use ratatui::crossterm::event::MouseEventKind;
-            if editor.popup == PopupMode::Keys {
+            if editor.popup == PopupMode::None {
+                // Main TextArea
+                match mouse_event.kind {
+                    MouseEventKind::ScrollUp => {
+                        // Scroll up by 1 line (negative row offset)
+                        editor.textarea.scroll((-1, 0));
+                    }
+                    MouseEventKind::ScrollDown => {
+                        // Scroll down by 1 line (positive row offset)
+                        editor.textarea.scroll((1, 0));
+                    }
+                    _ => {} // Ignore other mouse clicks/movements if not needed
+                }
+            } else {
+                // Current popup
                 match mouse_event.kind {
                     MouseEventKind::ScrollDown => {
                         if editor.popup_scroll.scroll_offset + 1 < editor.key_display_lines.len() {
@@ -1730,18 +1754,6 @@ where
                             editor.popup_scroll.scroll_offset.saturating_sub(1);
                     }
                     _ => {}
-                }
-            } else {
-                match mouse_event.kind {
-                    MouseEventKind::ScrollUp => {
-                        // Scroll up by 1 line (negative row offset)
-                        editor.textarea.scroll((-1, 0));
-                    }
-                    MouseEventKind::ScrollDown => {
-                        // Scroll down by 1 line (positive row offset)
-                        editor.textarea.scroll((1, 0));
-                    }
-                    _ => {} // Ignore other mouse clicks/movements if not needed
                 }
             }
         } else if let Event::Key(key_event) = event {
@@ -2475,7 +2487,7 @@ pub const EDIT_MODE_KEYS: &[KeyDisplayLine] = key_mappings![
     (260, "Alt+Shift+f", "Move cursor to next word end"),
     (270, "Atl+b", "Move cursor backward one word"),
     (280, "Alt+p", "Move cursor up one paragraph"),
-    (290, "Alt+n", "Move cursor down one paragraph"),
+    (290, "Alt+n, F2", "Move cursor down one paragraph"),
     (300, "Ctrl+e, End, Ctrl+Alt+f", "Move cursor to end of line"),
     (
         310,
@@ -2487,7 +2499,7 @@ pub const EDIT_MODE_KEYS: &[KeyDisplayLine] = key_mappings![
     (340, "Ctrl+l", "Toggle keys display (this screen)"),
     (350, "Ctrl+t", "Toggle selection highlight colours"),
     (360, "Alt+v, PageUp", "Page up"),
-    (370, "PageDown, F2", "Page down"),
+    (370, "PageDown", "Page down"),
     (375, "F3", "Toggle search"),
     (380, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     (
@@ -2506,6 +2518,15 @@ pub const EDIT_MODE_KEYS: &[KeyDisplayLine] = key_mappings![
     (440, "F10", "Exit `copy to system clipboard` mode"),
     (450, "F11", "Quit and abandon code changes"),
     (460, "F12", "Save as..."),
+];
+
+/// Key mappings for display purposes via (Ctrl-l) in Search mode.
+pub const SEARCH_MODE_KEYS: &[KeyDisplayLine] = key_mappings![
+    (10, "Key bindings", "Description"),
+    (20, "Enter", "Jump to first match and close search"),
+    (30, "Esc, F3", "Close search"),
+    (40, "Ctrl+g/n, ↓", "Next match"),
+    (50, "Alt+g, Ctrl+p, ↑", "Previous match"),
 ];
 
 /// Key mappings for display purposes via (Ctrl-l) in TUI editor and file dialog.

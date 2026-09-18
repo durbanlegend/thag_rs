@@ -27,6 +27,7 @@ opt-level = 3     # Apply maximum performance optimizations
 use eframe::egui;
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use thag_styling::{
     auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config,

@@ -725,35 +725,6 @@ impl Editor<'_> {
         }
     }
 
-    fn handle_popup_scroll_keys(&mut self, key_event: KeyEvent) {
-        if self.popup == PopupMode::Keys {
-            let max_scroll = self.key_display_lines.len().saturating_sub(10);
-            let key_combination = KeyCombination::from(key_event);
-            match key_combination {
-                key!(up) => {
-                    self.popup_scroll.scroll_offset =
-                        self.popup_scroll.scroll_offset.saturating_sub(1);
-                }
-                key!(down) => {
-                    if self.popup_scroll.scroll_offset < max_scroll {
-                        self.popup_scroll.scroll_offset += 1;
-                    }
-                }
-                key!(pageup) => {
-                    self.popup_scroll.scroll_offset =
-                        self.popup_scroll.scroll_offset.saturating_sub(10);
-                }
-                key!(pagedown) => {
-                    if self.popup_scroll.scroll_offset < max_scroll {
-                        self.popup_scroll.scroll_offset =
-                            (self.popup_scroll.scroll_offset + 10).min(max_scroll);
-                    }
-                }
-                _ => (), // Let other keys fall through to toggle popup
-            }
-        }
-    }
-
     #[allow(clippy::too_many_lines, clippy::unnested_or_patterns)]
     fn handle_edit_mode(&mut self, key_event: KeyEvent) -> ThagResult<KeyAction> {
         if key_event.code == KeyCode::Esc {
@@ -763,6 +734,37 @@ impl Editor<'_> {
         }
         // debug_log!("key_event={key_event:#?}");
         let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
+
+        // Handle scrolling in popup before normal editor keys
+        if self.popup == PopupMode::Keys {
+            let max_scroll = self.key_display_lines.len().saturating_sub(10);
+            match key_combination {
+                key!(up) => {
+                    self.popup_scroll.scroll_offset =
+                        self.popup_scroll.scroll_offset.saturating_sub(1);
+                    return Ok(KeyAction::Continue);
+                }
+                key!(down) => {
+                    if self.popup_scroll.scroll_offset < max_scroll {
+                        self.popup_scroll.scroll_offset += 1;
+                    }
+                    return Ok(KeyAction::Continue);
+                }
+                key!(pageup) => {
+                    self.popup_scroll.scroll_offset =
+                        self.popup_scroll.scroll_offset.saturating_sub(10);
+                    return Ok(KeyAction::Continue);
+                }
+                key!(pagedown) => {
+                    if self.popup_scroll.scroll_offset < max_scroll {
+                        self.popup_scroll.scroll_offset =
+                            (self.popup_scroll.scroll_offset + 10).min(max_scroll);
+                    }
+                    return Ok(KeyAction::Continue);
+                }
+                _ => (), // Let other keys fall through to toggle popup
+            }
+        }
 
         // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.
         #[allow(clippy::unnested_or_patterns)]

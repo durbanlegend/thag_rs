@@ -1,11 +1,17 @@
-/// A lightweight regex engine using Thompson's NFA algorithm, enhanced with
-/// `find_iter`-style match-position reporting and configurable search options:
-/// case sensitivity, whole-word matching, and regex vs plain-text mode.
+/// A lightweight backtracking regex engine for environments where the `regex`
+/// crate's size or compile-time overhead is unacceptable (e.g. WASM).
 ///
-/// "Unlike backtracking engines, an NFA tracks all possible states simultaneously,
-/// ensuring linear time complexity O(m × n) relative to text length n and pattern length m."
+/// Supported syntax: literals, `.` wildcard, `^`/`$` anchors, `\b` word
+/// boundary, character classes (`[a-z]`, `\d`, `\s` — including inside `[...]`),
+/// quantifiers (`*`, `?`, `+`, `{n}`, `{n,}`, `{n,m}` — all greedy), grouping
+/// (`(...)`, `(?:...)`), positive lookahead (`(?=...)`), alternation (`a|b`),
+/// plus configurable case-insensitive, whole-word, and plain-text search modes.
+///
+/// Not supported: negative/lookbehind assertions, lazy quantifiers,
+/// backreferences, or Unicode properties.
 //# Purpose: Prototype for a lightweight regex/search engine without the `regex` crate (e.g. for WASM).
 //# Categories: prototype, technique
+use core::ops::Range;
 use std::iter::Peekable;
 use std::str::Chars;
 
@@ -23,13 +29,16 @@ enum CharClass {
 #[derive(Debug, Clone, PartialEq)]
 enum RegexAST {
     Literal(char),
-    Wildcard,              // .
-    Class(CharClass),      // \d, \s, [...]
-    AnchorStart,           // ^
-    AnchorEnd,             // $
-    ZeroOrMore(Box<Self>), // *   (greedy)
-    ZeroOrOne(Box<Self>),  // ?   (greedy)
-    OneOrMore(Box<Self>),  // +   (greedy)
+    Wildcard,                                // .
+    Class(CharClass),                        // \d, \s, [...]
+    AnchorStart,                             // ^
+    AnchorEnd,                               // $
+    WordBoundary,                            // \b
+    ZeroOrMore(Box<Self>),                   // *         (greedy)
+    ZeroOrOne(Box<Self>),                    // ?         (greedy)
+    OneOrMore(Box<Self>),                    // +         (greedy)
+    Repeat(Box<Self>, usize, Option<usize>), // {n,m}     (greedy, no catastrophic backtracking)
+    LookAhead(Box<Self>),                    // (?=...)   (zero-width positive lookahead)
     Concat(Vec<Self>),
     Alternation(Box<Self>, Box<Self>), // a|b
 }
@@ -84,7 +93,7 @@ impl Match {
     /// assert_eq!(&"hello world"[m.range()], "world");
     /// ```
     #[must_use]
-    pub fn range(&self) -> core::ops::Range<usize> {
+    pub fn range(&self) -> Range<usize> {
         self.start..self.end
     }
 }
@@ -159,25 +168,10 @@ fn parse_concat(chars: &mut Peekable<Chars<'_>>) -> Result<RegexAST, String> {
                         return Err(format!("{{{min},{max}}} invalid: min > max"));
                     }
                 }
-                // Expand inline: `min` required copies then optional remainder.
-                // E.g. {2,4} → node node node? node?
-                //      {2,}  → node node node*
-                let mut seq: Vec<RegexAST> = (0..min).map(|_| node.clone()).collect();
-                match max_opt {
-                    None => seq.push(RegexAST::ZeroOrMore(Box::new(node))),
-                    Some(max) => {
-                        for _ in min..max {
-                            seq.push(RegexAST::ZeroOrOne(Box::new(node.clone())));
-                        }
-                    }
-                }
-                if seq.is_empty() {
-                    // {0} or {0,0}: zero occurrences — contributes nothing
-                } else if seq.len() == 1 {
-                    nodes.push(seq.remove(0));
-                } else {
-                    nodes.push(RegexAST::Concat(seq));
-                }
+                // Emit a single Repeat node.  Expanding into stacked ZeroOrOne nodes
+                // causes O(C(n+m,n)) catastrophic backtracking when the character
+                // class overlaps with a required literal later in the pattern.
+                nodes.push(RegexAST::Repeat(Box::new(node), min, max_opt));
             }
             _ => nodes.push(node),
         }
@@ -186,6 +180,25 @@ fn parse_concat(chars: &mut Peekable<Chars<'_>>) -> Result<RegexAST, String> {
 }
 
 fn parse_group(chars: &mut Peekable<Chars<'_>>) -> Result<RegexAST, String> {
+    // Handle non-capturing groups `(?:...)` by consuming the `?:` prefix.
+    // Our engine treats them identically to capturing groups `(...)` since
+    // it never exposes capture groups to the caller anyway.
+    if chars.peek() == Some(&'?') {
+        chars.next(); // consume '?'
+        match chars.next() {
+            Some(':') => {} // non-capturing group `(?:...)`: treat as plain `(...)`
+            Some('=') => {
+                // Positive lookahead `(?=...)`: zero-width assertion.
+                let inner = parse_alternation(chars)?;
+                if chars.next() != Some(')') {
+                    return Err("Unmatched '(' in lookahead".to_string());
+                }
+                return Ok(RegexAST::LookAhead(Box::new(inner)));
+            }
+            Some(ch) => return Err(format!("Unsupported group modifier '(?{ch}'")),
+            None => return Err("Unexpected end of pattern after '(?'".to_string()),
+        }
+    }
     let inner = parse_alternation(chars)?;
     if chars.peek() == Some(&')') {
         chars.next();
@@ -203,12 +216,25 @@ fn parse_bracket(chars: &mut Peekable<Chars<'_>>) -> Result<RegexAST, String> {
             if !raw.is_empty() {
                 classes.push(CharClass::Set(std::mem::take(&mut raw)));
             }
-            // Return the right variant based on how many sub-classes we collected.
             return Ok(RegexAST::Class(match classes.len() {
                 0 => CharClass::Set(vec![]),
                 1 => classes.remove(0),
                 _ => CharClass::Multi(classes),
             }));
+        }
+        // Backslash escapes inside a character class: `\d`, `\s`, or any literal.
+        // This correctly handles patterns like `[A-Za-z\d]` and `[\+]`.
+        if ch == '\\' {
+            if !raw.is_empty() {
+                classes.push(CharClass::Set(std::mem::take(&mut raw)));
+            }
+            match chars.next() {
+                Some('d') => classes.push(CharClass::Digit),
+                Some('s') => classes.push(CharClass::Whitespace),
+                Some(c) => raw.push(c), // e.g. `\+` → literal `+`
+                None => return Err("Trailing backslash in character class".to_string()),
+            }
+            continue;
         }
         if chars.peek() == Some(&'-') {
             // Peek one step further: if '-' is immediately before ']' (or end of input)
@@ -259,6 +285,7 @@ fn parse_escape(chars: &mut Peekable<Chars<'_>>) -> Result<RegexAST, String> {
     match chars.next() {
         Some('d') => Ok(RegexAST::Class(CharClass::Digit)),
         Some('s') => Ok(RegexAST::Class(CharClass::Whitespace)),
+        Some('b') => Ok(RegexAST::WordBoundary),
         Some(c) => Ok(RegexAST::Literal(c)),
         None => Err("Trailing backslash".to_string()),
     }
@@ -363,14 +390,79 @@ fn match_ast(nodes: &[RegexAST], text: &[char], cursor: usize, cs: bool) -> Opti
                 None
             }
         }
+        RegexAST::WordBoundary => {
+            // Zero-width assertion: succeeds when the position is between a word
+            // character (alphanumeric / '_') and a non-word character (or string edge).
+            let before_word = cursor > 0 && is_word_char(text[cursor - 1]);
+            let after_word = cursor < text.len() && is_word_char(text[cursor]);
+            if before_word != after_word {
+                match_ast(tail, text, cursor, cs)
+            } else {
+                None
+            }
+        }
         RegexAST::ZeroOrOne(inner) => {
-            // Greedy: prefer consuming one character.
-            if match_single(inner, &text[cursor..], cs) {
-                if let Some(end) = match_ast(tail, text, cursor + 1, cs) {
+            // Greedy: try one occurrence of inner (which may span multiple characters)
+            // by prepending it to the remaining tail and delegating to match_ast.
+            // This correctly handles multi-char inners such as groups `(?:...)`.
+            let mut one_seq = vec![inner.as_ref().clone()];
+            one_seq.extend_from_slice(tail);
+            if let Some(end) = match_ast(&one_seq, text, cursor, cs) {
+                return Some(end);
+            }
+            match_ast(tail, text, cursor, cs)
+        }
+        RegexAST::Repeat(inner, min, max_opt) => {
+            // Greedy repetition that avoids catastrophic backtracking.
+            //
+            // Strategy: make one linear forward pass to collect every cursor position
+            // reachable after 0, 1, 2, … consecutive matches of `inner`.  Then try
+            // appending `tail` from the longest match down to `min`.  Each tail
+            // attempt is independent — we never re-explore inner matches.
+            //
+            // This mirrors how `ZeroOrMore` handles single-char atoms (counting
+            // forward, trying tail positions backward) but works for any inner
+            // pattern, including multi-character groups.
+            let inner_nodes: Vec<RegexAST> = match inner.as_ref() {
+                RegexAST::Concat(v) => v.clone(),
+                other => vec![other.clone()],
+            };
+            let max_count = max_opt.unwrap_or(text.len().saturating_add(1));
+
+            // positions[k] = cursor after k successful matches of inner.
+            let mut positions = vec![cursor];
+            while positions.len() <= max_count {
+                let last = *positions.last().unwrap();
+                match match_ast(&inner_nodes, text, last, cs) {
+                    Some(end) if end > last => positions.push(end),
+                    _ => break,
+                }
+            }
+
+            if positions.len() <= *min {
+                return None; // fewer than `min` matches achieved
+            }
+
+            // Greedy: try from the longest match down to `min`.
+            for i in (*min..positions.len()).rev() {
+                if let Some(end) = match_ast(tail, text, positions[i], cs) {
                     return Some(end);
                 }
             }
-            match_ast(tail, text, cursor, cs)
+            None
+        }
+        RegexAST::LookAhead(inner) => {
+            // Zero-width positive lookahead: test whether `inner` matches at the
+            // current position WITHOUT consuming any characters.  If the sub-match
+            // succeeds, continue matching `tail` from the same cursor.
+            let inner_nodes: Vec<RegexAST> = match inner.as_ref() {
+                RegexAST::Concat(v) => v.clone(),
+                other => vec![other.clone()],
+            };
+            match match_ast(&inner_nodes, text, cursor, cs) {
+                Some(_) => match_ast(tail, text, cursor, cs),
+                None => None,
+            }
         }
         RegexAST::ZeroOrMore(inner) => {
             // Greedy: find the maximum run length, then backtrack until tail matches.
@@ -442,7 +534,7 @@ pub fn find_ranges(
     pattern: &str,
     haystack: &str,
     opts: &SearchOptions,
-) -> Result<Vec<core::ops::Range<usize>>, String> {
+) -> Result<Vec<Range<usize>>, String> {
     find_all(pattern, haystack, opts)
         .map(|matches| matches.into_iter().map(|m| m.range()).collect())
 }
@@ -948,6 +1040,10 @@ mod tests {
             find_ranges(pat, "user@mail.example.co.uk", &opts).unwrap(),
             vec![0..23]
         );
+        assert_eq!(
+            find_ranges(pat, "first.last+tester@domain.com", &opts).unwrap(),
+            vec![0..28]
+        );
     }
 
     #[test]
@@ -957,6 +1053,69 @@ mod tests {
         assert!(find_ranges(pat, "not-an-email", &opts).unwrap().is_empty());
         assert!(find_ranges(pat, "@nodomain.com", &opts).unwrap().is_empty());
         assert!(find_ranges(pat, "missing@dot", &opts).unwrap().is_empty());
+        assert!(
+            find_ranges(pat, "userexample.com", &opts)
+                .unwrap()
+                .is_empty()
+        );
+        assert!(find_ranges(pat, "user@.com", &opts).unwrap().is_empty());
+        assert!(
+            find_ranges(pat, "user@example.c", &opts)
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    fn assert_range_match(pattern: &str, haystack: &str, opts: &SearchOptions) {
+        assert_eq!(
+            find_ranges(pattern, haystack, opts).unwrap(),
+            vec![Range {
+                start: 0,
+                end: haystack.len()
+            }]
+        );
+    }
+
+    #[test]
+    fn test_ryo_regex_search_url_valid() {
+        let pat = r"^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{2,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?& text=\/=]*)$";
+        let opts = SearchOptions::default();
+        assert_range_match(pat, "https://example.com", &opts);
+        assert_range_match(pat, "https://example.org", &opts);
+        assert_range_match(
+            pat,
+            "https://www.google.com/search?q=regex+test+cases&sourceid=chrome&source=chrome.ob&ie=UTF-8",
+            &opts,
+        );
+    }
+
+    #[test]
+    fn test_ryo_regex_search_url_invalid() {
+        let pat = r"^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{2,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?& text=\/=]*)$";
+        let opts = SearchOptions::default();
+        assert!(find_ranges(pat, "example.com", &opts).unwrap().is_empty());
+        assert!(
+            find_ranges(pat, "https:/example.com", &opts)
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn test_ryo_regex_search_password_valid() {
+        let pat = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$";
+        let opts = SearchOptions::default();
+        assert_range_match(pat, "P@ssword123", &opts);
+    }
+
+    #[test]
+    fn test_ryo_regex_search_password_invalid() {
+        let pat = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$";
+        let opts = SearchOptions::default();
+        assert!(find_ranges(pat, "P@ss1", &opts).unwrap().is_empty());
+        assert!(find_ranges(pat, "Password@", &opts).unwrap().is_empty());
+        assert!(find_ranges(pat, "Password123", &opts).unwrap().is_empty());
+        assert!(find_ranges(pat, "p@ssword123", &opts).unwrap().is_empty());
     }
 
     #[test]

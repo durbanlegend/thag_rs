@@ -75,6 +75,18 @@ impl Match {
     pub fn as_str<'t>(&self, text: &'t str) -> &'t str {
         &text[self.start..self.end]
     }
+
+    /// Returns the match as a half-open byte range, usable directly as a slice index.
+    ///
+    /// ```
+    /// let m = Match { start: 6, end: 11 };
+    /// assert_eq!(m.range(), 6..11);
+    /// assert_eq!(&"hello world"[m.range()], "world");
+    /// ```
+    #[must_use]
+    pub fn range(&self) -> core::ops::Range<usize> {
+        self.start..self.end
+    }
 }
 
 // ═══════════════════════════════════ Parser ════════════════════════════════════
@@ -421,6 +433,20 @@ pub fn regex_search(pattern: &str, haystack: &str) -> Result<bool, String> {
     find_all(pattern, haystack, &SearchOptions::default()).map(|m| !m.is_empty())
 }
 
+/// Runs `find_all` and returns each match as a `core::ops::Range<usize>` byte range.
+///
+/// The ranges are half-open `[start, end)` byte offsets into `haystack`, identical
+/// to those produced by the `regex` crate's `find_iter`.  They can be used directly
+/// as slice indices: `&haystack[range]`.
+pub fn find_ranges(
+    pattern: &str,
+    haystack: &str,
+    opts: &SearchOptions,
+) -> Result<Vec<core::ops::Range<usize>>, String> {
+    find_all(pattern, haystack, opts)
+        .map(|matches| matches.into_iter().map(|m| m.range()).collect())
+}
+
 // ═══════════════════════════ Search backends ══════════════════════════════════
 
 fn regex_find_all(
@@ -683,4 +709,297 @@ fn main() {
     );
 
     println!("\nAll demos complete.");
+}
+
+// ══════════════════════════════ Unit tests ════════════════════════════════════
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── Core: Match::range ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_ryo_regex_search_match_range_method() {
+        let m = Match { start: 6, end: 11 };
+        assert_eq!(m.range(), 6..11);
+        // Verify the range works as a direct slice index.
+        assert_eq!(&"hello world"[m.range()], "world");
+    }
+
+    // ── Literal patterns ──────────────────────────────────────────────────────
+
+    #[test]
+    fn test_ryo_regex_search_literal() {
+        let ranges = find_ranges("cat", "the cat sat on a cat", &SearchOptions::default()).unwrap();
+        assert_eq!(ranges, vec![4..7, 17..20]);
+    }
+
+    // ── Wildcard ──────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_ryo_regex_search_wildcard() {
+        // '.' is a wildcard that matches any character, including space.
+        let ranges = find_ranges("a.c", "abc axc a c", &SearchOptions::default()).unwrap();
+        assert_eq!(ranges, vec![0..3, 4..7, 8..11]);
+    }
+
+    // ── Quantifiers ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_ryo_regex_search_zero_or_more() {
+        // 'ab*c' matches 'ac', 'abc', 'abbc'
+        let ranges = find_ranges("ab*c", "ac abc abbc", &SearchOptions::default()).unwrap();
+        assert_eq!(ranges, vec![0..2, 3..6, 7..11]);
+    }
+
+    #[test]
+    fn test_ryo_regex_search_zero_or_one() {
+        // 'colou?r' matches both 'color' and 'colour' (greedy: tries 'u' first)
+        let ranges = find_ranges("colou?r", "color and colour", &SearchOptions::default()).unwrap();
+        assert_eq!(ranges, vec![0..5, 10..16]);
+    }
+
+    #[test]
+    fn test_ryo_regex_search_one_or_more() {
+        // Greedy '+' consumes the longest possible run of digits.
+        let ranges = find_ranges(r"\d+", "foo123bar456baz", &SearchOptions::default()).unwrap();
+        assert_eq!(ranges, vec![3..6, 9..12]);
+    }
+
+    #[test]
+    fn test_ryo_regex_search_exact_repetition() {
+        // {4} matches exactly four consecutive digits.
+        let ranges =
+            find_ranges(r"\d{4}", "in 2024 and 2025 AD", &SearchOptions::default()).unwrap();
+        assert_eq!(ranges, vec![3..7, 12..16]);
+    }
+
+    #[test]
+    fn test_ryo_regex_search_min_repetition() {
+        // {2,} matches runs of two or more digits; lone digits are skipped.
+        let ranges = find_ranges(r"\d{2,}", "1 22 333 9 44", &SearchOptions::default()).unwrap();
+        assert_eq!(ranges, vec![2..4, 5..8, 11..13]);
+    }
+
+    #[test]
+    fn test_ryo_regex_search_bounded_repetition() {
+        // {2,3} is greedy: "1234" yields "123" then "4" is too short to match again.
+        let ranges = find_ranges(r"\d{2,3}", "1 22 333 1234 9", &SearchOptions::default()).unwrap();
+        assert_eq!(ranges, vec![2..4, 5..8, 9..12]);
+    }
+
+    // ── Character classes ──────────────────────────────────────────────────────
+
+    #[test]
+    fn test_ryo_regex_search_bracket_multi_range() {
+        // [a-zA-Z]+ must union both ranges — the historical bug returned only one.
+        let ranges = find_ranges("[a-zA-Z]+", "abc123DEF", &SearchOptions::default()).unwrap();
+        assert_eq!(ranges, vec![0..3, 6..9]);
+    }
+
+    #[test]
+    fn test_ryo_regex_search_bracket_hyphen_literal() {
+        // '-' at the end of a class is a literal hyphen, not a range operator.
+        let ranges = find_ranges("[a-z-]+", "hello-world", &SearchOptions::default()).unwrap();
+        assert_eq!(ranges, vec![0..11]);
+    }
+
+    #[test]
+    fn test_ryo_regex_search_digit_class() {
+        let ranges = find_ranges(r"\d+", "abc 42 xyz 7 99", &SearchOptions::default()).unwrap();
+        assert_eq!(ranges, vec![4..6, 11..12, 13..15]);
+    }
+
+    // ── Anchors ────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_ryo_regex_search_anchor_start() {
+        assert_eq!(
+            find_ranges("^hello", "hello world", &SearchOptions::default()).unwrap(),
+            vec![0..5]
+        );
+        assert!(
+            find_ranges("^hello", "say hello", &SearchOptions::default())
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn test_ryo_regex_search_anchor_end() {
+        assert_eq!(
+            find_ranges("world$", "hello world", &SearchOptions::default()).unwrap(),
+            vec![6..11]
+        );
+        assert!(
+            find_ranges("world$", "worlds apart", &SearchOptions::default())
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    // ── Alternation ────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_ryo_regex_search_alternation() {
+        let ranges = find_ranges(
+            "cat|dog|fish",
+            "I have a cat and a dog and a fish",
+            &SearchOptions::default(),
+        )
+        .unwrap();
+        assert_eq!(ranges, vec![9..12, 19..22, 29..33]);
+    }
+
+    // ── Case sensitivity ───────────────────────────────────────────────────────
+
+    #[test]
+    fn test_ryo_regex_search_case_sensitive() {
+        let opts = SearchOptions {
+            case_sensitive: true,
+            ..SearchOptions::default()
+        };
+        assert_eq!(
+            find_ranges("rust", "Rust rust RUST", &opts).unwrap(),
+            vec![5..9]
+        );
+    }
+
+    #[test]
+    fn test_ryo_regex_search_case_insensitive() {
+        let opts = SearchOptions {
+            case_sensitive: false,
+            ..SearchOptions::default()
+        };
+        assert_eq!(
+            find_ranges("rust", "Rust rust RUST", &opts).unwrap(),
+            vec![0..4, 5..9, 10..14]
+        );
+    }
+
+    // ── Whole-word ─────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_ryo_regex_search_whole_word() {
+        let opts = SearchOptions {
+            whole_word: true,
+            ..SearchOptions::default()
+        };
+        // "scatter" and "cats" embed "cat" but not as whole words.
+        assert_eq!(
+            find_ranges("cat", "scatter cats and a cat or two", &opts).unwrap(),
+            vec![19..22]
+        );
+    }
+
+    #[test]
+    fn test_ryo_regex_search_whole_word_punctuation_boundary() {
+        // '-' is not a word character, so "cat" in "cat-nap" IS a whole-word match.
+        let opts = SearchOptions {
+            whole_word: true,
+            ..SearchOptions::default()
+        };
+        assert_eq!(
+            find_ranges("cat", "cat-nap and cat", &opts).unwrap(),
+            vec![0..3, 12..15]
+        );
+    }
+
+    // ── Plain-text mode ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_ryo_regex_search_plain_text() {
+        let opts = SearchOptions {
+            use_regex: false,
+            ..SearchOptions::default()
+        };
+        // '$' and '.' are regex metacharacters but are treated as literals here.
+        assert_eq!(
+            find_ranges("$10.00", "Price: $10.00 and $10.00", &opts).unwrap(),
+            vec![7..13, 18..24]
+        );
+    }
+
+    #[test]
+    fn test_ryo_regex_search_plain_text_case_insensitive() {
+        let opts = SearchOptions {
+            use_regex: false,
+            case_sensitive: false,
+            whole_word: false,
+        };
+        assert_eq!(
+            find_ranges("hello", "HELLO hello Hello", &opts).unwrap(),
+            vec![0..5, 6..11, 12..17]
+        );
+    }
+
+    // ── Real-world patterns ────────────────────────────────────────────────────
+
+    #[test]
+    fn test_ryo_regex_search_email_valid() {
+        let pat = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+        let opts = SearchOptions::default();
+        assert_eq!(
+            find_ranges(pat, "user@example.com", &opts).unwrap(),
+            vec![0..16]
+        );
+        assert_eq!(
+            find_ranges(pat, "user@mail.example.co.uk", &opts).unwrap(),
+            vec![0..23]
+        );
+    }
+
+    #[test]
+    fn test_ryo_regex_search_email_invalid() {
+        let pat = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+        let opts = SearchOptions::default();
+        assert!(find_ranges(pat, "not-an-email", &opts).unwrap().is_empty());
+        assert!(find_ranges(pat, "@nodomain.com", &opts).unwrap().is_empty());
+        assert!(find_ranges(pat, "missing@dot", &opts).unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_ryo_regex_search_decimal_numbers() {
+        let ranges = find_ranges(
+            r"\d+\.\d+",
+            "pi is 3.14 and e is 2.718",
+            &SearchOptions::default(),
+        )
+        .unwrap();
+        assert_eq!(ranges, vec![6..10, 20..25]);
+    }
+
+    #[test]
+    fn test_ryo_regex_search_iso_dates() {
+        let ranges = find_ranges(
+            r"\d{4}-\d{2}-\d{2}",
+            "Born 1990-07-04, died 2024-12-31.",
+            &SearchOptions::default(),
+        )
+        .unwrap();
+        assert_eq!(ranges, vec![5..15, 22..32]);
+    }
+
+    #[test]
+    fn test_ryo_regex_search_hex_colours() {
+        let ranges = find_ranges(
+            r"#[a-fA-F0-9]{6}",
+            "bg: #ff0000; fg: #1A2B3C;",
+            &SearchOptions::default(),
+        )
+        .unwrap();
+        assert_eq!(ranges, vec![4..11, 17..24]);
+    }
+
+    #[test]
+    fn test_ryo_regex_search_ip_address() {
+        let ranges = find_ranges(
+            r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}",
+            "Server: 192.168.1.1 gateway 10.0.0.1",
+            &SearchOptions::default(),
+        )
+        .unwrap();
+        assert_eq!(ranges, vec![8..19, 28..36]);
+    }
 }

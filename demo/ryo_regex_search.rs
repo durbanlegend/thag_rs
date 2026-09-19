@@ -13,10 +13,11 @@ use std::str::Chars;
 
 #[derive(Debug, Clone, PartialEq)]
 enum CharClass {
-    Digit,             // \d
-    Whitespace,        // \s
-    Range(char, char), // [a-z]
-    Set(Vec<char>),    // [abc]
+    Digit,                 // \d
+    Whitespace,            // \s
+    Range(char, char),     // [a-z]
+    Set(Vec<char>),        // [abc]
+    Multi(Vec<CharClass>), // [a-zA-Z0-9] — union of multiple sub-classes
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -124,6 +125,48 @@ fn parse_concat(chars: &mut Peekable<Chars<'_>>) -> Result<RegexAST, String> {
                 chars.next();
                 nodes.push(RegexAST::OneOrMore(Box::new(node)));
             }
+            Some(&'{') => {
+                // `{n}`, `{n,}`, or `{n,m}` repetition quantifier.
+                chars.next(); // consume '{'
+                let min = parse_number(chars)?;
+                let max_opt = if chars.peek() == Some(&',') {
+                    chars.next(); // consume ','
+                    if chars.peek() == Some(&'}') {
+                        None // {n,} — unbounded upper limit
+                    } else {
+                        Some(parse_number(chars)?)
+                    }
+                } else {
+                    Some(min) // {n} — exact count
+                };
+                if chars.next() != Some('}') {
+                    return Err("Expected '}' to close repetition quantifier".to_string());
+                }
+                if let Some(max) = max_opt {
+                    if max < min {
+                        return Err(format!("{{{min},{max}}} invalid: min > max"));
+                    }
+                }
+                // Expand inline: `min` required copies then optional remainder.
+                // E.g. {2,4} → node node node? node?
+                //      {2,}  → node node node*
+                let mut seq: Vec<RegexAST> = (0..min).map(|_| node.clone()).collect();
+                match max_opt {
+                    None => seq.push(RegexAST::ZeroOrMore(Box::new(node))),
+                    Some(max) => {
+                        for _ in min..max {
+                            seq.push(RegexAST::ZeroOrOne(Box::new(node.clone())));
+                        }
+                    }
+                }
+                if seq.is_empty() {
+                    // {0} or {0,0}: zero occurrences — contributes nothing
+                } else if seq.len() == 1 {
+                    nodes.push(seq.remove(0));
+                } else {
+                    nodes.push(RegexAST::Concat(seq));
+                }
+            }
             _ => nodes.push(node),
         }
     }
@@ -146,22 +189,58 @@ fn parse_bracket(chars: &mut Peekable<Chars<'_>>) -> Result<RegexAST, String> {
     while let Some(ch) = chars.next() {
         if ch == ']' {
             if !raw.is_empty() {
-                classes.push(CharClass::Set(raw));
+                classes.push(CharClass::Set(std::mem::take(&mut raw)));
             }
-            return Ok(RegexAST::Class(
-                classes.pop().unwrap_or(CharClass::Set(vec![])),
-            ));
+            // Return the right variant based on how many sub-classes we collected.
+            return Ok(RegexAST::Class(match classes.len() {
+                0 => CharClass::Set(vec![]),
+                1 => classes.remove(0),
+                _ => CharClass::Multi(classes),
+            }));
         }
         if chars.peek() == Some(&'-') {
-            chars.next();
-            if let Some(end) = chars.next() {
-                classes.push(CharClass::Range(ch, end));
-                continue;
+            // Peek one step further: if '-' is immediately before ']' (or end of input)
+            // it is a literal hyphen, not a range operator.
+            chars.next(); // tentatively consume '-'
+            match chars.peek() {
+                Some(&']') | None => {
+                    // Literal '-' at the end of the class.
+                    raw.push(ch);
+                    raw.push('-');
+                }
+                Some(_) => {
+                    // Genuine range: flush pending raw chars first so they form their
+                    // own Set, then push the Range.
+                    if !raw.is_empty() {
+                        classes.push(CharClass::Set(std::mem::take(&mut raw)));
+                    }
+                    let end_ch = chars.next().unwrap(); // safe: we just peeked Some(_)
+                    classes.push(CharClass::Range(ch, end_ch));
+                }
             }
+            continue;
         }
         raw.push(ch);
     }
     Err("Unmatched '['".to_string())
+}
+
+/// Parses a decimal number from the char stream (used by `{n,m}` quantifiers).
+fn parse_number(chars: &mut Peekable<Chars<'_>>) -> Result<usize, String> {
+    let mut digits = String::new();
+    while let Some(&ch) = chars.peek() {
+        if ch.is_ascii_digit() {
+            chars.next();
+            digits.push(ch);
+        } else {
+            break;
+        }
+    }
+    if digits.is_empty() {
+        Err("Expected a number in repetition quantifier".to_string())
+    } else {
+        digits.parse::<usize>().map_err(|e| e.to_string())
+    }
 }
 
 fn parse_escape(chars: &mut Peekable<Chars<'_>>) -> Result<RegexAST, String> {
@@ -204,6 +283,9 @@ fn match_class(class: &CharClass, c: char, case_sensitive: bool) -> bool {
                 chars.iter().any(|&ch| chars_eq_ci(ch, c))
             }
         }
+        CharClass::Multi(classes) => classes
+            .iter()
+            .any(|cls| match_class(cls, c, case_sensitive)),
     }
 }
 
@@ -454,6 +536,14 @@ fn main() {
     assert_eq!(regex_search("cat|dog", "I love dogs"), Ok(true));
     assert_eq!(regex_search("cat|dog", "I love cats"), Ok(true));
     assert_eq!(regex_search("a(b|c)d", "abd"), Ok(true));
+    assert_eq!(
+        regex_search(
+            r#"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"#,
+            "user@mail.example.co.uk"
+        ),
+        Ok(true)
+    );
+    assert_eq!(regex_search("[.]", "8 k81.5 T71"), Ok(true));
     println!("All original assertions pass.\n");
 
     // ── 2. find_all: byte positions — also exercises the new `+` quantifier ───

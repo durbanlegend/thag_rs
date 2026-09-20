@@ -60,6 +60,9 @@ pub struct SearchOptions {
     /// `true` = dotall mode: `.` matches `\n` as well as every other character.
     /// Equivalent to the inline flag `(?s)`.  Default `false`.
     pub dot_all: bool,
+    /// `true` = multiline mode: `^` matches after `\n` and `$` matches before `\n`.
+    /// Equivalent to the inline flag `(?m)`.  Default `false`.
+    pub multiline: bool,
 }
 
 impl Default for SearchOptions {
@@ -69,6 +72,7 @@ impl Default for SearchOptions {
             whole_word: false,
             use_regex: true,
             dot_all: false,
+            multiline: false,
         }
     }
 }
@@ -312,6 +316,8 @@ struct MatchCtx {
     case_sensitive: bool,
     /// When `true`, `.` (Wildcard) matches `\n`.  Off by default.
     dot_all: bool,
+    /// When `true`, `^` matches after `\n` and `$` matches before `\n`.
+    multiline: bool,
 }
 
 impl MatchCtx {
@@ -319,6 +325,7 @@ impl MatchCtx {
         Self {
             case_sensitive: opts.case_sensitive,
             dot_all: opts.dot_all,
+            multiline: opts.multiline,
         }
     }
 }
@@ -382,14 +389,19 @@ fn match_ast(nodes: &[RegexAST], text: &[char], cursor: usize, ctx: MatchCtx) ->
 
     match head {
         RegexAST::AnchorStart => {
-            if cursor == 0 {
-                match_ast(tail, text, 0, ctx)
+            // Matches at position 0, or (in multiline mode) right after a '\n'.
+            let at_start = cursor == 0 || (ctx.multiline && cursor > 0 && text[cursor - 1] == '\n');
+            if at_start {
+                match_ast(tail, text, cursor, ctx)
             } else {
                 None
             }
         }
         RegexAST::AnchorEnd => {
-            if cursor == text.len() {
+            // Matches at end-of-string, or (in multiline mode) right before a '\n'.
+            let at_end = cursor == text.len()
+                || (ctx.multiline && cursor < text.len() && text[cursor] == '\n');
+            if at_end {
                 match_ast(tail, text, cursor, ctx)
             } else {
                 None
@@ -566,7 +578,8 @@ fn strip_inline_flags<'a>(pattern: &'a str, ctx: &mut MatchCtx) -> &'a str {
             match c {
                 's' => ctx.dot_all = true,
                 'i' => ctx.case_sensitive = false,
-                _ => {} // m, u, x: recognised but not yet implemented
+                'm' => ctx.multiline = true,
+                _ => {} // u, x: recognised but not yet implemented
             }
         }
         p = &p[3 + rel..]; // skip '(' + '?' + inner chars + ')'
@@ -598,8 +611,8 @@ fn regex_find_all(
     let mut pos = 0_usize;
 
     while pos <= text.len() {
-        if anchored && pos > 0 {
-            break; // `^` only matches at position 0
+        if anchored && !ctx.multiline && pos > 0 {
+            break; // without multiline, `^` only matches at position 0
         }
         match match_ast(&nodes, &text, pos, ctx) {
             Some(end) => {
@@ -811,6 +824,7 @@ fn main() {
                 whole_word: true,
                 use_regex: true,
                 dot_all: false,
+                multiline: false,
             },
         )
         .unwrap(),
@@ -1056,6 +1070,7 @@ mod tests {
             case_sensitive: false,
             whole_word: false,
             dot_all: false,
+            multiline: false,
         };
         assert_eq!(
             find_ranges("hello", "HELLO hello Hello", &opts).unwrap(),
@@ -1259,6 +1274,37 @@ dolor sit amet"
 dolor sit amet"
             ),
             Ok(true)
+        );
+    }
+
+    #[test]
+    fn test_ryo_regex_search_multiline() {
+        // haystack byte layout: f=0 o=1 o=2 \n=3 b=4 a=5 r=6 \n=7 b=8 a=9 z=10
+        let hay = "foo\nbar\nbaz";
+        let opts = SearchOptions::default();
+
+        // Without (?m), ^ only matches at position 0.
+        assert!(
+            find_ranges("^bar", hay, &opts).unwrap().is_empty(),
+            "^bar should not match mid-string without multiline"
+        );
+
+        // With (?m), ^ matches after every \n.
+        assert_eq!(find_ranges(r"(?m)^bar", hay, &opts).unwrap(), vec![4..7]);
+
+        // Without (?m), $ only matches at end-of-string.
+        assert!(
+            find_ranges("foo$", hay, &opts).unwrap().is_empty(),
+            "foo$ should not match mid-string without multiline"
+        );
+
+        // With (?m), $ also matches before every \n.
+        assert_eq!(find_ranges(r"(?m)foo$", hay, &opts).unwrap(), vec![0..3]);
+
+        // Combined: (?m)^..$ independently anchors to each line.
+        assert_eq!(
+            find_ranges(r"(?m)^[a-z]+$", hay, &opts).unwrap(),
+            vec![0..3, 4..7, 8..11]
         );
     }
 }

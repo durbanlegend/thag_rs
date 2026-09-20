@@ -607,7 +607,7 @@ pub enum PopupMode {
     None,
 }
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 /// Define `vim`-style editor states
 pub enum EditorMode {
     /// Text editing mode (tui-textarea consumes text input)
@@ -705,18 +705,41 @@ pub struct Editor<'a> {
     pub key_handler: Option<Box<KeyHandlerClosure>>,
     /// The navigation state machine.
     pub navigation: NavigationState,
+    /// The editor mode to return to from searches.
+    pub previous_mode: EditorMode,
     /// A search box.
     pub search: SearchBox<'a>,
+}
+
+impl Default for Editor<'_> {
+    fn default() -> Self {
+        Self {
+            return_text: true,
+            initial_content: "",
+            save_path: None,
+            history_path: None,
+            history: None,
+            textarea: TextArea::default(),
+            maybe_term: None,
+            popup: PopupMode::None,
+            saved: false,
+            selection_highlight_fg: Role::EMPH,
+            popup_scroll: PopupScrollState::default(),
+            status_message: String::new(),
+            key_display_lines: vec![],
+            key_display_parms: KeyDisplayParms::default(),
+            key_handler: None,
+            navigation: NavigationState::new(EditorMode::default()),
+            previous_mode: EditorMode::default(),
+            search: SearchBox::default(),
+        }
+    }
 }
 
 impl Editor<'_> {
     #[allow(clippy::too_many_lines)]
     fn handle_key_event(&mut self, key_event: KeyEvent) -> ThagResult<KeyAction> {
         // Handle scrolling in popups before normal editor keys
-        if self.popup != PopupMode::None {
-            self.handle_popup_scroll_keys(key_event);
-            // return Ok(KeyAction::Continue);
-        }
 
         match self.navigation.mode {
             EditorMode::Edit => self.handle_edit_mode(key_event),
@@ -993,7 +1016,7 @@ impl Editor<'_> {
 
     fn close_search(&mut self) {
         self.search.close();
-        self.switch_to_mode(EditorMode::Edit);
+        self.switch_to_mode(self.previous_mode.clone());
         self.textarea.set_search_pattern("").unwrap();
         self.textarea.set_block(
             Block::default()
@@ -1027,6 +1050,13 @@ impl Editor<'_> {
                 self.close_search();
             }
             key!(ctrl - q) => return KeyAction::Quit(self.saved),
+            key!(ctrl - l) => {
+                self.popup = match self.popup {
+                    PopupMode::Keys => PopupMode::None,
+                    _ => PopupMode::Keys,
+                };
+                return KeyAction::ToggleKeyPopup;
+            }
             _ => {
                 if let Some(query) = self.search.input(key_event.into()) {
                     let maybe_err = self.textarea.set_search_pattern(query).err();
@@ -1207,6 +1237,9 @@ impl Editor<'_> {
                 self.switch_to_mode(EditorMode::Edit);
                 self.key_display_parms.title_style = self.navigation.mode.title_style();
             }
+            key!('/') | key!('?') => {
+                self.open_search();
+            }
 
             // --- Large Jumps ---
             key!(g) => {
@@ -1284,6 +1317,7 @@ impl Editor<'_> {
             EditorMode::Search => "text editing: search",
         };
 
+        self.previous_mode = self.navigation.mode.clone();
         self.navigation.mode = editor_mode;
 
         self.status_message.clear();
@@ -1623,7 +1657,7 @@ where
             editor.key_display_lines = match editor.navigation.mode {
                 EditorMode::Edit => edit_mode_keys.clone(),
                 EditorMode::Vim => vim_mode_keys.clone(),
-                EditorMode::Search => vec![],
+                EditorMode::Search => search_mode_keys.clone(),
             };
 
             editor.maybe_term.as_mut().map_or_else(
@@ -2086,10 +2120,18 @@ pub fn display_keys_popup(
     let max_height = f.area().height.saturating_sub(6); // Reserve space for borders and titles
     let content_height = max_height.min(total_rows as u16);
 
+    let title_bottom = format!(
+        "{title_bottom}{}",
+        if total_rows > usize::from(max_height) {
+            " (scroll with mouse wheel)"
+        } else {
+            ""
+        }
+    );
     let block = Block::default()
         .borders(Borders::ALL)
         .title_top(Line::from(title_top).centered())
-        .title_bottom(Line::from(format!("{title_bottom} (scroll with mouse wheel)")).centered())
+        .title_bottom(Line::from(title_bottom).centered())
         .add_modifier(Modifier::BOLD)
         .fg(Color::themed(Role::HD1));
 
@@ -2187,10 +2229,18 @@ pub fn display_help_popup(
     let max_height = f.area().height.saturating_sub(6); // Reserve space for borders and titles
     let content_height = max_height.min(total_rows as u16);
 
+    let title_bottom = format!(
+        "{title_bottom}{}",
+        if total_rows > usize::from(max_height) {
+            " (scroll with mouse wheel)"
+        } else {
+            ""
+        }
+    );
     let block = Block::default()
         .borders(Borders::ALL)
         .title_top(Line::from(title_top).centered())
-        .title_bottom(Line::from(format!("{title_bottom} (scroll with mouse wheel)")).centered())
+        .title_bottom(Line::from(title_bottom).centered())
         .padding(ratatui::widgets::Padding::horizontal(1))
         .add_modifier(Modifier::BOLD)
         .fg(Color::themed(Role::HD1));

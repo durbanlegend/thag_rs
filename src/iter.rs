@@ -7,8 +7,8 @@ use crate::{
     key, lazy_static_var,
     manifest::extract,
     tui_editor::{
-        Editor, EditorMode, Entry, History, KeyAction, KeyDisplayParms, NavigationState, PopupMode,
-        PopupScrollState, RataStyle, SearchBox, script_key_handler, tui_edit,
+        Editor, Entry, History, KeyAction, KeyDisplayParms, PopupMode, RataStyle,
+        script_key_handler, tui_edit,
     },
 };
 use clap::{CommandFactory, Parser};
@@ -697,19 +697,11 @@ fn tui(
     ];
 
     let mut editor = Editor {
-        return_text: true,
         initial_content: &initial_content,
         save_path: Some(save_path.to_path_buf()),
         history_path: Some(&history_path),
         history: Some(history),
         textarea: TextArea::from(initial_content.lines()),
-        maybe_term: None,
-        popup: PopupMode::None,
-        saved: false,
-        selection_highlight_fg: Role::EMPH,
-        popup_scroll: PopupScrollState::default(),
-        status_message: String::new(),
-        key_display_lines: vec![],
         key_display_parms: KeyDisplayParms {
             edit_title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting  ^g / Esc: Switch to Vim mode",
             vim_title: "Edit TUI script.  ^q: quit  ^g / Esc: Switch to Edit mode",
@@ -718,8 +710,7 @@ fn tui(
             ..Default::default()
         },
         key_handler: Some(Box::new(script_key_handler)),
-        navigation: NavigationState::new(EditorMode::default()),
-        search: SearchBox::default(),
+        ..Default::default()
     };
 
     let (key_action, maybe_text) = tui_edit(&event_reader, &mut editor)?;
@@ -798,19 +789,9 @@ pub fn edit_history<R: EventReader + Debug>(
     ];
 
     let mut editor = Editor {
-        return_text: false,
         initial_content,
         save_path: Some(staging_path.to_path_buf()),
-        history_path: None,
-        history: None::<History>,
         textarea: TextArea::from(initial_content.lines()),
-        maybe_term: None,
-        popup: PopupMode::None,
-        saved: false,
-        selection_highlight_fg: Role::EMPH,
-        popup_scroll: PopupScrollState::default(),
-        status_message: String::new(),
-        key_display_lines: vec![],
         key_display_parms: KeyDisplayParms {
             edit_title: "Enter / paste / edit iterator history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting  ^g: Vim mode",
             vim_title: "Enter / paste / edit iterator history.  ^q: quit  ^g: Switch to Edit mode",
@@ -820,8 +801,7 @@ pub fn edit_history<R: EventReader + Debug>(
             ..Default::default()
         },
         key_handler: Some(Box::new(script_key_handler)),
-        navigation: NavigationState::new(EditorMode::default()),
-        search: SearchBox::default(),
+        ..Default::default()
     };
 
     let (key_action, _maybe_text) = tui_edit(event_reader, &mut editor)?;

@@ -1,10 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::{
-    CrosstermEventReader, EventReader, Role, ThagError, ThagResult, V, debug_log,
-    tui_editor::{
-        Editor, EditorMode, History, KeyAction, KeyDisplayParms, NavigationState, PopupMode,
-        PopupScrollState, SearchBox, script_key_handler, tui_edit,
-    },
+    CrosstermEventReader, EventReader, ThagError, ThagResult, V, debug_log,
+    tui_editor::{Editor, History, KeyAction, KeyDisplayParms, script_key_handler, tui_edit},
     vprtln,
 };
 use edit::edit_file;
@@ -76,19 +73,10 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     }
 
     let mut editor = Editor {
-        return_text: true,
         initial_content: &initial_content,
-        save_path: None,
         history_path: Some(&history_path),
         history: Some(history),
         textarea: TextArea::from(initial_content.lines()),
-        maybe_term: None,
-        popup: PopupMode::None,
-        saved: false,
-        selection_highlight_fg: Role::EMPH,
-        popup_scroll: PopupScrollState::default(),
-        status_message: String::new(),
-        key_display_lines: vec![],
         key_display_parms: KeyDisplayParms {
             edit_title: "Enter / paste / edit Rust script.  ^d: submit  ^q: quit  ^l: keys  ^t: toggle highlighting  ^g / Esc: Switch to Vim mode",
             vim_title: "Enter / paste / edit Rust script.  ^q: quit  ^g / Esc: Switch to Edit mode",
@@ -97,8 +85,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
             ..Default::default()
         },
         key_handler: Some(Box::new(script_key_handler)),
-        navigation: NavigationState::new(EditorMode::default()),
-        search: SearchBox::default(),
+        ..Default::default()
     };
     // let add_keys = [
     //     KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),

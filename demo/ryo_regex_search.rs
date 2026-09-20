@@ -57,6 +57,9 @@ pub struct SearchOptions {
     /// `true` = interpret the pattern as a regex (default);
     /// `false` = treat the pattern as a literal string.
     pub use_regex: bool,
+    /// `true` = dotall mode: `.` matches `\n` as well as every other character.
+    /// Equivalent to the inline flag `(?s)`.  Default `false`.
+    pub dot_all: bool,
 }
 
 impl Default for SearchOptions {
@@ -65,6 +68,7 @@ impl Default for SearchOptions {
             case_sensitive: true,
             whole_word: false,
             use_regex: true,
+            dot_all: false,
         }
     }
 }
@@ -301,6 +305,24 @@ fn chars_eq_ci(a: char, b: char) -> bool {
     a.to_lowercase().eq(b.to_lowercase())
 }
 
+/// Flags threaded through the recursive matcher, derived from `SearchOptions`
+/// plus any inline modifiers (`(?s)`, `(?i)`, …) stripped from the pattern.
+#[derive(Clone, Copy)]
+struct MatchCtx {
+    case_sensitive: bool,
+    /// When `true`, `.` (Wildcard) matches `\n`.  Off by default.
+    dot_all: bool,
+}
+
+impl MatchCtx {
+    fn from_opts(opts: &SearchOptions) -> Self {
+        Self {
+            case_sensitive: opts.case_sensitive,
+            dot_all: opts.dot_all,
+        }
+    }
+}
+
 fn match_class(class: &CharClass, c: char, case_sensitive: bool) -> bool {
     match class {
         CharClass::Digit => c.is_ascii_digit(),
@@ -328,21 +350,22 @@ fn match_class(class: &CharClass, c: char, case_sensitive: bool) -> bool {
     }
 }
 
-fn match_single(node: &RegexAST, text: &[char], cs: bool) -> bool {
+fn match_single(node: &RegexAST, text: &[char], ctx: MatchCtx) -> bool {
     if text.is_empty() {
         return false;
     }
     let c = text[0];
     match node {
         RegexAST::Literal(lit) => {
-            if cs {
+            if ctx.case_sensitive {
                 c == *lit
             } else {
                 chars_eq_ci(c, *lit)
             }
         }
-        RegexAST::Wildcard => true,
-        RegexAST::Class(cls) => match_class(cls, c, cs),
+        // Without dotall, '.' does not match newline (standard regex behaviour).
+        RegexAST::Wildcard => ctx.dot_all || c != '\n',
+        RegexAST::Class(cls) => match_class(cls, c, ctx.case_sensitive),
         _ => false,
     }
 }
@@ -350,10 +373,8 @@ fn match_single(node: &RegexAST, text: &[char], cs: bool) -> bool {
 /// Returns `Some(end_char_index)` when `nodes` match from `cursor` onward; `None` otherwise.
 ///
 /// All quantifiers (`*`, `?`, `+`) are **greedy** — they consume as many characters as
-/// possible while still allowing the overall pattern to match.  This is necessary for
-/// correct span reporting: a lazy `\d+` on "123" would spuriously return [0..1] on the
-/// first attempt and never produce the full [0..3] span.
-fn match_ast(nodes: &[RegexAST], text: &[char], cursor: usize, cs: bool) -> Option<usize> {
+/// possible while still allowing the overall pattern to match.
+fn match_ast(nodes: &[RegexAST], text: &[char], cursor: usize, ctx: MatchCtx) -> Option<usize> {
     if nodes.is_empty() {
         return Some(cursor);
     }
@@ -362,14 +383,14 @@ fn match_ast(nodes: &[RegexAST], text: &[char], cursor: usize, cs: bool) -> Opti
     match head {
         RegexAST::AnchorStart => {
             if cursor == 0 {
-                match_ast(tail, text, 0, cs)
+                match_ast(tail, text, 0, ctx)
             } else {
                 None
             }
         }
         RegexAST::AnchorEnd => {
             if cursor == text.len() {
-                match_ast(tail, text, cursor, cs)
+                match_ast(tail, text, cursor, ctx)
             } else {
                 None
             }
@@ -377,26 +398,24 @@ fn match_ast(nodes: &[RegexAST], text: &[char], cursor: usize, cs: bool) -> Opti
         RegexAST::Alternation(left, right) => {
             let mut lseq = vec![*left.clone()];
             lseq.extend_from_slice(tail);
-            match_ast(&lseq, text, cursor, cs).or_else(|| {
+            match_ast(&lseq, text, cursor, ctx).or_else(|| {
                 let mut rseq = vec![*right.clone()];
                 rseq.extend_from_slice(tail);
-                match_ast(&rseq, text, cursor, cs)
+                match_ast(&rseq, text, cursor, ctx)
             })
         }
         RegexAST::Literal(_) | RegexAST::Wildcard | RegexAST::Class(_) => {
-            if match_single(head, &text[cursor..], cs) {
-                match_ast(tail, text, cursor + 1, cs)
+            if match_single(head, &text[cursor..], ctx) {
+                match_ast(tail, text, cursor + 1, ctx)
             } else {
                 None
             }
         }
         RegexAST::WordBoundary => {
-            // Zero-width assertion: succeeds when the position is between a word
-            // character (alphanumeric / '_') and a non-word character (or string edge).
             let before_word = cursor > 0 && is_word_char(text[cursor - 1]);
             let after_word = cursor < text.len() && is_word_char(text[cursor]);
             if before_word != after_word {
-                match_ast(tail, text, cursor, cs)
+                match_ast(tail, text, cursor, ctx)
             } else {
                 None
             }
@@ -404,74 +423,59 @@ fn match_ast(nodes: &[RegexAST], text: &[char], cursor: usize, cs: bool) -> Opti
         RegexAST::ZeroOrOne(inner) => {
             // Greedy: try one occurrence of inner (which may span multiple characters)
             // by prepending it to the remaining tail and delegating to match_ast.
-            // This correctly handles multi-char inners such as groups `(?:...)`.
             let mut one_seq = vec![inner.as_ref().clone()];
             one_seq.extend_from_slice(tail);
-            if let Some(end) = match_ast(&one_seq, text, cursor, cs) {
+            if let Some(end) = match_ast(&one_seq, text, cursor, ctx) {
                 return Some(end);
             }
-            match_ast(tail, text, cursor, cs)
+            match_ast(tail, text, cursor, ctx)
         }
         RegexAST::Repeat(inner, min, max_opt) => {
-            // Greedy repetition that avoids catastrophic backtracking.
-            //
-            // Strategy: make one linear forward pass to collect every cursor position
-            // reachable after 0, 1, 2, … consecutive matches of `inner`.  Then try
-            // appending `tail` from the longest match down to `min`.  Each tail
-            // attempt is independent — we never re-explore inner matches.
-            //
-            // This mirrors how `ZeroOrMore` handles single-char atoms (counting
-            // forward, trying tail positions backward) but works for any inner
-            // pattern, including multi-character groups.
+            // Greedy repetition without catastrophic backtracking: pre-collect all
+            // cursor positions reachable by repeating `inner`, then try tails linearly.
             let inner_nodes: Vec<RegexAST> = match inner.as_ref() {
                 RegexAST::Concat(v) => v.clone(),
                 other => vec![other.clone()],
             };
             let max_count = max_opt.unwrap_or(text.len().saturating_add(1));
-
-            // positions[k] = cursor after k successful matches of inner.
             let mut positions = vec![cursor];
             while positions.len() <= max_count {
                 let last = *positions.last().unwrap();
-                match match_ast(&inner_nodes, text, last, cs) {
+                match match_ast(&inner_nodes, text, last, ctx) {
                     Some(end) if end > last => positions.push(end),
                     _ => break,
                 }
             }
-
             if positions.len() <= *min {
-                return None; // fewer than `min` matches achieved
+                return None;
             }
-
-            // Greedy: try from the longest match down to `min`.
             for i in (*min..positions.len()).rev() {
-                if let Some(end) = match_ast(tail, text, positions[i], cs) {
+                if let Some(end) = match_ast(tail, text, positions[i], ctx) {
                     return Some(end);
                 }
             }
             None
         }
         RegexAST::LookAhead(inner) => {
-            // Zero-width positive lookahead: test whether `inner` matches at the
-            // current position WITHOUT consuming any characters.  If the sub-match
-            // succeeds, continue matching `tail` from the same cursor.
+            // Zero-width positive lookahead: test `inner` at the current position
+            // without consuming characters, then continue with `tail` from the same cursor.
             let inner_nodes: Vec<RegexAST> = match inner.as_ref() {
                 RegexAST::Concat(v) => v.clone(),
                 other => vec![other.clone()],
             };
-            match match_ast(&inner_nodes, text, cursor, cs) {
-                Some(_) => match_ast(tail, text, cursor, cs),
+            match match_ast(&inner_nodes, text, cursor, ctx) {
+                Some(_) => match_ast(tail, text, cursor, ctx),
                 None => None,
             }
         }
         RegexAST::ZeroOrMore(inner) => {
-            // Greedy: find the maximum run length, then backtrack until tail matches.
+            // Greedy: count the maximum run of single-char matches, then backtrack.
             let mut max_i = 0;
-            while cursor + max_i < text.len() && match_single(inner, &text[cursor + max_i..], cs) {
+            while cursor + max_i < text.len() && match_single(inner, &text[cursor + max_i..], ctx) {
                 max_i += 1;
             }
             for count in (0..=max_i).rev() {
-                if let Some(end) = match_ast(tail, text, cursor + count, cs) {
+                if let Some(end) = match_ast(tail, text, cursor + count, ctx) {
                     return Some(end);
                 }
             }
@@ -479,15 +483,15 @@ fn match_ast(nodes: &[RegexAST], text: &[char], cursor: usize, cs: bool) -> Opti
         }
         RegexAST::OneOrMore(inner) => {
             // Greedy: like ZeroOrMore but requires at least one match.
-            if !match_single(inner, &text[cursor..], cs) {
+            if !match_single(inner, &text[cursor..], ctx) {
                 return None;
             }
             let mut max_i = 1;
-            while cursor + max_i < text.len() && match_single(inner, &text[cursor + max_i..], cs) {
+            while cursor + max_i < text.len() && match_single(inner, &text[cursor + max_i..], ctx) {
                 max_i += 1;
             }
             for count in (1..=max_i).rev() {
-                if let Some(end) = match_ast(tail, text, cursor + count, cs) {
+                if let Some(end) = match_ast(tail, text, cursor + count, ctx) {
                     return Some(end);
                 }
             }
@@ -496,7 +500,7 @@ fn match_ast(nodes: &[RegexAST], text: &[char], cursor: usize, cs: bool) -> Opti
         RegexAST::Concat(inner) => {
             let mut seq = inner.clone();
             seq.extend_from_slice(tail);
-            match_ast(&seq, text, cursor, cs)
+            match_ast(&seq, text, cursor, ctx)
         }
     }
 }
@@ -541,12 +545,43 @@ pub fn find_ranges(
 
 // ═══════════════════════════ Search backends ══════════════════════════════════
 
+/// Strips leading inline flag groups such as `(?s)`, `(?i)`, `(?si)` from
+/// `pattern`, applying the recognised flags to `ctx`, and returns the remainder.
+///
+/// Only groups whose content consists entirely of letters from `"simux"` are
+/// treated as flag groups; anything else (e.g. `(?:...)`, `(?=...)`) is left
+/// untouched.  Currently applied flags: `s` → dotall, `i` → case-insensitive.
+fn strip_inline_flags<'a>(pattern: &'a str, ctx: &mut MatchCtx) -> &'a str {
+    let mut p = pattern;
+    loop {
+        if !p.starts_with("(?") {
+            break;
+        }
+        let Some(rel) = p[2..].find(')') else { break };
+        let inner = &p[2..2 + rel];
+        if inner.is_empty() || !inner.chars().all(|c| "simux".contains(c)) {
+            break;
+        }
+        for c in inner.chars() {
+            match c {
+                's' => ctx.dot_all = true,
+                'i' => ctx.case_sensitive = false,
+                _ => {} // m, u, x: recognised but not yet implemented
+            }
+        }
+        p = &p[3 + rel..]; // skip '(' + '?' + inner chars + ')'
+    }
+    p
+}
+
 fn regex_find_all(
     pattern: &str,
     haystack: &str,
     opts: &SearchOptions,
 ) -> Result<Vec<Match>, String> {
-    let ast = parse_regex(pattern)?;
+    let mut ctx = MatchCtx::from_opts(opts);
+    let pat = strip_inline_flags(pattern, &mut ctx);
+    let ast = parse_regex(pat)?;
     let text: Vec<char> = haystack.chars().collect();
 
     // Precompute the byte offset of every character position.
@@ -566,7 +601,7 @@ fn regex_find_all(
         if anchored && pos > 0 {
             break; // `^` only matches at position 0
         }
-        match match_ast(&nodes, &text, pos, opts.case_sensitive) {
+        match match_ast(&nodes, &text, pos, ctx) {
             Some(end) => {
                 if !opts.whole_word || is_whole_word(&text, pos, end) {
                     results.push(Match {
@@ -775,6 +810,7 @@ fn main() {
                 case_sensitive: false,
                 whole_word: true,
                 use_regex: true,
+                dot_all: false,
             },
         )
         .unwrap(),
@@ -1019,6 +1055,7 @@ mod tests {
             use_regex: false,
             case_sensitive: false,
             whole_word: false,
+            dot_all: false,
         };
         assert_eq!(
             find_ranges("hello", "HELLO hello Hello", &opts).unwrap(),
@@ -1119,6 +1156,25 @@ mod tests {
     }
 
     #[test]
+    fn test_ryo_regex_search_iso_dates_valid() {
+        let pat = r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$";
+        let opts = SearchOptions::default();
+        assert_range_match(pat, "2026-09-20", &opts);
+    }
+
+    #[test]
+    fn test_ryo_regex_search_iso_dates_invalid() {
+        let pat = r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$";
+        let opts = SearchOptions::default();
+        assert!(find_ranges(pat, "2026-13-20", &opts).unwrap().is_empty());
+        assert!(find_ranges(pat, "2026-09-32", &opts).unwrap().is_empty());
+        assert!(find_ranges(pat, "2026-9-20", &opts).unwrap().is_empty());
+        assert!(find_ranges(pat, "2026-09-9", &opts).unwrap().is_empty());
+        assert!(find_ranges(pat, "2026-00-20", &opts).unwrap().is_empty());
+        assert!(find_ranges(pat, "2026-09-00", &opts).unwrap().is_empty());
+    }
+
+    #[test]
     fn test_ryo_regex_search_decimal_numbers() {
         let ranges = find_ranges(
             r"\d+\.\d+",
@@ -1160,5 +1216,49 @@ mod tests {
         )
         .unwrap();
         assert_eq!(ranges, vec![8..19, 28..36]);
+    }
+
+    #[test]
+    fn test_ryo_regex_search_demos() {
+        assert_eq!(regex_search(r"c\dat", "c3at"), Ok(true));
+        assert_eq!(regex_search("[a-z]ox", "fox"), Ok(true));
+        assert_eq!(regex_search(r"cat\s", "cat "), Ok(true));
+        assert_eq!(regex_search("^abc", "abcdef"), Ok(true));
+        assert_eq!(regex_search("^abc", "xabcdef"), Ok(false));
+        assert_eq!(regex_search("xyz$", "wuvxyz"), Ok(true));
+        assert_eq!(regex_search("cat|dog", "I love dogs"), Ok(true));
+        assert_eq!(regex_search("cat|dog", "I love cats"), Ok(true));
+        assert_eq!(regex_search("a(b|c)d", "abd"), Ok(true));
+        assert_eq!(
+            regex_search(
+                r#"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"#,
+                "user@mail.example.co.uk"
+            ),
+            Ok(true)
+        );
+        assert_eq!(regex_search("[.]", "8 k81.5 T71"), Ok(true));
+    }
+
+    #[test]
+    fn test_ryo_regex_search_edge_cases() {
+        assert_eq!(regex_search(r"^$", "lorem ipsum"), Ok(false));
+        // global
+        assert_eq!(
+            regex_search(
+                r"\n",
+                r"lorem ipsum
+dolor sit amet"
+            ),
+            Ok(false)
+        );
+        assert_eq!(regex_search("", "lorem ipsum"), Ok(true)); // empty pattern matches at every position
+        assert_eq!(
+            regex_search(
+                r"(?s)m.d",
+                r"lorem ipsum
+dolor sit amet"
+            ),
+            Ok(true)
+        );
     }
 }

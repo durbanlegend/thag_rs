@@ -21,9 +21,12 @@ pub struct HelpSystem {
     pub categories: Vec<String>,
     /// Version information
     pub version: Option<String>,
-    /// Named options: `(flags_string, description)`, e.g. `("-o, --output <FILE>", "Output path")`.
+    /// Named options: `(flags_string, description)`, e.g. `("-o, --output <FILE>")`.
     /// Populated via [`HelpSystem::with_options`]; displayed below the hard-coded `-h, --help` entry.
     pub options: Vec<(String, String)>,
+    /// Named arguments: `(label, description)`, e.g. `("PATH Output path")`.
+    /// Populated via [`HelpSystem::with_args``]; displayed below the hard-coded `-h, --help` entry.
+    pub args: Vec<(String, String)>,
 }
 
 impl Default for HelpSystem {
@@ -46,6 +49,7 @@ impl HelpSystem {
             categories: Vec::new(),
             version: None,
             options: Vec::new(),
+            args: Vec::new(),
         }
     }
 
@@ -113,6 +117,22 @@ impl HelpSystem {
         self
     }
 
+    /// Append named arguments to the ARGUMENTS section.
+    ///
+    /// Each entry is `(label, description)` where `label` is a string such as
+    /// `"-n, --no-watch"` and `description` is a short explanation.
+    /// Descriptions are aligned to the same column in the output.
+    #[must_use]
+    pub fn with_args(
+        mut self,
+        options: impl IntoIterator<Item = (&'static str, &'static str)>,
+    ) -> Self {
+        for (label, desc) in options {
+            self.options.push((label.to_string(), desc.to_string()));
+        }
+        self
+    }
+
     /// Check if help was requested and display it if so
     #[must_use]
     pub fn check_help(&self) -> bool {
@@ -153,7 +173,7 @@ impl HelpSystem {
                             help.categories =
                                 value.split(',').map(|cat| cat.trim().to_string()).collect();
                         }
-                        // //# Option: <flags>: <description>
+                        // //# Option: <>: <description>
                         // The second colon separates the flags string from the description.
                         // If no second colon is present, the whole value is treated as the
                         // flags string with an empty description.
@@ -163,6 +183,14 @@ impl HelpSystem {
                                     .push((flags.trim().to_string(), desc.trim().to_string()));
                             } else {
                                 help.options.push((value.to_string(), String::new()));
+                            }
+                        }
+                        "argument" => {
+                            if let Some((arg, desc)) = value.split_once(':') {
+                                help.args
+                                    .push((arg.trim().to_string(), desc.trim().to_string()));
+                            } else {
+                                help.args.push((value.to_string(), String::new()));
                             }
                         }
                         _ => {}
@@ -231,6 +259,7 @@ impl fmt::Display for HelpSystem {
         let col_width = self
             .options
             .iter()
+            .chain(self.args.iter())
             .map(|(flags, _)| flags.len())
             .max()
             .unwrap_or(0)
@@ -238,6 +267,10 @@ impl fmt::Display for HelpSystem {
         writeln!(f, "    {:<col_width$}   Print help", "-h, --help")?;
         for (flags, desc) in &self.options {
             writeln!(f, "    {flags:<col_width$}   {desc}")?;
+        }
+        writeln!(f, "\nARGUMENTS:")?;
+        for (label, desc) in &self.args {
+            writeln!(f, "    {label:<col_width$}   {desc}")?;
         }
 
         if !self.categories.is_empty() {
@@ -257,9 +290,7 @@ macro_rules! help_system {
     }};
 
     // Simplified version - just create with tool name
-    ($tool_name:expr) => {{
-        $crate::help_system::HelpSystem::new().with_version(env!("CARGO_PKG_VERSION"))
-    }};
+    ($tool_name:expr) => {{ $crate::help_system::HelpSystem::new().with_version(env!("CARGO_PKG_VERSION")) }};
 }
 
 /// Convenience function to check for help and exit if found

@@ -23,29 +23,30 @@ default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_com
 opt-level = 3       # Apply maximum performance optimizations
 debug = true
 */
-/// A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
-/// `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the
+/// A fast lightweight multi-lingual GUI markdown viewer.
+///
+/// Relative links are resolved relative to the parent directory of the
 /// current markdown file, so navigation between linked documents works correctly.
-/// Supports back/forward history, light/dark/system theme switching via `egui_theme_switch`, zoom,
-/// font scaling, opening a new file (Cmd/Ctrl-O), a left-side table of contents panel (§ / Cmd/Ctrl-T),
-/// text search with match counter and section navigation (Cmd/Ctrl-F), refresh from disk (Cmd/Ctrl-R),
-/// live file watching (auto-reloads when the file changes on disk), and a help screen (F1).
-/// Improved readability over the egui defaults: near-black text in light mode,
-/// near-white in dark mode, warm paper background, higher-contrast code block backgrounds, and
-/// GitHub-style syntax highlighting for code blocks.
+///
+/// Features:
+/// - Support for 28 languages, according to your LOCALE or LANG system/environment variable. E.g. LOCALE=fr.
+/// - Multi-file navigation: files can be selected or dragged and dropped singly or in batches as and when needed.
+/// - Large document support.
+/// - Light/dark/system theme switching.
+/// - Zoom and font scaling with reset.
+/// - Optional table of contents sidebar.
+/// - Full-document search with options for case Iin)sensitive, whole word and regular expression searches.
+/// - Search across mixed text and code spans and link anchors.
+/// - Automatic live file watching and refresh
+///
 /// On Unix systems, launching from a terminal automatically detaches the process so the terminal
 /// is returned immediately (use --foreground to suppress this).
-///
-/// Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
-/// an image produces an invisible zero-size hyperlink. If you want a clickable link alongside an image,
-/// add an explicit text link in the markdown below it. You may also notice that it does not handle banners
-/// well.
-/// The MSRV of this program is 1.95 as dictated by `egui_commonmark`.
-//# Purpose: GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature when built as a tool, on account of its significant additional dependencies.
+//# Purpose: A GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature when built as a tool, on account of its significant additional dependencies.
 //# Categories: crates, gui, tools
 //# Usage: thag_md_view [OPTIONS] [PATH]
-//# Option: PATH: Markdown file to open; launches an interactive file-picker if omitted
-//# Option: --foreground: Stay attached to the launching terminal (Unix only)
+//# Option: --foreground: Stay attached to the launching terminal (Unix only). Primarily for debugging.
+//# Option: --version (-V): Print version number and exit.
+//# Argument: [PATH]: Optional initial markdown file to open
 use eframe::egui;
 use egui::{
     Color32,
@@ -68,9 +69,39 @@ use std::{
 };
 use thag_proc_macros::copy_resource_dir;
 
-const HIST_BACK: &'static str = "\u{25c0}";
-const HIST_FORWARD: &'static str = "\u{25b6}";
-const OPEN_FILES: &'static str = "\u{1f4d6}\u{2026}";
+const CMD_LINE_HELP: &str = r"A fast lightweight multi-lingual GUI markdown viewer.
+
+Relative links are resolved relative to the parent directory of the
+current markdown file, so navigation between linked documents works correctly.
+
+Features:
+- Support for 28 languages, according to your LOCALE or LANG system/environment variable. E.g. LOCALE=fr.
+- Multi-file navigation: files can be selected or dragged and dropped singly or in batches as and when needed.
+- Large document support.
+- Light/dark/system theme switching.
+- Zoom and font scaling with reset.
+- Optional table of contents sidebar.
+- Full-document search with options for case Iin)sensitive, whole word and regular expression searches.
+- Search across mixed text and code spans and link anchors.
+- Automatic live file watching and refresh
+
+On Unix systems, launching from a terminal automatically detaches the process so the terminal
+is returned immediately (use --foreground to suppress this).
+
+USAGE:
+    thag_md_view [OPTIONS] [PATH]
+
+OPTIONS:
+    -h, --help       Print help
+    --foreground     Stay attached to the launching terminal (Unix only). Primarily for debugging.
+    --version (-V)   Print version number and exit.
+
+ARGUMENTS:
+    [PATH]           Optional initial markdown file to open";
+
+const HIST_BACK_ICON: &str = "\u{25c0}";
+const HIST_FWD_ICON: &str = "\u{25b6}";
+const OPEN_FILES_ICON: &str = "\u{1f4d6}\u{2026}";
 
 #[cfg(target_os = "macos")]
 const MOD: &str = "Cmd";
@@ -631,6 +662,23 @@ fn main() -> eframe::Result<()> {
     // Strip internal markers before processing positional arguments.
     let args: Vec<String> = env::args().filter(|a| a != "--foreground").collect();
 
+    if args.contains(&"--help".to_string()) || args.contains(&"-h".to_string()) {
+        eprintln!("{CMD_LINE_HELP}");
+        return Ok(());
+    }
+
+    if args.contains(&"--version".to_string()) || args.contains(&"-V".to_string()) {
+        eprintln!(
+            "{} version {}",
+            PathBuf::from(&args[0])
+                .file_name()
+                .unwrap()
+                .to_string_lossy(),
+            env!("CARGO_PKG_VERSION")
+        );
+        return Ok(());
+    }
+
     let selected_file: Option<PathBuf> = if args.len() > 1 {
         let input_path = Path::new(&args[1]);
         if !input_path.exists() {
@@ -666,9 +714,9 @@ fn main() -> eframe::Result<()> {
             let raw_content = t!(
                 "welcome.instruction",
                 cmd = MOD,
-                open_files = OPEN_FILES,
-                hist_back = HIST_BACK,
-                hist_forward = HIST_FORWARD
+                open_files = OPEN_FILES_ICON,
+                hist_back = HIST_BACK_ICON,
+                hist_forward = HIST_FWD_ICON
             )
             .to_string();
             let (id_injected, toc) = extract_toc_and_inject_ids(&raw_content);
@@ -774,6 +822,13 @@ fn main() -> eframe::Result<()> {
         .unwrap()
         .insert(0, monospace_font.to_owned());
 
+    // Add it to end of proportional list as a fallback, e.g. displaying widgets in help screen
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Proportional)
+        .unwrap()
+        .push(monospace_font.to_owned());
+
     eframe::run_native(
         "Markdown Viewer",
         options,
@@ -803,6 +858,7 @@ enum NavAction {
     None,
     Back,
     Forward,
+    History(usize),
 }
 
 /// The state holder for our egui app.
@@ -822,8 +878,6 @@ struct MarkdownApp {
     history_index: usize,
     /// Multiplicative scale applied to content text only (toolbar stays at 1×).
     font_scale: f32,
-    /// Whether high-contrast colours are active (`true`) or stock egui colours (`false`).
-    enhanced_contrast: bool,
     /// Table of contents entries extracted from the current document.
     toc: Vec<TocEntry>,
     /// Whether the TOC side panel is visible.
@@ -849,7 +903,7 @@ struct MarkdownApp {
     /// Bridge-thread channel: a `()` arrives whenever the watched file changes.
     watcher_rx: Option<Receiver<()>>,
     /// When set, a brief "reloaded" notice is shown in the toolbar until this instant.
-    last_auto_reload: Option<Instant>,
+    last_reload: Option<Instant>,
     /// `true` until the end of the very first frame; used to request key-window focus
     /// on startup so that keyboard shortcuts work without requiring a prior mouse click.
     first_frame: bool,
@@ -876,7 +930,6 @@ impl MarkdownApp {
             history: if path.is_file() { vec![path] } else { vec![] },
             history_index: 0,
             font_scale: 1.0,
-            enhanced_contrast: true,
             toc,
             show_toc: true,
             search_open: false,
@@ -887,7 +940,7 @@ impl MarkdownApp {
             content_heading_positions: Vec::new(),
             watcher: None,
             watcher_rx: None,
-            last_auto_reload: None,
+            last_reload: None,
             first_frame: true,
             use_viewport_cache: content_len >= &VIEWPORT_CACHE_THRESHOLD,
         };
@@ -1062,7 +1115,10 @@ impl MarkdownApp {
     fn reload_file(&mut self) -> bool {
         let path = self.current_file_path.clone();
         if path.is_file() {
-            self.load_file(path)
+            if self.load_file(path) {
+                self.last_reload = Some(Instant::now());
+            }
+            true
         } else {
             false
         }
@@ -1088,6 +1144,13 @@ impl MarkdownApp {
         } else {
             false
         }
+    }
+
+    /// Load a specific entry from the history stack. Returns `true` on success.
+    fn load_history(&mut self, n: usize) -> bool {
+        self.history_index = n;
+        let path = self.history[self.history_index].clone();
+        self.load_file(path)
     }
 
     /// Resolve a clicked relative link, load it, and push it onto history (discarding any
@@ -1164,6 +1227,17 @@ impl MarkdownApp {
             false
         }
     }
+
+    fn remove_search(&mut self, current_path_label: &str) {
+        let last_search_query = self.cache.search_query.clone();
+        // Remove search matches
+        self.cache.search_query = String::new();
+        self.cache
+            .update_search_matches(current_path_label, &self.content);
+        // Restore search box contents for when box is reopened
+        // self.cache.search_query.clone_from(&last_search_query);
+        self.cache.search_query = last_search_query;
+    }
 }
 
 fn add_code_block_themes(cache: &mut CommonMarkCache) {
@@ -1205,13 +1279,12 @@ impl eframe::App for MarkdownApp {
             .unwrap_or_default();
         let current_path_label = self.current_file_path.display().to_string();
         let font_scale = self.font_scale;
-        let enhanced_contrast = self.enhanced_contrast;
         let show_toc = self.show_toc;
         let search_open = self.search_open;
         let show_help = self.show_help;
         // Is the auto-reload notice still within its 2-second display window?
         let show_reload_notice = self
-            .last_auto_reload
+            .last_reload
             .is_some_and(|t| t.elapsed() < Duration::from_secs(2));
         let doc_is_large = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
         let use_viewport_cache = self.use_viewport_cache & doc_is_large;
@@ -1221,7 +1294,6 @@ impl eframe::App for MarkdownApp {
         let mut open_files_requested = false;
         let mut refresh_requested = false;
         let mut new_font_scale = self.font_scale;
-        let mut new_enhanced_contrast = enhanced_contrast;
         let mut new_show_toc = show_toc;
         let mut new_search_open = search_open;
         let mut new_show_help = show_help;
@@ -1316,9 +1388,16 @@ impl eframe::App for MarkdownApp {
         }
         if cmd_f {
             new_search_open = !search_open;
-            if !search_open {
+            if new_search_open {
+                // Run the previous search if any
+                if !self.cache.search_query.is_empty() {
+                    self.cache
+                        .update_search_matches(&current_path_label, &self.content);
+                }
                 // Opening the bar — request focus for the text field.
                 self.search_focus = true;
+            } else {
+                self.remove_search(&current_path_label);
             }
         }
         if cmd_r && self.current_file_path.is_file() {
@@ -1327,9 +1406,10 @@ impl eframe::App for MarkdownApp {
         if f1_key || (escape_key && show_help) {
             new_show_help = !show_help;
         }
-        // Search navigation (only meaningful when the bar is open).
+        // Esc should close the search box and remove the search.
         if new_search_open && search_escape {
             new_search_open = false;
+            self.remove_search(&current_path_label);
         }
 
         // ── Top panel: toolbar ────────────────────────────────────────────────────────────
@@ -1365,33 +1445,39 @@ impl eframe::App for MarkdownApp {
                 });
 
                 if ui
-                    .selectable_label(
-                        enhanced_contrast,
-                        if enhanced_contrast {
-                            "◑➖"
-                        } else {
-                            "◑➕"
-                        },
-                    )
-                    .on_hover_text(if enhanced_contrast {
-                        t!("toolbar.contrast_restore").to_string()
-                    } else {
-                        t!("toolbar.contrast_apply").to_string()
-                    })
-                    .clicked()
-                {
-                    new_enhanced_contrast = !enhanced_contrast;
-                }
-                ui.separator();
-                if ui
-                    .add_enabled(can_go_back, egui::Button::new(HIST_BACK))
+                    .add_enabled(can_go_back, egui::Button::new(HIST_BACK_ICON))
                     .on_hover_text(&back_tip)
                     .clicked()
                 {
                     nav_action = NavAction::Back;
                 }
+
+                if self.history.len() > 1 {
+                    egui::ComboBox::from_id_salt("history_selector")
+                        .selected_text(
+                            self.history
+                                .get(self.history_index)
+                                .map(|p| p.display().to_string())
+                                .unwrap_or_default(),
+                        )
+                        .show_ui(ui, |ui| {
+                            for (index, path) in self.history.iter().enumerate() {
+                                if ui
+                                    .selectable_label(
+                                        index == self.history_index,
+                                        path.display().to_string(),
+                                    )
+                                    .clicked()
+                                {
+                                    nav_action = NavAction::History(index);
+                                    ui.close();
+                                }
+                            }
+                        });
+                }
+
                 if ui
-                    .add_enabled(can_go_forward, egui::Button::new(HIST_FORWARD))
+                    .add_enabled(can_go_forward, egui::Button::new(HIST_FWD_ICON))
                     .on_hover_text(&forward_tip)
                     .clicked()
                 {
@@ -1425,7 +1511,7 @@ impl eframe::App for MarkdownApp {
                     .clicked()
                 {
                     new_search_open = !new_search_open;
-                    if !search_open {
+                    if new_search_open {
                         self.search_focus = true;
                     }
                 }
@@ -1435,8 +1521,7 @@ impl eframe::App for MarkdownApp {
                     ui.separator();
                     ui.label(
                         egui::RichText::new(t!("status.reloaded").to_string())
-                            .color(ui.visuals().hyperlink_color)
-                            .small(),
+                            .color(ui.visuals().weak_text_color()), // .small(),
                     )
                     .on_hover_text(t!("status.reloaded_tip").to_string());
                     // Keep asking for repaints until the notice expires.
@@ -1690,15 +1775,15 @@ impl eframe::App for MarkdownApp {
                         self.cache.go_to_match(1);
                     }
 
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui
-                            .small_button("x")
-                            .on_hover_text(t!("search.close_tip").to_string())
-                            .clicked()
-                        {
-                            new_search_open = false;
-                        }
-                    });
+                    if ui
+                        .button("X")
+                        .on_hover_text(t!("search.close_tip").to_string())
+                        .clicked()
+                    {
+                        new_search_open = false;
+                    }
+
+                    ui.separator();
                 });
             });
         }
@@ -1919,43 +2004,43 @@ impl eframe::App for MarkdownApp {
                     .parent()
                     .map_or_else(|| PathBuf::from("."), Path::to_path_buf)
             };
-            if let Some(paths) = FileDialog::new()
+            FileDialog::new()
                 .add_filter("Markdown", &["md", "markdown"])
                 .set_directory(&start_dir)
                 .pick_files()
-            {
-                let mut success = false;
-                for path in paths {
-                    if self.load_and_register_history(path) && !success {
-                        success = true
+                .is_some_and(|paths| {
+                    let mut success = false;
+                    for path in paths {
+                        if self.load_and_register_history(path) && !success {
+                            success = true;
+                        }
                     }
-                }
-                success
-            } else {
-                false // user cancelled
-            }
+                    success
+                })
         } else if !dropped_files.is_empty() {
             let mut success = false;
             for path in dropped_files {
                 if self.load_and_register_history(path) && !success {
-                    success = true
+                    success = true;
                 }
             }
             success
         } else if refresh_requested {
-            self.reload_file()
             // No history change on refresh.
+            let _ = self.reload_file();
+            false
         } else if watcher_triggered {
             // Auto-reload: the file watcher signalled a change on disk.
             // Reload without history change, then stamp the notice timer.
             if self.reload_file() {
-                self.last_auto_reload = Some(Instant::now());
+                self.last_reload = Some(Instant::now());
             }
             false // not a navigation; title stays the same
         } else {
             match nav_action {
                 NavAction::Back => self.go_back(),
                 NavAction::Forward => self.go_forward(),
+                NavAction::History(n) => self.load_history(n),
                 NavAction::None => false,
             }
         };
@@ -1989,10 +2074,6 @@ impl eframe::App for MarkdownApp {
         // check here is a belt-and-braces fallback for any path we may have missed.
         self.use_viewport_cache =
             new_use_viewport_cache && (self.content.len() >= VIEWPORT_CACHE_THRESHOLD);
-        if new_enhanced_contrast != enhanced_contrast {
-            self.enhanced_contrast = new_enhanced_contrast;
-            apply_style(ui.ctx(), new_enhanced_contrast);
-        }
 
         if navigated {
             ui.ctx()
@@ -2012,7 +2093,8 @@ impl eframe::App for MarkdownApp {
                 .open(&mut open)
                 .show(ui, |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
-                        let help_text = t!("help.text").to_string();
+                        let help_text =
+                            t!("help.text", prev = "\u{276e}", next = "\u{276f}").to_string();
                         CommonMarkViewer::new().show(ui, &mut self.help_cache, &help_text);
                     });
                 });
@@ -2067,7 +2149,7 @@ impl FastSvgLoader {
     /// Must match `egui::generate_loader_id!(SvgLoader)` as evaluated inside
     /// the `egui_extras::loaders::svg_loader` module:
     /// `concat!(module_path!(), "::", "SvgLoader")`
-    const ID: &'static str = "egui_extras::loaders::svg_loader::SvgLoader";
+    const ID: &str = "egui_extras::loaders::svg_loader::SvgLoader";
 
     fn new() -> Self {
         let mut options = resvg::usvg::Options::default();

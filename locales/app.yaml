@@ -546,35 +546,35 @@ toolbar.theme_light:
   zu: "Shintsha ku-mode ekhanyayo"
 
 status.reloaded:
-  af: "↻ herlaai"
-  bg: "↻ презаредено"
-  ca: "↻ recarregat"
-  cs: "↻ znovu načteno"
-  cy: "↻ ail-lwythwyd"
-  da: "↻ genindlæst"
-  de: "↻ neu geladen"
-  el: "↻ επαναφορτώθηκε"
-  en: "↻ reloaded"
-  es: "↻ recargado"
-  fi: "↻ ladattu uudelleen"
-  fr: "↻ rechargé"
-  hr: "↻ ponovo učitano"
-  hu: "↻ újratöltve"
-  it: "↻ ricaricato"
-  nb: "↻ lastet inn på nytt"
-  nl: "↻ opnieuw geladen"
-  no: "↻ lastet inn på nytt"
-  pl: "↻ przeładowano"
-  pt: "↻ recarregado"
-  ro: "↻ reîncărcat"
-  ru: "↻ перезагружено"
-  sk: "↻ znovu načítané"
-  sl: "↻ znova naloženo"
-  st: "↻ e tsotlehilwe bocha"
-  sv: "↻ inläst"
-  uk: "↻ перезавантажено"
-  xh: "↻ ilayishiwe kwakhona"
-  zu: "↻ ilayishiwe kabusha"
+  af: "↻ Herlaai"
+  bg: "↻ Презаредено"
+  ca: "↻ Recarregat"
+  cs: "↻ Znovu načteno"
+  cy: "↻ Ail-lwythwyd"
+  da: "↻ Genindlæst"
+  de: "↻ Neu geladen"
+  el: "↻ Επαναφορτώθηκε"
+  en: "↻ Reloaded"
+  es: "↻ Recargado"
+  fi: "↻ Ladattu uudelleen"
+  fr: "↻ Rechargé"
+  hr: "↻ Ponovo učitano"
+  hu: "↻ Újratöltve"
+  it: "↻ Ricaricato"
+  nb: "↻ Lastet inn på nytt"
+  nl: "↻ Opnieuw geladen"
+  no: "↻ Lastet inn på nytt"
+  pl: "↻ Przeładowano"
+  pt: "↻ Recarregado"
+  ro: "↻ Reîncărcat"
+  ru: "↻ Перезагружено"
+  sk: "↻ Znovu načítané"
+  sl: "↻ Znova naloženo"
+  st: "↻ E tsotlehilwe bocha"
+  sv: "↻ Inläst"
+  uk: "↻ Перезавантажено"
+  xh: "↻ Ilayishiwe kwakhona"
+  zu: "↻ Ilayishiwe kabusha"
 
 status.reloaded_tip:
   af: "Lêer op skyf verander — outomaties herlaai"
@@ -1117,24 +1117,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Quit |
 
     The viewer watches the current file for changes and reloads automatically.
-    Use `--no-detach` or `--foreground` on the command line to keep it attached to the terminal (Unix only).
+    Use `--foreground` on the command line to keep it attached to the terminal (Unix only).
 
     ### Navigation
     | Key | Action |
     |---|---|
     | ◀ / ▶ buttons | Back / Forward in history |
-    | Cmd/Ctrl-t | Toggle the table of contents panel |
+    | Cmd/Ctrl-t or § button | Toggle the table of contents panel |
 
     ### Search
     | Key | Action |
     |---|---|
     | Cmd/Ctrl-f | Open / close the search bar |
-    | Enter  or  ⬇ button | Next match |
-    | Shift-Enter  or  ⬆ button | Previous match |
+    | Enter  or  %{next} button | Next match |
+    | Shift-Enter  or  %{prev} button | Previous match |
     | Escape | Close the search bar |
-
-    > Search navigates to the section containing each match and highlights matched text inline.
-    > The active match is shown in orange; other matches in yellow.
 
     ### Auto-reload
     The viewer watches the open file for changes on disk and reloads it automatically.
@@ -1162,6 +1159,7 @@ help.text:
     | Key | Action |
     |---|---|
     | F1 | Toggle this help screen |
+    | Escape | Close this help screen |
   de: |
     # Markdown-Betrachter — Hilfe
 
@@ -1175,7 +1173,7 @@ help.text:
     | Cmd/Strg-w  /  Cmd/Strg-q | Beenden |
 
     Der Betrachter überwacht die aktuelle Datei auf Änderungen und lädt sie automatisch neu.
-    Verwenden Sie `--no-detach` oder `--foreground` in der Kommandozeile, um die Verbindung zum Terminal aufrechtzuerhalten (nur Unix).
+    Verwenden Sie `--foreground` in der Kommandozeile, um die Verbindung zum Terminal aufrechtzuerhalten (nur Unix).
 
     ### Navigation
     | Taste | Aktion |
@@ -1187,12 +1185,9 @@ help.text:
     | Taste | Aktion |
     |---|---|
     | Cmd/Strg-f | Suchleiste öffnen / schließen |
-    | Eingabe  oder  Schaltfläche ⬇ | Nächster Treffer |
-    | Umschalt-Eingabe  oder  Schaltfläche ⬆ | Vorheriger Treffer |
+    | Eingabe  oder  Schaltfläche %{next} | Nächster Treffer |
+    | Umschalt-Eingabe  oder  Schaltfläche %{prev} | Vorheriger Treffer |
     | Escape | Suchleiste schließen |
-
-    > Die Suche navigiert zum Abschnitt, der den jeweiligen Treffer enthält, und hebt den gefundenen Text hervor.
-    > Der aktive Treffer wird orange angezeigt; andere Treffer in Gelb.
 
     ### Automatisches Neu-Laden
     Der Betrachter überwacht die geöffnete Datei auf Änderungen und lädt sie automatisch neu.
@@ -1220,6 +1215,7 @@ help.text:
     | Taste | Aktion |
     |---|---|
     | F1 | Diesen Hilfebildschirm ein-/ausblenden |
+    | Escape | Diesen Hilfebildschirm ausblenden |
   fr: |
     # Visionneuse Markdown — Aide
 
@@ -1233,24 +1229,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Quitter |
 
     La visionneuse surveille le fichier courant et le recharge automatiquement en cas de modification.
-    Utilisez `--no-detach` ou `--foreground` en ligne de commande pour rester attaché au terminal (Unix uniquement).
+    Utilisez `--foreground` en ligne de commande pour rester attaché au terminal (Unix uniquement).
 
     ### Navigation
     | Touche | Action |
     |---|---|
     | Boutons ◀ / ▶ | Précédent / Suivant dans l'historique |
-    | Cmd/Ctrl-t | Afficher/masquer le panneau de la table des matières |
+    | Cmd/Ctrl-t ou  bouton § | Afficher/masquer le panneau de la table des matières |
 
     ### Recherche
     | Touche | Action |
     |---|---|
     | Cmd/Ctrl-f | Ouvrir / fermer la barre de recherche |
-    | Entrée  ou  bouton ⬇ | Correspondance suivante |
-    | Maj-Entrée  ou  bouton ⬆ | Correspondance précédente |
+    | Entrée  ou  bouton %{next} | Correspondance suivante |
+    | Maj-Entrée  ou  bouton %{prev} | Correspondance précédente |
     | Échap | Fermer la barre de recherche |
-
-    > La recherche navigue vers la section contenant chaque résultat et surligne le texte correspondant.
-    > Le résultat actif est affiché en orange ; les autres en jaune.
 
     ### Rechargement automatique
     La visionneuse surveille le fichier ouvert pour détecter les modifications sur le disque et le recharge automatiquement.
@@ -1291,24 +1284,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Salir |
 
     El visor monitorea el archivo actual en busca de cambios y lo recarga automáticamente.
-    Use `--no-detach` o `--foreground` en la línea de comandos para mantenerlo conectado al terminal (solo Unix).
+    Use `--foreground` en la línea de comandos para mantenerlo conectado al terminal (solo Unix).
 
     ### Navegación
     | Tecla | Acción |
     |---|---|
     | Botones ◀ / ▶ | Atrás / Adelante en el historial |
-    | Cmd/Ctrl-t | Mostrar/ocultar el panel de tabla de contenidos |
+    | Cmd/Ctrl-t o  botón § | Mostrar/ocultar el panel de tabla de contenidos |
 
     ### Búsqueda
     | Tecla | Acción |
     |---|---|
     | Cmd/Ctrl-f | Abrir / cerrar la barra de búsqueda |
-    | Intro  o  botón ⬇ | Coincidencia siguiente |
-    | Mayús-Intro  o  botón ⬆ | Coincidencia anterior |
+    | Intro  o  botón %{next} | Coincidencia siguiente |
+    | Mayús-Intro  o  botón %{prev} | Coincidencia anterior |
     | Escape | Cerrar la barra de búsqueda |
-
-    > La búsqueda navega a la sección que contiene cada coincidencia y resalta el texto encontrado.
-    > La coincidencia activa se muestra en naranja; las demás en amarillo.
 
     ### Recarga automática
     El visor monitorea el archivo abierto en busca de cambios en el disco y lo recarga automáticamente.
@@ -1336,6 +1326,7 @@ help.text:
     | Tecla | Acción |
     |---|---|
     | F1 | Mostrar/ocultar esta pantalla de ayuda |
+    | Escape | Ocultar esta pantalla de ayuda |
   pt: |
     # Visualizador de Markdown — Ajuda
 
@@ -1349,24 +1340,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Sair |
 
     O visualizador monitora o arquivo atual em busca de alterações e o recarrega automaticamente.
-    Use `--no-detach` ou `--foreground` na linha de comando para mantê-lo conectado ao terminal (somente Unix).
+    Use `--foreground` na linha de comando para mantê-lo conectado ao terminal (somente Unix).
 
     ### Navegação
     | Tecla | Ação |
     |---|---|
     | Botões ◀ / ▶ | Voltar / Avançar no histórico |
-    | Cmd/Ctrl-t | Alternar o painel do índice |
+    | Cmd/Ctrl-t  ou  botào § | Alternar o painel do índice |
 
     ### Pesquisa
     | Tecla | Ação |
     |---|---|
     | Cmd/Ctrl-f | Abrir / fechar a barra de pesquisa |
-    | Enter  ou  botão ⬇ | Próxima correspondência |
-    | Shift-Enter  ou  botão ⬆ | Correspondência anterior |
+    | Enter  ou  botão %{next} | Próxima correspondência |
+    | Shift-Enter  ou  botão %{prev} | Correspondência anterior |
     | Escape | Fechar a barra de pesquisa |
-
-    > A pesquisa navega até a seção que contém cada correspondência e destaca o texto encontrado.
-    > A correspondência ativa é exibida em laranja; as demais em amarelo.
 
     ### Recarga automática
     O visualizador monitora o arquivo aberto em busca de alterações no disco e o recarrega automaticamente.
@@ -1394,6 +1382,7 @@ help.text:
     | Tecla | Ação |
     |---|---|
     | F1 | Alternar esta tela de ajuda |
+    | Escape | Fechar esta tela de ajuda |
   sv: |
     # Markdown-visare — Hjälp
 
@@ -1407,24 +1396,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Avsluta |
 
     Visaren bevakar den aktuella filen för ändringar och läser in den automatiskt.
-    Använd `--no-detach` eller `--foreground` på kommandoraden för att hålla den kopplad till terminalen (endast Unix).
+    Använd `--foreground` på kommandoraden för att hålla den kopplad till terminalen (endast Unix).
 
     ### Navigering
     | Tangent | Åtgärd |
     |---|---|
     | Knappar ◀ / ▶ | Bakåt / Framåt i historiken |
-    | Cmd/Ctrl-t | Visa/dölj innehållsförteckningspanelen |
+    | Cmd/Ctrl-t  eller  knapp § | Visa/dölj innehållsförteckningspanelen |
 
     ### Sökning
     | Tangent | Åtgärd |
     |---|---|
     | Cmd/Ctrl-f | Öppna / stäng sökfältet |
-    | Enter  eller  knapp ⬇ | Nästa träff |
-    | Skift-Enter  eller  knapp ⬆ | Föregående träff |
+    | Enter  eller  knapp %{next} | Nästa träff |
+    | Skift-Enter  eller  knapp %{prev} | Föregående träff |
     | Escape | Stäng sökfältet |
-
-    > Sökningen navigerar till avsnittet som innehåller varje träff och markerar den hittade texten.
-    > Den aktiva träffen visas i orange; övriga träffar i gult.
 
     ### Automatisk inläsning
     Visaren bevakar den öppna filen för diskändringar och läser in den automatiskt.
@@ -1452,6 +1438,7 @@ help.text:
     | Tangent | Åtgärd |
     |---|---|
     | F1 | Visa/dölj den här hjälpskärmen |
+    | Escape | Dölj den här hjälpskärmen |
   it: |
     # Visualizzatore Markdown — Aiuto
 
@@ -1465,24 +1452,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Esci |
 
     Il visualizzatore monitora il file corrente per le modifiche e lo ricarica automaticamente.
-    Usa `--no-detach` o `--foreground` dalla riga di comando per mantenerlo collegato al terminale (solo Unix).
+    Usa `--foreground` dalla riga di comando per mantenerlo collegato al terminale (solo Unix).
 
     ### Navigazione
     | Tasto | Azione |
     |---|---|
     | Pulsanti ◀ / ▶ | Indietro / Avanti nella cronologia |
-    | Cmd/Ctrl-t | Mostra/nascondi il pannello del sommario |
+    | Cmd/Ctrl-t  o  pulsante § | Mostra/nascondi il pannello del sommario |
 
     ### Ricerca
     | Tasto | Azione |
     |---|---|
     | Cmd/Ctrl-f | Apri / chiudi la barra di ricerca |
-    | Invio  o  pulsante ⬇ | Risultato successivo |
-    | Maiusc-Invio  o  pulsante ⬆ | Risultato precedente |
+    | Invio  o  pulsante %{next} | Risultato successivo |
+    | Maiusc-Invio  o  pulsante %{prev} | Risultato precedente |
     | Esc | Chiudi la barra di ricerca |
-
-    > La ricerca naviga alla sezione che contiene ogni risultato ed evidenzia il testo trovato.
-    > Il risultato attivo è mostrato in arancione; gli altri in giallo.
 
     ### Ricarica automatica
     Il visualizzatore monitora il file aperto per le modifiche su disco e lo ricarica automaticamente.
@@ -1523,24 +1507,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Wyjdź |
 
     Przeglądarka monitoruje bieżący plik pod kątem zmian i przeładowuje go automatycznie.
-    Użyj `--no-detach` lub `--foreground` w wierszu poleceń, aby utrzymać połączenie z terminalem (tylko Unix).
+    Użyj `--foreground` w wierszu poleceń, aby utrzymać połączenie z terminalem (tylko Unix).
 
     ### Nawigacja
     | Klawisz | Akcja |
     |---|---|
     | Przyciski ◀ / ▶ | Wstecz / Dalej w historii |
-    | Cmd/Ctrl-t | Pokaż/ukryj panel spisu treści |
+    | Cmd/Ctrl-t  lub  przycisk § | Pokaż/ukryj panel spisu treści |
 
     ### Wyszukiwanie
     | Klawisz | Akcja |
     |---|---|
     | Cmd/Ctrl-f | Otwórz / zamknij pasek wyszukiwania |
-    | Enter  lub  przycisk ⬇ | Następny wynik |
-    | Shift-Enter  lub  przycisk ⬆ | Poprzedni wynik |
+    | Enter  lub  przycisk %{next} | Następny wynik |
+    | Shift-Enter  lub  przycisk %{prev} | Poprzedni wynik |
     | Escape | Zamknij pasek wyszukiwania |
-
-    > Wyszukiwanie nawiguje do sekcji zawierającej każdy wynik i podświetla znaleziony tekst.
-    > Aktywny wynik jest wyświetlany na pomarańczowo; inne na żółto.
 
     ### Automatyczne przeładowanie
     Przeglądarka monitoruje otwarty plik pod kątem zmian na dysku i przeładowuje go automatycznie.
@@ -1568,6 +1549,7 @@ help.text:
     | Klawisz | Akcja |
     |---|---|
     | F1 | Pokaż/ukryj ten ekran pomocy |
+    | Escape | Ukryj ten ekran pomocy |
   cs: |
     # Prohlížeč Markdown — Nápověda
 
@@ -1581,24 +1563,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Ukončit |
 
     Prohlížeč sleduje aktuální soubor, zda nedošlo ke změnám, a automaticky jej znovu načítá.
-    Na příkazovém řádku použijte `--no-detach` nebo `--foreground`, aby zůstal připojen k terminálu (pouze Unix).
+    Na příkazovém řádku použijte `--foreground`, aby zůstal připojen k terminálu (pouze Unix).
 
     ### Navigace
     | Klávesa | Akce |
     |---|---|
     | Tlačítka ◀ / ▶ | Zpět / Vpřed v historii |
-    | Cmd/Ctrl-t | Zobrazit/skrýt panel obsahu |
+    | Cmd/Ctrl-t nebo  tlačítko § | Zobrazit/skrýt panel obsahu |
 
     ### Hledání
     | Klávesa | Akce |
     |---|---|
     | Cmd/Ctrl-f | Otevřít / zavřít vyhledávací lištu |
-    | Enter  nebo  tlačítko ⬇ | Další shoda |
-    | Shift-Enter  nebo  tlačítko ⬆ | Předchozí shoda |
+    | Enter  nebo  tlačítko %{next} | Další shoda |
+    | Shift-Enter  nebo  tlačítko %{prev} | Předchozí shoda |
     | Escape | Zavřít vyhledávací lištu |
-
-    > Hledání přejde na oddíl obsahující každou shodu a zvýrazní nalezený text.
-    > Aktivní shoda je zobrazena oranžově; ostatní žlutě.
 
     ### Automatické znovu načítání
     Prohlížeč sleduje otevřený soubor, zda nedošlo ke změnám na disku, a automaticky jej znovu načítá.
@@ -1626,6 +1605,7 @@ help.text:
     | Klávesa | Akce |
     |---|---|
     | F1 | Zobrazit/skrýt tuto obrazovku nápovědy |
+    | Escape | Skrýt tuto obrazovku nápovědy |
   ru: |
     # Просмотрщик Markdown — Помощь
 
@@ -1639,24 +1619,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Выйти |
 
     Просмотрщик отслеживает изменения в текущем файле и перезагружает его автоматически.
-    Используйте `--no-detach` или `--foreground` в командной строке, чтобы оставить его подключённым к терминалу (только Unix).
+    Используйте `--foreground` в командной строке, чтобы оставить его подключённым к терминалу (только Unix).
 
     ### Навигация
     | Клавиша | Действие |
     |---|---|
     | Кнопки ◀ / ▶ | Назад / Вперёд в истории |
-    | Cmd/Ctrl-t | Показать/скрыть панель оглавления |
+    | Cmd/Ctrl-t  или  кнопка § | Показать/скрыть панель оглавления |
 
     ### Поиск
     | Клавиша | Действие |
     |---|---|
     | Cmd/Ctrl-f | Открыть / закрыть строку поиска |
-    | Enter  или  кнопка ⬇ | Следующее совпадение |
-    | Shift-Enter  или  кнопка ⬆ | Предыдущее совпадение |
+    | Enter  или  кнопка %{next} | Следующее совпадение |
+    | Shift-Enter  или  кнопка %{prev} | Предыдущее совпадение |
     | Escape | Закрыть строку поиска |
-
-    > Поиск переходит к разделу, содержащему каждое совпадение, и выделяет найденный текст.
-    > Активное совпадение отображается оранжевым; остальные — жёлтым.
 
     ### Автоматическая перезагрузка
     Просмотрщик отслеживает изменения открытого файла на диске и перезагружает его автоматически.
@@ -1684,6 +1661,7 @@ help.text:
     | Клавиша | Действие |
     |---|---|
     | F1 | Показать/скрыть этот экран помощи |
+    | Escape | Скрыть этот экран помощи |
   zu: |
     # Umbukeli wase-Markdown — Usizo
 
@@ -1697,24 +1675,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Phuma |
 
     Umbukeli ugada ifayili yamanje ukuze athole izinguquko futhi ayilavishe kabusha ngokuzenzakalelayo.
-    Sebenzisa `--no-detach` noma `--foreground` emugqeni wemiyalo ukuze uhlale uxhunyiwe ethalini (Unix kuphela).
+    Sebenzisa `--foreground` emugqeni wemiyalo ukuze uhlale uxhunyiwe ethalini (Unix kuphela).
 
     ### Ukuzulazula
     | Ikhiye | Isenzo |
     |---|---|
     | Izinkinobho ◀ / ▶ | Emuva / Phambili emlando |
-    | Cmd/Ctrl-t | Bonisa/fihla iphaneli yohlu lwezindikimba |
+    | Cmd/Ctrl-t  noma  inkinobho § | Bonisa/fihla iphaneli yohlu lwezindikimba |
 
     ### Ukusesha
     | Ikhiye | Isenzo |
     |---|---|
     | Cmd/Ctrl-f | Vula / vala ibha yokusesha |
-    | Enter  noma  inkinobho ⬇ | Ukufanelana okulandelayo |
-    | Shift-Enter  noma  inkinobho ⬆ | Ukufanelana kwangaphambilini |
+    | Enter  noma  inkinobho %{next} | Ukufanelana okulandelayo |
+    | Shift-Enter  noma  inkinobho %{prev} | Ukufanelana kwangaphambilini |
     | Escape | Vala ibha yokusesha |
-
-    > Ukusesha kuzulazula kuya engxenyeni equkethe ukufanelana ngakunye futhi kugqamise umbhalo otholakele.
-    > Ukufanelana okusebenzayo kuboniswa ngombala we-orenje; okunye ngombala omthubi.
 
     ### Ukuphinda Kulayishwa Ngokuzenzakalelayo
     Umbukeli ugada ifayili evuliwe ukuze athole izinguquko kudiski futhi ayilavishe kabusha ngokuzenzakalelayo.
@@ -1742,6 +1717,7 @@ help.text:
     | Ikhiye | Isenzo |
     |---|---|
     | F1 | Bonisa/fihla lesi sikrini sosizo |
+    | Escape | Fihla lesi sikrini sosizo |
   st: |
     # Seboni sa Markdown — Thuso
 
@@ -1755,24 +1731,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Tsoa |
 
     Seboni se lebeletse faele ea jwale bakeng sa liphetoho 'me se e tlatsa bocha ka ho iphepa.
-    Sebedisa `--no-detach` kapa `--foreground` mollaong oa taelo ho se boloka se kgokahanye le terminal (Unix feela).
+    Sebedisa `--foreground` mollaong oa taelo ho se boloka se kgokahanye le terminal (Unix feela).
 
     ### Ho Khomarela
     | Sehlooho | Ketso |
     |---|---|
     | Likonopo ◀ / ▶ | Morao / Pele molalong oa nalane |
-    | Cmd/Ctrl-t | Bontša/Patela sepata sa lenane la litlhophelo |
+    | Cmd/Ctrl-t  kapa  konopo § | Bontša/Patela sepata sa lenane la litlhophelo |
 
     ### Ho Batla
     | Sehlooho | Ketso |
     |---|---|
     | Cmd/Ctrl-f | Bula / koala bha ea ho batla |
-    | Enter  kapa  konopo ⬇ | Tšoantšo e latelang |
-    | Shift-Enter  kapa  konopo ⬆ | Tšoantšo e fetileng |
+    | Enter  kapa  konopo %{next} | Tšoantšo e latelang |
+    | Shift-Enter  kapa  konopo %{prev} | Tšoantšo e fetileng |
     | Escape | Koala bha ea ho batla |
-
-    > Ho batla ho ea karolong e nang le tšoantšo ka 'ngoe 'me ho hlokomela mongolo o fumanehileng.
-    > Tšoantšo e sebetsang e bontšoa ka bochabeng; tse ling ka yellow.
 
     ### Ho Tlatsa Bocha ka Ho Iphepa
     Seboni se lebeletse faele e buletsoeng bakeng sa liphetoho desteng 'me se e tlatsa bocha ka ho iphepa.
@@ -1800,6 +1773,7 @@ help.text:
     | Sehlooho | Ketso |
     |---|---|
     | F1 | Bontša/Patela skrini ena ea thuso |
+    | Escape | Patela skrini ena ea thuso |
   xh: |
     # Umboni we-Markdown — Uncedo
 
@@ -1813,24 +1787,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Phuma |
 
     Umboni ulinda ifayile yangoku ukufumana iinguqulo kwaye uyilavishe kwakhona ngokuzenzakalelayo.
-    Sebenzisa `--no-detach` okanye `--foreground` kumgca womyalelo ukuze uhlale uxhunyiwe kwiterminal (Unix kuphela).
+    Sebenzisa `--foreground` kumgca womyalelo ukuze uhlale uxhunyiwe kwiterminal (Unix kuphela).
 
     ### Ukuzulazula
     | Isitshixo | Isenzo |
     |---|---|
     | Iinkinobho ◀ / ▶ | Emva / Phambili emlanjeni wembali |
-    | Cmd/Ctrl-t | Bonisa/Fihla iphaneli yoluhlu lwezindikimba |
+    | Cmd/Ctrl-t  okanye  inkinobho § | Bonisa/Fihla iphaneli yoluhlu lwezindikimba |
 
     ### Ukukhangela
     | Isitshixo | Isenzo |
     |---|---|
     | Cmd/Ctrl-f | Vula / vala ibha yokukhangela |
-    | Enter  okanye  inkinobho ⬇ | Ukufanelana okulandelayo |
-    | Shift-Enter  okanye  inkinobho ⬆ | Ukufanelana okwangaphambili |
+    | Enter  okanye  inkinobho %{next} | Ukufanelana okulandelayo |
+    | Shift-Enter  okanye  inkinobho %{prev} | Ukufanelana okwangaphambili |
     | Escape | Vala ibha yokukhangela |
-
-    > Ukukhangela kuzulazula kuya kwicandelo equkethe ukufanelana ngakunye kwaye kugqamise umbhalo otholakeleyo.
-    > Ukufanelana okusebenzayo kuboniswa ngombala we-orenje; okunye ngombala omthubi.
 
     ### Ukulayisha Kwakhona Ngokuzenzakalelayo
     Umboni ulinda ifayile evuliweyo ukufumana iinguqulo kudisk kwaye uyilavishe kwakhona ngokuzenzakalelayo.
@@ -1858,6 +1829,7 @@ help.text:
     | Isitshixo | Isenzo |
     |---|---|
     | F1 | Bonisa/Fihla lesi sikrini soncedo |
+    | Escape | Fihla lesi sikrini soncedo |
   nl: |
     # Markdown-viewer — Help
 
@@ -1871,24 +1843,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Afsluiten |
 
     De viewer bewaakt het huidige bestand op wijzigingen en laadt het automatisch opnieuw.
-    Gebruik `--no-detach` of `--foreground` op de opdrachtregel om het verbonden te houden met de terminal (alleen Unix).
+    Gebruik `--foreground` op de opdrachtregel om het verbonden te houden met de terminal (alleen Unix).
 
     ### Navigatie
     | Toets | Actie |
     |---|---|
     | Knoppen ◀ / ▶ | Terug / Vooruit in geschiedenis |
-    | Cmd/Ctrl-t | Inhoudsopgave-paneel in-/uitschakelen |
+    | Cmd/Ctrl-t  of  knop § | Inhoudsopgave-paneel in-/uitschakelen |
 
     ### Zoeken
     | Toets | Actie |
     |---|---|
     | Cmd/Ctrl-f | Zoekbalk openen / sluiten |
-    | Enter  of  knop ⬇ | Volgende overeenkomst |
-    | Shift-Enter  of  knop ⬆ | Vorige overeenkomst |
+    | Enter  of  knop %{next} | Volgende overeenkomst |
+    | Shift-Enter  of  knop %{prev} | Vorige overeenkomst |
     | Escape | Zoekbalk sluiten |
-
-    > Zoeken navigeert naar het gedeelte dat elke overeenkomst bevat en markeert de gevonden tekst.
-    > De actieve overeenkomst wordt oranje weergegeven; andere geel.
 
     ### Automatisch herladen
     De viewer bewaakt het geopende bestand op wijzigingen op schijf en laadt het automatisch opnieuw.
@@ -1916,6 +1885,7 @@ help.text:
     | Toets | Actie |
     |---|---|
     | F1 | Dit helpscherm in-/uitschakelen |
+    | Escape | Dit helpscherm uitschakelen |
   nb: |
     # Markdown-visning — Hjelp
 
@@ -1929,24 +1899,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Avslutt |
 
     Visningen overvåker gjeldende fil for endringer og laster inn på nytt automatisk.
-    Bruk `--no-detach` eller `--foreground` på kommandolinjen for å holde den tilkoblet terminalen (kun Unix).
+    Bruk `--foreground` på kommandolinjen for å holde den tilkoblet terminalen (kun Unix).
 
     ### Navigasjon
     | Tast | Handling |
     |---|---|
     | Knapper ◀ / ▶ | Tilbake / Fremover i historikk |
-    | Cmd/Ctrl-t | Vis/skjul innholdsfortegnelsespanel |
+    | Cmd/Ctrl-t  eller  knapp § | Vis/skjul innholdsfortegnelsespanel |
 
     ### Søk
     | Tast | Handling |
     |---|---|
     | Cmd/Ctrl-f | Åpne / lukk søkefeltet |
-    | Enter  eller  knapp ⬇ | Neste treff |
-    | Shift-Enter  eller  knapp ⬆ | Forrige treff |
+    | Enter  eller  knapp %{next} | Neste treff |
+    | Shift-Enter  eller  knapp %{prev} | Forrige treff |
     | Escape | Lukk søkefeltet |
-
-    > Søk navigerer til avsnittet som inneholder hvert treff og uthever den funne teksten.
-    > Det aktive treffet vises i oransje; andre treff i gult.
 
     ### Automatisk innlasting
     Visningen overvåker den åpne filen for diskendringer og laster inn på nytt automatisk.
@@ -1974,6 +1941,7 @@ help.text:
     | Tast | Handling |
     |---|---|
     | F1 | Vis/skjul denne hjelpeskjermen |
+    | Escape | Skjul denne hjelpeskjermen |
   no: |
     # Markdown-visning — Hjelp
 
@@ -1987,24 +1955,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Avslutt |
 
     Visningen overvåker gjeldende fil for endringer og laster inn på nytt automatisk.
-    Bruk `--no-detach` eller `--foreground` på kommandolinjen for å holde den tilkoblet terminalen (kun Unix).
+    Bruk `--foreground` på kommandolinjen for å holde den tilkoblet terminalen (kun Unix).
 
     ### Navigasjon
     | Tast | Handling |
     |---|---|
     | Knapper ◀ / ▶ | Tilbake / Fremover i historikk |
-    | Cmd/Ctrl-t | Vis/skjul innholdsfortegnelsespanel |
+    | Cmd/Ctrl-t  eller  knapp § | Vis/skjul innholdsfortegnelsespanel |
 
     ### Søk
     | Tast | Handling |
     |---|---|
     | Cmd/Ctrl-f | Åpne / lukk søkefeltet |
-    | Enter  eller  knapp ⬇ | Neste treff |
-    | Shift-Enter  eller  knapp ⬆ | Forrige treff |
+    | Enter  eller  knapp %{next} | Neste treff |
+    | Shift-Enter  eller  knapp %{prev} | Forrige treff |
     | Escape | Lukk søkefeltet |
-
-    > Søk navigerer til avsnittet som inneholder hvert treff og uthever den funne teksten.
-    > Det aktive treffet vises i oransje; andre treff i gult.
 
     ### Automatisk innlasting
     Visningen overvåker den åpne filen for diskendringer og laster inn på nytt automatisk.
@@ -2032,6 +1997,7 @@ help.text:
     | Tast | Handling |
     |---|---|
     | F1 | Vis/skjul denne hjelpeskjermen |
+    | Escape | Skjul denne hjelpeskjermen |
   da: |
     # Markdown-fremviser — Hjælp
 
@@ -2045,24 +2011,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Afslut |
 
     Fremviseren overvåger den aktuelle fil for ændringer og genindlæser automatisk.
-    Brug `--no-detach` eller `--foreground` på kommandolinjen for at holde den tilsluttet terminalen (kun Unix).
+    Brug `--foreground` på kommandolinjen for at holde den tilsluttet terminalen (kun Unix).
 
     ### Navigation
     | Tast | Handling |
     |---|---|
     | Knapper ◀ / ▶ | Tilbage / Frem i historik |
-    | Cmd/Ctrl-t | Vis/skjul indholdsfortegnelsespanel |
+    | Cmd/Ctrl-t  eller  knap § | Vis/skjul indholdsfortegnelsespanel |
 
     ### Søgning
     | Tast | Handling |
     |---|---|
     | Cmd/Ctrl-f | Åbn / luk søgefeltet |
-    | Enter  eller  knap ⬇ | Næste match |
-    | Shift-Enter  eller  knap ⬆ | Forrige match |
+    | Enter  eller  knap %{next} | Næste match |
+    | Shift-Enter  eller  knap %{prev} | Forrige match |
     | Escape | Luk søgefeltet |
-
-    > Søgning navigerer til afsnittet med hvert match og fremhæver den fundne tekst.
-    > Det aktive match vises i orange; andre i gult.
 
     ### Automatisk genindlæsning
     Fremviseren overvåger den åbne fil for diskændringer og genindlæser automatisk.
@@ -2090,6 +2053,7 @@ help.text:
     | Tast | Handling |
     |---|---|
     | F1 | Vis/skjul dette hjælpeskærmbillede |
+    | Escape | Skjul dette hjælpeskærmbillede |
   fi: |
     # Markdown-katselin — Ohje
 
@@ -2103,24 +2067,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Lopeta |
 
     Katselin tarkkailee nykyistä tiedostoa muutosten varalta ja lataa sen uudelleen automaattisesti.
-    Käytä `--no-detach` tai `--foreground` komentoriviltä pitääksesi sen yhteydessä terminaaliin (vain Unix).
+    Käytä `--foreground` komentoriviltä pitääksesi sen yhteydessä terminaaliin (vain Unix).
 
     ### Navigointi
     | Näppäin | Toiminto |
     |---|---|
     | Painikkeet ◀ / ▶ | Takaisin / Eteenpäin historiassa |
-    | Cmd/Ctrl-t | Näytä/piilota sisällysluettelopaneeli |
+    | Cmd/Ctrl-t  tai  painike § | Näytä/piilota sisällysluettelopaneeli |
 
     ### Haku
     | Näppäin | Toiminto |
     |---|---|
     | Cmd/Ctrl-f | Avaa / sulje hakupalkki |
-    | Enter  tai  painike ⬇ | Seuraava osuma |
-    | Shift-Enter  tai  painike ⬆ | Edellinen osuma |
+    | Enter  tai  painike %{next} | Seuraava osuma |
+    | Shift-Enter  tai  painike %{prev} | Edellinen osuma |
     | Escape | Sulje hakupalkki |
-
-    > Haku navigoi osioon, joka sisältää kunkin osuman ja korostaa löydetyn tekstin.
-    > Aktiivinen osuma näytetään oranssina; muut keltaisina.
 
     ### Automaattinen uudelleenlataus
     Katselin tarkkailee avointa tiedostoa levymuutosten varalta ja lataa sen uudelleen automaattisesti.
@@ -2148,6 +2109,7 @@ help.text:
     | Näppäin | Toiminto |
     |---|---|
     | F1 | Näytä/piilota tämä ohjenäyttö |
+    | Escape | Piilota tämä ohjenäyttö |
   cy: |
     # Gwyliedydd Markdown — Cymorth
 
@@ -2161,24 +2123,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Gadael |
 
     Mae'r gwyliedydd yn gwylio'r ffeil bresennol am newidiadau ac yn ail-lwytho'n awtomatig.
-    Defnyddiwch `--no-detach` neu `--foreground` ar y llinell orchymyn i'w gadw wedi'i gysylltu â'r terminal (Unix yn unig).
+    Defnyddiwch `--foreground` ar y llinell orchymyn i'w gadw wedi'i gysylltu â'r terminal (Unix yn unig).
 
     ### Llywio
     | Bysell | Gweithred |
     |---|---|
     | Botymau ◀ / ▶ | Yn ôl / Ymlaen yn y hanes |
-    | Cmd/Ctrl-t | Toglo panel tabl cynnwys |
+    | Cmd/Ctrl-t  neu  botwm § | Toglo panel tabl cynnwys |
 
     ### Chwilio
     | Bysell | Gweithred |
     |---|---|
     | Cmd/Ctrl-f | Agor / cau'r bar chwilio |
-    | Enter  neu  botwm ⬇ | Cyfatebiaeth nesaf |
-    | Shift-Enter  neu  botwm ⬆ | Cyfatebiaeth flaenorol |
+    | Enter  neu  botwm %{next} | Cyfatebiaeth nesaf |
+    | Shift-Enter  neu  botwm %{prev} | Cyfatebiaeth flaenorol |
     | Escape | Cau'r bar chwilio |
-
-    > Mae chwilio'n llywio i'r adran sy'n cynnwys pob cyfatebiaeth ac yn amlygu'r testun a ganfuwyd.
-    > Dangosir y cyfatebiaeth weithredol mewn oren; eraill mewn melyn.
 
     ### Ail-lwytho Awtomatig
     Mae'r gwyliedydd yn gwylio'r ffeil agored am newidiadau ar y ddisg ac yn ail-lwytho'n awtomatig.
@@ -2206,6 +2165,7 @@ help.text:
     | Bysell | Gweithred |
     |---|---|
     | F1 | Toglo'r sgrin cymorth hon |
+    | Escape | Cuddio'r sgrin cymorth hon |
   ca: |
     # Visualitzador Markdown — Ajuda
 
@@ -2219,24 +2179,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Surt |
 
     El visualitzador vigila el fitxer actual per detectar canvis i el torna a carregar automàticament.
-    Usa `--no-detach` o `--foreground` a la línia d'ordres per mantenir-lo connectat al terminal (només Unix).
+    Usa `--foreground` a la línia d'ordres per mantenir-lo connectat al terminal (només Unix).
 
     ### Navegació
     | Tecla | Acció |
     |---|---|
     | Botons ◀ / ▶ | Enrere / Endavant en l'historial |
-    | Cmd/Ctrl-t | Mostra/amaga el tauler de la taula de continguts |
+    | Cmd/Ctrl-t  o  botó § | Mostra/amaga el tauler de la taula de continguts |
 
     ### Cerca
     | Tecla | Acció |
     |---|---|
     | Cmd/Ctrl-f | Obre / tanca la barra de cerca |
-    | Intro  o  botó ⬇ | Coincidència següent |
-    | Maj-Intro  o  botó ⬆ | Coincidència anterior |
+    | Intro  o  botó %{next} | Coincidència següent |
+    | Maj-Intro  o  botó %{prev} | Coincidència anterior |
     | Escape | Tanca la barra de cerca |
-
-    > La cerca navega a la secció que conté cada coincidència i ressalta el text trobat.
-    > La coincidència activa es mostra en taronja; les altres en groc.
 
     ### Recàrrega automàtica
     El visualitzador vigila el fitxer obert per detectar canvis al disc i el torna a carregar automàticament.
@@ -2264,6 +2221,7 @@ help.text:
     | Tecla | Acció |
     |---|---|
     | F1 | Mostra/amaga aquesta pantalla d'ajuda |
+    | Escape | Amaga aquesta pantalla d'ajuda |
   ro: |
     # Vizualizator Markdown — Ajutor
 
@@ -2277,24 +2235,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Ieșiți |
 
     Vizualizatorul urmărește fișierul curent pentru modificări și se reîncarcă automat.
-    Utilizați `--no-detach` sau `--foreground` pe linia de comandă pentru a-l menține conectat la terminal (numai Unix).
+    Utilizați `--foreground` pe linia de comandă pentru a-l menține conectat la terminal (numai Unix).
 
     ### Navigare
     | Tastă | Acțiune |
     |---|---|
     | Butoane ◀ / ▶ | Înapoi / Înainte în istoric |
-    | Cmd/Ctrl-t | Comutați panoul cuprinsului |
+    | Cmd/Ctrl-t  sau  buton § | Comutați panoul cuprinsului |
 
     ### Căutare
     | Tastă | Acțiune |
     |---|---|
     | Cmd/Ctrl-f | Deschideți / închideți bara de căutare |
-    | Enter  sau  buton ⬇ | Potrivire următoare |
-    | Shift-Enter  sau  buton ⬆ | Potrivire anterioară |
+    | Enter  sau  buton %{next} | Potrivire următoare |
+    | Shift-Enter  sau  buton %{prev} | Potrivire anterioară |
     | Escape | Închideți bara de căutare |
-
-    > Căutarea navighează la secțiunea care conține fiecare potrivire și evidențiază textul găsit.
-    > Potrivirea activă este afișată în portocaliu; celelalte în galben.
 
     ### Reîncărcare automată
     Vizualizatorul urmărește fișierul deschis pentru modificări pe disc și îl reîncarcă automat.
@@ -2322,6 +2277,7 @@ help.text:
     | Tastă | Acțiune |
     |---|---|
     | F1 | Comutați acest ecran de ajutor |
+    | Escape | Ascunde acest ecran de ajutor |
   hu: |
     # Markdown-nézegető — Súgó
 
@@ -2335,24 +2291,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Kilépés |
 
     A nézegető figyeli az aktuális fájlt változások szempontjából, és automatikusan újratölti.
-    Használja a `--no-detach` vagy `--foreground` kapcsolót a parancssorban, hogy terminálon csatlakozva maradjon (csak Unix).
+    Használja a `--foreground` kapcsolót a parancssorban, hogy terminálon csatlakozva maradjon (csak Unix).
 
     ### Navigáció
     | Billentyű | Művelet |
     |---|---|
     | ◀ / ▶ gombok | Vissza / Előre az előzményekben |
-    | Cmd/Ctrl-t | Tartalomjegyzék-panel be-/kikapcsolása |
+    | Cmd/Ctrl-t  vagy  § | Tartalomjegyzék-panel be-/kikapcsolása |
 
     ### Keresés
     | Billentyű | Művelet |
     |---|---|
     | Cmd/Ctrl-f | Keresősáv megnyitása / bezárása |
-    | Enter  vagy  ⬇ gomb | Következő egyezés |
-    | Shift-Enter  vagy  ⬆ gomb | Előző egyezés |
+    | Enter  vagy  %{next} gomb | Következő egyezés |
+    | Shift-Enter  vagy  %{prev} gomb | Előző egyezés |
     | Escape | Keresősáv bezárása |
-
-    > A keresés az egyes egyezéseket tartalmazó szakaszhoz navigál és kiemeli az egyező szöveget.
-    > Az aktív egyezés narancsszínnel jelenik meg; a többi sárgával.
 
     ### Automatikus újratöltés
     A nézegető figyeli a nyitott fájlt lemezváltozások szempontjából, és automatikusan újratölti.
@@ -2380,6 +2333,7 @@ help.text:
     | Billentyű | Művelet |
     |---|---|
     | F1 | Súgóképernyő be-/kikapcsolása |
+    | Escape | Súgóképernyő kikapcsolása |
   sk: |
     # Prehliadač Markdown — Pomocník
 
@@ -2393,24 +2347,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Ukončiť |
 
     Prehliadač sleduje aktuálny súbor na zmeny a automaticky ho znovu načítava.
-    Použite `--no-detach` alebo `--foreground` na príkazovom riadku, aby zostal pripojený k terminálu (len Unix).
+    Použite `--foreground` na príkazovom riadku, aby zostal pripojený k terminálu (len Unix).
 
     ### Navigácia
     | Kláves | Akcia |
     |---|---|
     | Tlačidlá ◀ / ▶ | Späť / Vpred v histórii |
-    | Cmd/Ctrl-t | Zobraziť/skryť panel obsahu |
+    | Cmd/Ctrl-t  alebo  tlačidlo § | Zobraziť/skryť panel obsahu |
 
     ### Hľadanie
     | Kláves | Akcia |
     |---|---|
     | Cmd/Ctrl-f | Otvoriť / zatvoriť panel vyhľadávania |
-    | Enter  alebo  tlačidlo ⬇ | Nasledujúca zhoda |
-    | Shift-Enter  alebo  tlačidlo ⬆ | Predchádzajúca zhoda |
+    | Enter  alebo  tlačidlo %{next} | Nasledujúca zhoda |
+    | Shift-Enter  alebo  tlačidlo %{prev} | Predchádzajúca zhoda |
     | Escape | Zatvoriť panel vyhľadávania |
-
-    > Hľadanie prechádza na oddiel obsahujúci každú zhodu a zvýrazní nájdený text.
-    > Aktívna zhoda sa zobrazuje oranžovo; ostatné žlto.
 
     ### Automatické znovu načítanie
     Prehliadač sleduje otvorený súbor na zmeny na disku a automaticky ho znovu načítava.
@@ -2438,6 +2389,7 @@ help.text:
     | Kláves | Akcia |
     |---|---|
     | F1 | Zobraziť/skryť túto obrazovku pomocníka |
+    | Escape | Skryť túto obrazovku pomocníka |
   hr: |
     # Preglednik Markdown — Pomoć
 
@@ -2451,24 +2403,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Izađi |
 
     Preglednik prati trenutnu datoteku radi promjena i automatski je ponovo učitava.
-    Koristite `--no-detach` ili `--foreground` u naredbenom retku da ostane spojen na terminal (samo Unix).
+    Koristite `--foreground` u naredbenom retku da ostane spojen na terminal (samo Unix).
 
     ### Navigacija
     | Tipka | Radnja |
     |---|---|
     | Gumbi ◀ / ▶ | Natrag / Naprijed u povijesti |
-    | Cmd/Ctrl-t | Uključi/isključi panel sadržaja |
+    | Cmd/Ctrl-t  ili  gumb § | Uključi/isključi panel sadržaja |
 
     ### Pretraživanje
     | Tipka | Radnja |
     |---|---|
     | Cmd/Ctrl-f | Otvori / zatvori traku za pretraživanje |
-    | Enter  ili  gumb ⬇ | Sljedeći rezultat |
-    | Shift-Enter  ili  gumb ⬆ | Prethodni rezultat |
+    | Enter  ili  gumb %{next} | Sljedeći rezultat |
+    | Shift-Enter  ili  gumb %{prev} | Prethodni rezultat |
     | Escape | Zatvori traku za pretraživanje |
-
-    > Pretraživanje navigira do odjeljka koji sadrži svaki rezultat i ističe pronađeni tekst.
-    > Aktivni rezultat prikazuje se narančasto; ostali žuto.
 
     ### Automatsko učitavanje
     Preglednik prati otvorenu datoteku radi promjena na disku i automatski je ponovo učitava.
@@ -2496,6 +2445,7 @@ help.text:
     | Tipka | Radnja |
     |---|---|
     | F1 | Uključi/isključi ovaj zaslon pomoći |
+    | Escape | Isključi ovaj zaslon pomoći |
   sl: |
     # Pregledovalnik Markdown — Pomoč
 
@@ -2509,24 +2459,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Zapusti |
 
     Pregledovalnik opazuje trenutno datoteko za spremembe in jo samodejno znova naloži.
-    Uporabite `--no-detach` ali `--foreground` v ukazni vrstici, da ostane priključen na terminal (samo Unix).
+    Uporabite `--foreground` v ukazni vrstici, da ostane priključen na terminal (samo Unix).
 
     ### Navigacija
     | Tipka | Dejanje |
     |---|---|
     | Gumba ◀ / ▶ | Nazaj / Naprej v zgodovini |
-    | Cmd/Ctrl-t | Preklopi kazalo vsebine |
+    | Cmd/Ctrl-t ali  gumb § | Preklopi kazalo vsebine |
 
     ### Iskanje
     | Tipka | Dejanje |
     |---|---|
     | Cmd/Ctrl-f | Odpri / zapri iskalno vrstico |
-    | Enter  ali  gumb ⬇ | Naslednji zadetek |
-    | Shift-Enter  ali  gumb ⬆ | Prejšnji zadetek |
+    | Enter  ali  gumb %{next} | Naslednji zadetek |
+    | Shift-Enter  ali  gumb %{prev} | Prejšnji zadetek |
     | Escape | Zapri iskalno vrstico |
-
-    > Iskanje se pomakne na razdelek, ki vsebuje vsak zadetek, in označi najdeno besedilo.
-    > Aktivni zadetek je prikazan oranžno; drugi rumeno.
 
     ### Samodejno ponovito nalaganje
     Pregledovalnik opazuje odprto datoteko za spremembe na disku in jo samodejno znova naloži.
@@ -2554,6 +2501,7 @@ help.text:
     | Tipka | Dejanje |
     |---|---|
     | F1 | Preklopi ta zaslon pomoči |
+    | Escape | Skrij ta zaslon s pomočjo |
   uk: |
     # Переглядач Markdown — Довідка
 
@@ -2567,24 +2515,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Вийти |
 
     Переглядач стежить за поточним файлом на наявність змін і перезавантажує його автоматично.
-    Використовуйте `--no-detach` або `--foreground` у командному рядку, щоб залишити підключеним до терміналу (лише Unix).
+    Використовуйте `--foreground` у командному рядку, щоб залишити підключеним до терміналу (лише Unix).
 
     ### Навігація
     | Клавіша | Дія |
     |---|---|
     | Кнопки ◀ / ▶ | Назад / Вперед в історії |
-    | Cmd/Ctrl-t | Показати/приховати панель змісту |
+    | Cmd/Ctrl-t  або  кнопка § | Показати/приховати панель змісту |
 
     ### Пошук
     | Клавіша | Дія |
     |---|---|
     | Cmd/Ctrl-f | Відкрити / закрити рядок пошуку |
-    | Enter  або  кнопка ⬇ | Наступний збіг |
-    | Shift-Enter  або  кнопка ⬆ | Попередній збіг |
+    | Enter  або  кнопка %{next} | Наступний збіг |
+    | Shift-Enter  або  кнопка %{prev} | Попередній збіг |
     | Escape | Закрити рядок пошуку |
-
-    > Пошук переходить до розділу, що містить кожен збіг, і виділяє знайдений текст.
-    > Активний збіг відображається помаранчевим; інші — жовтим.
 
     ### Автоматичне перезавантаження
     Переглядач стежить за відкритим файлом на наявність змін на диску і перезавантажує його автоматично.
@@ -2612,6 +2557,7 @@ help.text:
     | Клавіша | Дія |
     |---|---|
     | F1 | Показати/приховати цей екран довідки |
+    | Escape | Приховати цей екран довідки  |
   bg: |
     # Преглед на Markdown — Помощ
 
@@ -2625,24 +2571,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Изход |
 
     Прегледачът следи текущия файл за промени и го презарежда автоматично.
-    Използвайте `--no-detach` или `--foreground` в командния ред, за да остане свързан с терминала (само Unix).
+    Използвайте `--foreground` в командния ред, за да остане свързан с терминала (само Unix).
 
     ### Навигация
     | Клавиш | Действие |
     |---|---|
     | Бутони ◀ / ▶ | Назад / Напред в историята |
-    | Cmd/Ctrl-t | Показване/скриване на панела за съдържание |
+    | Cmd/Ctrl-t  или  бутон § | Показване/скриване на панела за съдържание |
 
     ### Търсене
     | Клавиш | Действие |
     |---|---|
     | Cmd/Ctrl-f | Отваряне / затваряне на лентата за търсене |
-    | Enter  или  бутон ⬇ | Следващо съвпадение |
-    | Shift-Enter  или  бутон ⬆ | Предишно съвпадение |
+    | Enter  или  бутон %{next} | Следващо съвпадение |
+    | Shift-Enter  или  бутон %{prev} | Предишно съвпадение |
     | Escape | Затваряне на лентата за търсене |
-
-    > Търсенето навигира до раздела, съдържащ всяко съвпадение, и маркира намерения текст.
-    > Активното съвпадение е показано в оранжево; другите в жълто.
 
     ### Автоматично презареждане
     Прегледачът следи отворения файл за промени на диска и го презарежда автоматично.
@@ -2670,6 +2613,7 @@ help.text:
     | Клавиш | Действие |
     |---|---|
     | F1 | Показване/скриване на този екран с помощ |
+    | Escape | Скриване на този екран с помощ |
   el: |
     # Προβολή Markdown — Βοήθεια
 
@@ -2683,24 +2627,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Έξοδος |
 
     Η προβολή παρακολουθεί το τρέχον αρχείο για αλλαγές και το επαναφορτώνει αυτόματα.
-    Χρησιμοποιήστε `--no-detach` ή `--foreground` στη γραμμή εντολών για να παραμείνει συνδεδεμένο με τον τερματικό (μόνο Unix).
+    Χρησιμοποιήστε `--foreground` στη γραμμή εντολών για να παραμείνει συνδεδεμένο με τον τερματικό (μόνο Unix).
 
     ### Πλοήγηση
     | Πλήκτρο | Ενέργεια |
     |---|---|
     | Κουμπιά ◀ / ▶ | Πίσω / Μπροστά στο ιστορικό |
-    | Cmd/Ctrl-t | Εναλλαγή πίνακα περιεχομένων |
+    | Cmd/Ctrl-t  ή  κουμπί § | Εναλλαγή πίνακα περιεχομένων |
 
     ### Αναζήτηση
     | Πλήκτρο | Ενέργεια |
     |---|---|
     | Cmd/Ctrl-f | Άνοιγμα / κλείσιμο γραμμής αναζήτησης |
-    | Enter  ή  κουμπί ⬇ | Επόμενη αντιστοιχία |
-    | Shift-Enter  ή  κουμπί ⬆ | Προηγούμενη αντιστοιχία |
+    | Enter  ή  κουμπί %{next} | Επόμενη αντιστοιχία |
+    | Shift-Enter  ή  κουμπί %{prev} | Προηγούμενη αντιστοιχία |
     | Escape | Κλείσιμο γραμμής αναζήτησης |
-
-    > Η αναζήτηση πλοηγείται στην ενότητα που περιέχει κάθε αντιστοιχία και επισημαίνει το βρεθέν κείμενο.
-    > Η ενεργή αντιστοιχία εμφανίζεται πορτοκαλί· οι άλλες κίτρινο.
 
     ### Αυτόματη επαναφόρτωση
     Η προβολή παρακολουθεί το ανοιχτό αρχείο για αλλαγές στον δίσκο και το επαναφορτώνει αυτόματα.
@@ -2728,6 +2669,7 @@ help.text:
     | Πλήκτρο | Ενέργεια |
     |---|---|
     | F1 | Εναλλαγή αυτής της οθόνης βοήθειας |
+    | Escape | Απόκρυψη αυτής της οθόνης βοήθειας |
   af: |
     # Markdown-kyker — Hulp
 
@@ -2741,24 +2683,21 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Verlaat |
 
     Die kyker dophou die huidige lêer vir veranderinge en herlaai outomaties.
-    Gebruik `--no-detach` of `--foreground` op die opdragreël om dit aan die terminaal gekoppel te hou (slegs Unix).
+    Gebruik `--foreground` op die opdragreël om dit aan die terminaal gekoppel te hou (slegs Unix).
 
     ### Navigasie
     | Sleutel | Aksie |
     |---|---|
     | Knoppies ◀ / ▶ | Terug / Vorentoe in geskiedenis |
-    | Cmd/Ctrl-t | Wissel inhoudsopgawe-paneel |
+    | Cmd/Ctrl-t  of  knoppie § | Wissel inhoudsopgawe-paneel |
 
     ### Soektog
     | Sleutel | Aksie |
     |---|---|
     | Cmd/Ctrl-f | Maak soekbalk oop / toe |
-    | Enter  of  knoppie ⬇ | Volgende treffer |
-    | Shift-Enter  of  knoppie ⬆ | Vorige treffer |
+    | Enter  of  knoppie %{next} | Volgende treffer |
+    | Shift-Enter  of  knoppie %{prev} | Vorige treffer |
     | Escape | Sluit soekbalk |
-
-    > Soektog navigeer na die afdeling wat elke treffer bevat en merk die gevonde teks.
-    > Die aktiewe treffer word oranje gewys; ander in geel.
 
     ### Outomatiese herlaai
     Die kyker dophou die oop lêer vir skyfveranderinge en herlaai dit outomaties.
@@ -2786,3 +2725,4 @@ help.text:
     | Sleutel | Aksie |
     |---|---|
     | F1 | Wissel hierdie hulpskerm |
+    | Escape | Sluit hierdie hulpskerm |

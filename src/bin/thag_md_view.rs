@@ -857,6 +857,7 @@ fn main() -> eframe::Result<()> {
 enum NavAction {
     None,
     Back,
+    Close(egui::Context),
     Forward,
     History(usize),
 }
@@ -1129,8 +1130,16 @@ impl MarkdownApp {
         if self.can_go_back() {
             self.history_index -= 1;
             let path = self.history[self.history_index].clone();
+            eprintln!(
+                "Succeeded in self.go_back(), self.history_index={}",
+                self.history_index
+            );
             self.load_file(path)
         } else {
+            eprintln!(
+                "Failed self.go_back(), self.history_index={0}",
+                self.history_index
+            );
             false
         }
     }
@@ -1140,10 +1149,87 @@ impl MarkdownApp {
         if self.can_go_forward() {
             self.history_index += 1;
             let path = self.history[self.history_index].clone();
+            eprintln!(
+                "Succeeded in self.go_forward(), self.history_index={}",
+                self.history_index
+            );
             self.load_file(path)
         } else {
+            eprintln!(
+                "Failed self.go_forward(), self.history_index={0}",
+                self.history_index
+            );
             false
         }
+    }
+
+    /// Close current file and try to go one step back in history, or failing that,
+    /// one step forward.
+    /// Returns `true` on success.
+    fn close(&mut self, ctx: &egui::Context) -> bool {
+        let remove_hist_index = self.history_index;
+        let success = self.go_back() || self.go_forward();
+        eprintln!(
+            "success={success}, remove_hist_index={remove_hist_index}, self.history={:?}",
+            self.history
+        );
+        if success {
+            match self.history.len() {
+                0 => false,
+                1 => {
+                    let _ = self.history.remove(0);
+                    true
+                }
+                _ => {
+                    let _ = self.history.remove(remove_hist_index);
+                    if remove_hist_index < self.history.len() {
+                        // Shift index back
+                        self.history_index = self.history_index.saturating_sub(1);
+                    }
+                    true
+                }
+            }
+        } else {
+            match self.history.len() {
+                0 => {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    true
+                }
+                1 => {
+                    let _ = self.history.remove(0);
+                    self.welcome(ctx);
+                    true
+                }
+                _ => {
+                    unreachable!()
+                }
+            }
+        }
+    }
+
+    fn welcome(&mut self, ctx: &egui::Context) {
+        self.raw_content = t!(
+            "welcome.instruction",
+            cmd = MOD,
+            open_files = OPEN_FILES_ICON,
+            hist_back = HIST_BACK_ICON,
+            hist_forward = HIST_FWD_ICON
+        )
+        .to_string();
+        let canonical_initial_path = env::current_dir()
+            .unwrap_or_default()
+            .canonicalize()
+            .unwrap_or_default();
+        let (id_injected, toc) = extract_toc_and_inject_ids(&self.raw_content);
+        self.content = absolutize_image_paths(&id_injected, &canonical_initial_path);
+        self.toc = toc;
+        // let new_show_toc = true;
+        self.show_toc = true;
+        self.current_file_path = canonical_initial_path;
+        ctx.send_viewport_cmd(egui::ViewportCommand::Title(format!(
+            "thag_md_view: {}",
+            self.current_file_path.display()
+        )));
     }
 
     /// Load a specific entry from the history stack. Returns `true` on success.
@@ -1303,7 +1389,7 @@ impl eframe::App for MarkdownApp {
         // ── Global keyboard shortcuts ─────────────────────────────────────────────────────
         // Collect all key states in one input() call to avoid re-locking the context.
         let (
-            close,
+            close_key,
             open_key,
             zoom_in_key,
             zoom_out_key,
@@ -1360,7 +1446,8 @@ impl eframe::App for MarkdownApp {
         // Act on shortcuts (zoom/font) only when text field does not have focus.
         let wants_text = ui.ctx().egui_wants_keyboard_input();
 
-        if close {
+        if close_key {
+            eprintln!("Exiting app");
             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
         } else if open_key {
             open_files_requested = true;
@@ -1444,6 +1531,8 @@ impl eframe::App for MarkdownApp {
                     }
                 });
 
+                ui.separator();
+
                 if ui
                     .add_enabled(can_go_back, egui::Button::new(HIST_BACK_ICON))
                     .on_hover_text(&back_tip)
@@ -1452,6 +1541,20 @@ impl eframe::App for MarkdownApp {
                     nav_action = NavAction::Back;
                 }
 
+                if ui
+                    .add_enabled(can_go_forward, egui::Button::new(HIST_FWD_ICON))
+                    .on_hover_text(&forward_tip)
+                    .clicked()
+                {
+                    nav_action = NavAction::Forward;
+                }
+                if ui
+                    .button("X")
+                    .on_hover_text(t!("toolbar.close_file_tip").to_string())
+                    .clicked()
+                {
+                    nav_action = NavAction::Close(ui.ctx().clone());
+                }
                 if self.history.len() > 1 {
                     egui::ComboBox::from_id_salt("history_selector")
                         .selected_text(
@@ -1476,13 +1579,6 @@ impl eframe::App for MarkdownApp {
                         });
                 }
 
-                if ui
-                    .add_enabled(can_go_forward, egui::Button::new(HIST_FWD_ICON))
-                    .on_hover_text(&forward_tip)
-                    .clicked()
-                {
-                    nav_action = NavAction::Forward;
-                }
                 ui.separator();
                 if ui
                     .button("📖…")
@@ -2042,6 +2138,7 @@ impl eframe::App for MarkdownApp {
                 NavAction::Forward => self.go_forward(),
                 NavAction::History(n) => self.load_history(n),
                 NavAction::None => false,
+                NavAction::Close(ctx) => self.close(&ctx),
             }
         };
 

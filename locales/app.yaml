@@ -80,6 +80,37 @@ toolbar.contrast_apply:
   xh: "Sebenzisa imibala enokulungana okuphezulu"
   zu: "Sebenzisa imibala enokulungana okukhulu"
 
+toolbar.close_file_tip:
+  af: "Sluit huidige lêer (%{cmd}-W)"
+  bg: "Затвори текущия файл (%{cmd}-W)"
+  ca: "Tanca el fitxer actual (%{cmd}-W)"
+  cs: "Zavřít aktuální soubor (%{cmd}-W)"
+  cy: "Cau'r ffeil gyfredol (%{cmd}-W)"
+  da: "Luk aktuel fil (%{cmd}-W)"
+  de: "Aktuelle Datei schließen (%{cmd}-W)"
+  el: "Κλείσιμο τρέχοντος αρχείου (%{cmd}-W)"
+  en: "Close current file (%{cmd}-W)"
+  es: "Cerrar archivo actual (%{cmd}-W)"
+  fi: "Sulje nykyinen tiedosto (%{cmd}-W)"
+  fr: "Fermer le fichier actuel (%{cmd}-W)"
+  hr: "Zatvori trenutnu datoteku (%{cmd}-W)"
+  hu: "Aktuális fájl bezárása (%{cmd}-W)"
+  it: "Chiudi file corrente (%{cmd}-W)"
+  nb: "Lukk gjeldende fil (%{cmd}-W)"
+  nl: "Huidig bestand sluiten (%{cmd}-W)"
+  no: "Lukk gjeldende fil (%{cmd}-W)"
+  pl: "Zamknij bieżący plik (%{cmd}-W)"
+  pt: "Fechar ficheiro atual (%{cmd}-W)"
+  ro: "Închide fișierul curent (%{cmd}-W)"
+  ru: "Закрыть текущий файл (%{cmd}-W)"
+  sk: "Zavrieť aktuálny súbor (%{cmd}-W)"
+  sl: "Zapri trenutno datoteko (%{cmd}-W)"
+  st: "Kwala faele ya hona jwale (%{cmd}-W)"
+  sv: "Stäng aktuell fil (%{cmd}-W)"
+  uk: "Закрити поточний файл (%{cmd}-W)"
+  xh: "Vala ifayile yangoku (%{cmd}-W)"
+  zu: "Vala ifayela lamanje (%{cmd}-W)"
+
 toolbar.open_files:
   af: "Maak Markdown-lêers oop (%{cmd}-O)"
   bg: "Отваряне на Markdown файлове (%{cmd}-O)"
@@ -205,35 +236,35 @@ toolbar.search_toggle:
   zu: "Sesha (%{cmd}-F)"
 
 toolbar.close:
-  af: "Sluit (%{cmd}-W)"
-  bg: "Затваряне (%{cmd}-W)"
-  ca: "Tanca (%{cmd}-W)"
-  cs: "Zavřít (%{cmd}-W)"
-  cy: "Cau (%{cmd}-W)"
-  da: "Luk (%{cmd}-W)"
-  de: "Schließen (%{cmd}-W)"
-  el: "Κλείσιμο (%{cmd}-W)"
-  en: "Close (%{cmd}-W)"
-  es: "Cerrar (%{cmd}-W)"
-  fi: "Sulje (%{cmd}-W)"
-  fr: "Fermer (%{cmd}-W)"
-  hr: "Zatvori (%{cmd}-W)"
-  hu: "Bezárás (%{cmd}-W)"
-  it: "Chiudi (%{cmd}-W)"
-  nb: "Lukk (%{cmd}-W)"
-  nl: "Sluiten (%{cmd}-W)"
-  no: "Lukk (%{cmd}-W)"
-  pl: "Zamknij (%{cmd}-W)"
-  pt: "Fechar (%{cmd}-W)"
-  ro: "Închideți (%{cmd}-W)"
-  ru: "Закрыть (%{cmd}-W)"
-  sk: "Zatvoriť (%{cmd}-W)"
-  sl: "Zapri (%{cmd}-W)"
-  st: "Koala (%{cmd}-W)"
-  sv: "Stäng (%{cmd}-W)"
-  uk: "Закрити (%{cmd}-W)"
-  xh: "Vala (%{cmd}-W)"
-  zu: "Vala (%{cmd}-W)"
+  af: "Sluit (%{cmd}-Q)"
+  bg: "Затваряне (%{cmd}-Q)"
+  ca: "Tanca (%{cmd}-Q)"
+  cs: "Zavřít (%{cmd}-Q)"
+  cy: "Cau (%{cmd}-Q)"
+  da: "Luk (%{cmd}-Q)"
+  de: "Schließen (%{cmd}-Q)"
+  el: "Κλείσιμο (%{cmd}-Q)"
+  en: "Close (%{cmd}-Q)"
+  es: "Cerrar (%{cmd}-Q)"
+  fi: "Sulje (%{cmd}-Q)"
+  fr: "Fermer (%{cmd}-Q)"
+  hr: "Zatvori (%{cmd}-Q)"
+  hu: "Bezárás (%{cmd}-Q)"
+  it: "Chiudi (%{cmd}-Q)"
+  nb: "Lukk (%{cmd}-Q)"
+  nl: "Sluiten (%{cmd}-Q)"
+  no: "Lukk (%{cmd}-Q)"
+  pl: "Zamknij (%{cmd}-Q)"
+  pt: "Fechar (%{cmd}-Q)"
+  ro: "Închideți (%{cmd}-Q)"
+  ru: "Закрыть (%{cmd}-Q)"
+  sk: "Zatvoriť (%{cmd}-Q)"
+  sl: "Zapri (%{cmd}-Q)"
+  st: "Koala (%{cmd}-Q)"
+  sv: "Stäng (%{cmd}-Q)"
+  uk: "Закрити (%{cmd}-Q)"
+  xh: "Vala (%{cmd}-Q)"
+  zu: "Vala (%{cmd}-Q)"
 
 toolbar.help:
   af: "Hulp (F1)"
@@ -1117,7 +1148,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Quit |
 
     The viewer watches the current file for changes and reloads automatically.
-    Use `--foreground` on the command line to keep it attached to the terminal (Unix only).
+
+    A brief "↻ Reloaded" notice appears in the toolbar after each reload.
 
     ### Navigation
     | Key | Action |
@@ -1132,10 +1164,6 @@ help.text:
     | Enter  or  %{next} button | Next match |
     | Shift-Enter  or  %{prev} button | Previous match |
     | Escape | Close the search bar |
-
-    ### Auto-reload
-    The viewer watches the open file for changes on disk and reloads it automatically.
-    A brief "↻ Reloaded" notice appears in the toolbar after each auto-reload.
 
     ### Zoom & Font
     | Key | Action |
@@ -1173,7 +1201,8 @@ help.text:
     | Cmd/Strg-w  /  Cmd/Strg-q | Beenden |
 
     Der Betrachter überwacht die aktuelle Datei auf Änderungen und lädt sie automatisch neu.
-    Verwenden Sie `--foreground` in der Kommandozeile, um die Verbindung zum Terminal aufrechtzuerhalten (nur Unix).
+
+    Nach jedem Neu-Laden erscheint kurz eine „↻ Neu geladen"-Meldung in der Symbolleiste.
 
     ### Navigation
     | Taste | Aktion |
@@ -1188,10 +1217,6 @@ help.text:
     | Eingabe  oder  Schaltfläche %{next} | Nächster Treffer |
     | Umschalt-Eingabe  oder  Schaltfläche %{prev} | Vorheriger Treffer |
     | Escape | Suchleiste schließen |
-
-    ### Automatisches Neu-Laden
-    Der Betrachter überwacht die geöffnete Datei auf Änderungen und lädt sie automatisch neu.
-    Nach jedem automatischen Neu-Laden erscheint kurz eine „↻ Neu geladen"-Meldung in der Symbolleiste.
 
     ### Zoom und Schrift
     | Taste | Aktion |
@@ -1229,7 +1254,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Quitter |
 
     La visionneuse surveille le fichier courant et le recharge automatiquement en cas de modification.
-    Utilisez `--foreground` en ligne de commande pour rester attaché au terminal (Unix uniquement).
+
+    Une brève notification « ↻ Rechargé » apparaît dans la barre d'outils après chaque rechargement.
 
     ### Navigation
     | Touche | Action |
@@ -1244,10 +1270,6 @@ help.text:
     | Entrée  ou  bouton %{next} | Correspondance suivante |
     | Maj-Entrée  ou  bouton %{prev} | Correspondance précédente |
     | Échap | Fermer la barre de recherche |
-
-    ### Rechargement automatique
-    La visionneuse surveille le fichier ouvert pour détecter les modifications sur le disque et le recharge automatiquement.
-    Une brève notification « ↻ Rechargé » apparaît dans la barre d'outils après chaque rechargement automatique.
 
     ### Zoom et Police
     | Touche | Action |
@@ -1284,7 +1306,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Salir |
 
     El visor monitorea el archivo actual en busca de cambios y lo recarga automáticamente.
-    Use `--foreground` en la línea de comandos para mantenerlo conectado al terminal (solo Unix).
+
+    Tras cada recarga aparece brevemente el aviso «↻ Recargado» en la barra de herramientas.
 
     ### Navegación
     | Tecla | Acción |
@@ -1299,10 +1322,6 @@ help.text:
     | Intro  o  botón %{next} | Coincidencia siguiente |
     | Mayús-Intro  o  botón %{prev} | Coincidencia anterior |
     | Escape | Cerrar la barra de búsqueda |
-
-    ### Recarga automática
-    El visor monitorea el archivo abierto en busca de cambios en el disco y lo recarga automáticamente.
-    Tras cada recarga automática aparece brevemente el aviso «↻ Recargado» en la barra de herramientas.
 
     ### Zoom y Fuente
     | Tecla | Acción |
@@ -1340,7 +1359,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Sair |
 
     O visualizador monitora o arquivo atual em busca de alterações e o recarrega automaticamente.
-    Use `--foreground` na linha de comando para mantê-lo conectado ao terminal (somente Unix).
+
+    Um breve aviso «↻ Recarregado» aparece na barra de ferramentas após cada recarga.
 
     ### Navegação
     | Tecla | Ação |
@@ -1355,10 +1375,6 @@ help.text:
     | Enter  ou  botão %{next} | Próxima correspondência |
     | Shift-Enter  ou  botão %{prev} | Correspondência anterior |
     | Escape | Fechar a barra de pesquisa |
-
-    ### Recarga automática
-    O visualizador monitora o arquivo aberto em busca de alterações no disco e o recarrega automaticamente.
-    Um breve aviso «↻ Recarregado» aparece na barra de ferramentas após cada recarga automática.
 
     ### Zoom e Fonte
     | Tecla | Ação |
@@ -1396,7 +1412,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Avsluta |
 
     Visaren bevakar den aktuella filen för ändringar och läser in den automatiskt.
-    Använd `--foreground` på kommandoraden för att hålla den kopplad till terminalen (endast Unix).
+
+    Ett kort meddelande «↻ Inläst» visas i verktygsfältet efter varje inläsning.
 
     ### Navigering
     | Tangent | Åtgärd |
@@ -1411,10 +1428,6 @@ help.text:
     | Enter  eller  knapp %{next} | Nästa träff |
     | Skift-Enter  eller  knapp %{prev} | Föregående träff |
     | Escape | Stäng sökfältet |
-
-    ### Automatisk inläsning
-    Visaren bevakar den öppna filen för diskändringar och läser in den automatiskt.
-    Ett kort meddelande «↻ Inläst» visas i verktygsfältet efter varje automatisk inläsning.
 
     ### Zoom och Teckensnitt
     | Tangent | Åtgärd |
@@ -1452,7 +1465,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Esci |
 
     Il visualizzatore monitora il file corrente per le modifiche e lo ricarica automaticamente.
-    Usa `--foreground` dalla riga di comando per mantenerlo collegato al terminale (solo Unix).
+
+    Un breve avviso «↻ Ricaricato» appare nella barra degli strumenti dopo ogni ricarica.
 
     ### Navigazione
     | Tasto | Azione |
@@ -1467,10 +1481,6 @@ help.text:
     | Invio  o  pulsante %{next} | Risultato successivo |
     | Maiusc-Invio  o  pulsante %{prev} | Risultato precedente |
     | Esc | Chiudi la barra di ricerca |
-
-    ### Ricarica automatica
-    Il visualizzatore monitora il file aperto per le modifiche su disco e lo ricarica automaticamente.
-    Un breve avviso «↻ Ricaricato» appare nella barra degli strumenti dopo ogni ricarica automatica.
 
     ### Zoom e Carattere
     | Tasto | Azione |
@@ -1507,7 +1517,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Wyjdź |
 
     Przeglądarka monitoruje bieżący plik pod kątem zmian i przeładowuje go automatycznie.
-    Użyj `--foreground` w wierszu poleceń, aby utrzymać połączenie z terminalem (tylko Unix).
+
+    Po każdym przeładowaniu w pasku narzędzi pojawia się krótki komunikat «↻ Przeładowano».
 
     ### Nawigacja
     | Klawisz | Akcja |
@@ -1522,10 +1533,6 @@ help.text:
     | Enter  lub  przycisk %{next} | Następny wynik |
     | Shift-Enter  lub  przycisk %{prev} | Poprzedni wynik |
     | Escape | Zamknij pasek wyszukiwania |
-
-    ### Automatyczne przeładowanie
-    Przeglądarka monitoruje otwarty plik pod kątem zmian na dysku i przeładowuje go automatycznie.
-    Po każdym automatycznym przeładowaniu w pasku narzędzi pojawia się krótki komunikat «↻ Przeładowano».
 
     ### Zoom i Czcionka
     | Klawisz | Akcja |
@@ -1563,7 +1570,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Ukončit |
 
     Prohlížeč sleduje aktuální soubor, zda nedošlo ke změnám, a automaticky jej znovu načítá.
-    Na příkazovém řádku použijte `--foreground`, aby zůstal připojen k terminálu (pouze Unix).
+
+    Po každém znovu načtení se na panelu nástrojů krátce zobrazí oznámení «↻ Znovu načteno».
 
     ### Navigace
     | Klávesa | Akce |
@@ -1578,10 +1586,6 @@ help.text:
     | Enter  nebo  tlačítko %{next} | Další shoda |
     | Shift-Enter  nebo  tlačítko %{prev} | Předchozí shoda |
     | Escape | Zavřít vyhledávací lištu |
-
-    ### Automatické znovu načítání
-    Prohlížeč sleduje otevřený soubor, zda nedošlo ke změnám na disku, a automaticky jej znovu načítá.
-    Po každém automatickém znovu načtení se na panelu nástrojů krátce zobrazí oznámení «↻ Znovu načteno».
 
     ### Zoom a Písmo
     | Klávesa | Akce |
@@ -1619,7 +1623,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Выйти |
 
     Просмотрщик отслеживает изменения в текущем файле и перезагружает его автоматически.
-    Используйте `--foreground` в командной строке, чтобы оставить его подключённым к терминалу (только Unix).
+
+    После каждой перезагрузки на панели инструментов кратко появляется уведомление «↻ Перезагружено».
 
     ### Навигация
     | Клавиша | Действие |
@@ -1634,10 +1639,6 @@ help.text:
     | Enter  или  кнопка %{next} | Следующее совпадение |
     | Shift-Enter  или  кнопка %{prev} | Предыдущее совпадение |
     | Escape | Закрыть строку поиска |
-
-    ### Автоматическая перезагрузка
-    Просмотрщик отслеживает изменения открытого файла на диске и перезагружает его автоматически.
-    После каждой автоматической перезагрузки на панели инструментов кратко появляется уведомление «↻ Перезагружено».
 
     ### Масштаб и Шрифт
     | Клавиша | Действие |
@@ -1675,7 +1676,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Phuma |
 
     Umbukeli ugada ifayili yamanje ukuze athole izinguquko futhi ayilavishe kabusha ngokuzenzakalelayo.
-    Sebenzisa `--foreground` emugqeni wemiyalo ukuze uhlale uxhunyiwe ethalini (Unix kuphela).
+
+    Isaziso esifushane «↻ Ilayishiwe kabusha» sivela ebalosebenzisi ngemuva kokuyilavishe kabusha ngakunye.
 
     ### Ukuzulazula
     | Ikhiye | Isenzo |
@@ -1690,10 +1692,6 @@ help.text:
     | Enter  noma  inkinobho %{next} | Ukufanelana okulandelayo |
     | Shift-Enter  noma  inkinobho %{prev} | Ukufanelana kwangaphambilini |
     | Escape | Vala ibha yokusesha |
-
-    ### Ukuphinda Kulayishwa Ngokuzenzakalelayo
-    Umbukeli ugada ifayili evuliwe ukuze athole izinguquko kudiski futhi ayilavishe kabusha ngokuzenzakalelayo.
-    Isaziso esifushane «↻ Ilayishiwe kabusha» sivela ebalosebenzisi ngemuva kokuyilavishe kabusha ngakunye.
 
     ### Ukusondeza Nokushintsha Uhlobo Lombhalo
     | Ikhiye | Isenzo |
@@ -1731,7 +1729,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Tsoa |
 
     Seboni se lebeletse faele ea jwale bakeng sa liphetoho 'me se e tlatsa bocha ka ho iphepa.
-    Sebedisa `--foreground` mollaong oa taelo ho se boloka se kgokahanye le terminal (Unix feela).
+
+    Tsebišo e khuts'oane «↻ E tsotlehilwe bocha» e hlaha baeng ba lisebelisoa ka mor'a ho tlatsa bocha ka ho iphepa 'ngoe le 'ngoe.
 
     ### Ho Khomarela
     | Sehlooho | Ketso |
@@ -1746,10 +1745,6 @@ help.text:
     | Enter  kapa  konopo %{next} | Tšoantšo e latelang |
     | Shift-Enter  kapa  konopo %{prev} | Tšoantšo e fetileng |
     | Escape | Koala bha ea ho batla |
-
-    ### Ho Tlatsa Bocha ka Ho Iphepa
-    Seboni se lebeletse faele e buletsoeng bakeng sa liphetoho desteng 'me se e tlatsa bocha ka ho iphepa.
-    Tsebišo e khuts'oane «↻ E tsotlehilwe bocha» e hlaha baeng ba lisebelisoa ka mor'a ho tlatsa bocha ka ho iphepa 'ngoe le 'ngoe.
 
     ### Holimo le Mongolo
     | Sehlooho | Ketso |
@@ -1787,7 +1782,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Phuma |
 
     Umboni ulinda ifayile yangoku ukufumana iinguqulo kwaye uyilavishe kwakhona ngokuzenzakalelayo.
-    Sebenzisa `--foreground` kumgca womyalelo ukuze uhlale uxhunyiwe kwiterminal (Unix kuphela).
+
+    Isaziso esifutshane «↻ Ilayishiwe kwakhona» sivela ebalosebenzisi emva kokulayisha kwakhona ngakunye.
 
     ### Ukuzulazula
     | Isitshixo | Isenzo |
@@ -1802,10 +1798,6 @@ help.text:
     | Enter  okanye  inkinobho %{next} | Ukufanelana okulandelayo |
     | Shift-Enter  okanye  inkinobho %{prev} | Ukufanelana okwangaphambili |
     | Escape | Vala ibha yokukhangela |
-
-    ### Ukulayisha Kwakhona Ngokuzenzakalelayo
-    Umboni ulinda ifayile evuliweyo ukufumana iinguqulo kudisk kwaye uyilavishe kwakhona ngokuzenzakalelayo.
-    Isaziso esifutshane «↻ Ilayishiwe kwakhona» sivela ebalosebenzisi emva kokulayisha kwakhona ngakunye.
 
     ### Ukusondeza Nokushintsha Uhlobo Lombhalo
     | Isitshixo | Isenzo |
@@ -1843,7 +1835,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Afsluiten |
 
     De viewer bewaakt het huidige bestand op wijzigingen en laadt het automatisch opnieuw.
-    Gebruik `--foreground` op de opdrachtregel om het verbonden te houden met de terminal (alleen Unix).
+
+    Na elk herladen verschijnt kort een «↻ Opnieuw geladen»-melding in de werkbalk.
 
     ### Navigatie
     | Toets | Actie |
@@ -1858,10 +1851,6 @@ help.text:
     | Enter  of  knop %{next} | Volgende overeenkomst |
     | Shift-Enter  of  knop %{prev} | Vorige overeenkomst |
     | Escape | Zoekbalk sluiten |
-
-    ### Automatisch herladen
-    De viewer bewaakt het geopende bestand op wijzigingen op schijf en laadt het automatisch opnieuw.
-    Na elk automatisch herladen verschijnt kort een «↻ Opnieuw geladen»-melding in de werkbalk.
 
     ### Zoom en Lettertype
     | Toets | Actie |
@@ -1899,7 +1888,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Avslutt |
 
     Visningen overvåker gjeldende fil for endringer og laster inn på nytt automatisk.
-    Bruk `--foreground` på kommandolinjen for å holde den tilkoblet terminalen (kun Unix).
+
+    En kort «↻ Lastet inn på nytt»-melding vises i verktøylinjen etter hver innlasting.
 
     ### Navigasjon
     | Tast | Handling |
@@ -1914,10 +1904,6 @@ help.text:
     | Enter  eller  knapp %{next} | Neste treff |
     | Shift-Enter  eller  knapp %{prev} | Forrige treff |
     | Escape | Lukk søkefeltet |
-
-    ### Automatisk innlasting
-    Visningen overvåker den åpne filen for diskendringer og laster inn på nytt automatisk.
-    En kort «↻ Lastet inn på nytt»-melding vises i verktøylinjen etter hver automatisk innlasting.
 
     ### Zoom og Skrift
     | Tast | Handling |
@@ -1955,7 +1941,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Avslutt |
 
     Visningen overvåker gjeldende fil for endringer og laster inn på nytt automatisk.
-    Bruk `--foreground` på kommandolinjen for å holde den tilkoblet terminalen (kun Unix).
+
+    En kort «↻ Lastet inn på nytt»-melding vises i verktøylinjen etter hver innlasting.
 
     ### Navigasjon
     | Tast | Handling |
@@ -1970,10 +1957,6 @@ help.text:
     | Enter  eller  knapp %{next} | Neste treff |
     | Shift-Enter  eller  knapp %{prev} | Forrige treff |
     | Escape | Lukk søkefeltet |
-
-    ### Automatisk innlasting
-    Visningen overvåker den åpne filen for diskendringer og laster inn på nytt automatisk.
-    En kort «↻ Lastet inn på nytt»-melding vises i verktøylinjen etter hver automatisk innlasting.
 
     ### Zoom og Skrift
     | Tast | Handling |
@@ -2011,7 +1994,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Afslut |
 
     Fremviseren overvåger den aktuelle fil for ændringer og genindlæser automatisk.
-    Brug `--foreground` på kommandolinjen for at holde den tilsluttet terminalen (kun Unix).
+
+    En kort «↻ Genindlæst»-meddelelse vises i værktøjslinjen efter hver genindlæsning.
 
     ### Navigation
     | Tast | Handling |
@@ -2026,10 +2010,6 @@ help.text:
     | Enter  eller  knap %{next} | Næste match |
     | Shift-Enter  eller  knap %{prev} | Forrige match |
     | Escape | Luk søgefeltet |
-
-    ### Automatisk genindlæsning
-    Fremviseren overvåger den åbne fil for diskændringer og genindlæser automatisk.
-    En kort «↻ Genindlæst»-meddelelse vises i værktøjslinjen efter hver automatisk genindlæsning.
 
     ### Zoom og Skrifttype
     | Tast | Handling |
@@ -2067,7 +2047,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Lopeta |
 
     Katselin tarkkailee nykyistä tiedostoa muutosten varalta ja lataa sen uudelleen automaattisesti.
-    Käytä `--foreground` komentoriviltä pitääksesi sen yhteydessä terminaaliin (vain Unix).
+
+    Lyhyt «↻ Ladattu uudelleen» -ilmoitus näkyy työkalupalkissa jokaisen uudelleenlatauksen jälkeen.
 
     ### Navigointi
     | Näppäin | Toiminto |
@@ -2082,10 +2063,6 @@ help.text:
     | Enter  tai  painike %{next} | Seuraava osuma |
     | Shift-Enter  tai  painike %{prev} | Edellinen osuma |
     | Escape | Sulje hakupalkki |
-
-    ### Automaattinen uudelleenlataus
-    Katselin tarkkailee avointa tiedostoa levymuutosten varalta ja lataa sen uudelleen automaattisesti.
-    Lyhyt «↻ Ladattu uudelleen» -ilmoitus näkyy työkalupalkissa jokaisen automaattisen uudelleenlatauksen jälkeen.
 
     ### Zoom ja Fontti
     | Näppäin | Toiminto |
@@ -2123,7 +2100,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Gadael |
 
     Mae'r gwyliedydd yn gwylio'r ffeil bresennol am newidiadau ac yn ail-lwytho'n awtomatig.
-    Defnyddiwch `--foreground` ar y llinell orchymyn i'w gadw wedi'i gysylltu â'r terminal (Unix yn unig).
+
+    Ymddengys hysbysiad byr «↻ Ail-lwythwyd» yn y bar offer ar ôl pob ail-lwytho.
 
     ### Llywio
     | Bysell | Gweithred |
@@ -2138,10 +2116,6 @@ help.text:
     | Enter  neu  botwm %{next} | Cyfatebiaeth nesaf |
     | Shift-Enter  neu  botwm %{prev} | Cyfatebiaeth flaenorol |
     | Escape | Cau'r bar chwilio |
-
-    ### Ail-lwytho Awtomatig
-    Mae'r gwyliedydd yn gwylio'r ffeil agored am newidiadau ar y ddisg ac yn ail-lwytho'n awtomatig.
-    Ymddengys hysbysiad byr «↻ Ail-lwythwyd» yn y bar offer ar ôl pob ail-lwytho awtomatig.
 
     ### Zoom a Ffont
     | Bysell | Gweithred |
@@ -2179,7 +2153,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Surt |
 
     El visualitzador vigila el fitxer actual per detectar canvis i el torna a carregar automàticament.
-    Usa `--foreground` a la línia d'ordres per mantenir-lo connectat al terminal (només Unix).
+
+    Apareix un breu avís «↻ Recarregat» a la barra d'eines després de cada recàrrega.
 
     ### Navegació
     | Tecla | Acció |
@@ -2194,10 +2169,6 @@ help.text:
     | Intro  o  botó %{next} | Coincidència següent |
     | Maj-Intro  o  botó %{prev} | Coincidència anterior |
     | Escape | Tanca la barra de cerca |
-
-    ### Recàrrega automàtica
-    El visualitzador vigila el fitxer obert per detectar canvis al disc i el torna a carregar automàticament.
-    Apareix un breu avís «↻ Recarregat» a la barra d'eines després de cada recàrrega automàtica.
 
     ### Zoom i Tipus de lletra
     | Tecla | Acció |
@@ -2235,7 +2206,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Ieșiți |
 
     Vizualizatorul urmărește fișierul curent pentru modificări și se reîncarcă automat.
-    Utilizați `--foreground` pe linia de comandă pentru a-l menține conectat la terminal (numai Unix).
+
+    Un scurt aviz «↻ Reîncărcat» apare în bara de instrumente după fiecare reîncărcare.
 
     ### Navigare
     | Tastă | Acțiune |
@@ -2250,10 +2222,6 @@ help.text:
     | Enter  sau  buton %{next} | Potrivire următoare |
     | Shift-Enter  sau  buton %{prev} | Potrivire anterioară |
     | Escape | Închideți bara de căutare |
-
-    ### Reîncărcare automată
-    Vizualizatorul urmărește fișierul deschis pentru modificări pe disc și îl reîncarcă automat.
-    Un scurt aviz «↻ Reîncărcat» apare în bara de instrumente după fiecare reîncărcare automată.
 
     ### Zoom și Font
     | Tastă | Acțiune |
@@ -2291,7 +2259,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Kilépés |
 
     A nézegető figyeli az aktuális fájlt változások szempontjából, és automatikusan újratölti.
-    Használja a `--foreground` kapcsolót a parancssorban, hogy terminálon csatlakozva maradjon (csak Unix).
+
+    Minden újratöltés után egy rövid «↻ Újratöltve» értesítés jelenik meg az eszköztárban.
 
     ### Navigáció
     | Billentyű | Művelet |
@@ -2306,10 +2275,6 @@ help.text:
     | Enter  vagy  %{next} gomb | Következő egyezés |
     | Shift-Enter  vagy  %{prev} gomb | Előző egyezés |
     | Escape | Keresősáv bezárása |
-
-    ### Automatikus újratöltés
-    A nézegető figyeli a nyitott fájlt lemezváltozások szempontjából, és automatikusan újratölti.
-    Minden automatikus újratöltés után egy rövid «↻ Újratöltve» értesítés jelenik meg az eszköztárban.
 
     ### Zoom és Betűtípus
     | Billentyű | Művelet |
@@ -2347,7 +2312,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Ukončiť |
 
     Prehliadač sleduje aktuálny súbor na zmeny a automaticky ho znovu načítava.
-    Použite `--foreground` na príkazovom riadku, aby zostal pripojený k terminálu (len Unix).
+
+    Po každom znovu načítaní sa krátko zobrazí správa «↻ Znovu načítané» na paneli nástrojov.
 
     ### Navigácia
     | Kláves | Akcia |
@@ -2362,10 +2328,6 @@ help.text:
     | Enter  alebo  tlačidlo %{next} | Nasledujúca zhoda |
     | Shift-Enter  alebo  tlačidlo %{prev} | Predchádzajúca zhoda |
     | Escape | Zatvoriť panel vyhľadávania |
-
-    ### Automatické znovu načítanie
-    Prehliadač sleduje otvorený súbor na zmeny na disku a automaticky ho znovu načítava.
-    Po každom automatickom znovu načítaní sa krátko zobrazí správa «↻ Znovu načítané» na paneli nástrojov.
 
     ### Zoom a Písmo
     | Kláves | Akcia |
@@ -2403,7 +2365,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Izađi |
 
     Preglednik prati trenutnu datoteku radi promjena i automatski je ponovo učitava.
-    Koristite `--foreground` u naredbenom retku da ostane spojen na terminal (samo Unix).
+
+    Nakon svakog učitavanja kratko se prikazuje obavijest «↻ Ponovo učitano» na alatnoj traci.
 
     ### Navigacija
     | Tipka | Radnja |
@@ -2418,10 +2381,6 @@ help.text:
     | Enter  ili  gumb %{next} | Sljedeći rezultat |
     | Shift-Enter  ili  gumb %{prev} | Prethodni rezultat |
     | Escape | Zatvori traku za pretraživanje |
-
-    ### Automatsko učitavanje
-    Preglednik prati otvorenu datoteku radi promjena na disku i automatski je ponovo učitava.
-    Nakon svakog automatskog učitavanja kratko se prikazuje obavijest «↻ Ponovo učitano» na alatnoj traci.
 
     ### Zoom i Font
     | Tipka | Radnja |
@@ -2459,7 +2418,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Zapusti |
 
     Pregledovalnik opazuje trenutno datoteko za spremembe in jo samodejno znova naloži.
-    Uporabite `--foreground` v ukazni vrstici, da ostane priključen na terminal (samo Unix).
+
+    Po vsakem nalaganju se v orodni vrstici kratko prikaže obvestilo «↻ Znova naloženo».
 
     ### Navigacija
     | Tipka | Dejanje |
@@ -2474,10 +2434,6 @@ help.text:
     | Enter  ali  gumb %{next} | Naslednji zadetek |
     | Shift-Enter  ali  gumb %{prev} | Prejšnji zadetek |
     | Escape | Zapri iskalno vrstico |
-
-    ### Samodejno ponovito nalaganje
-    Pregledovalnik opazuje odprto datoteko za spremembe na disku in jo samodejno znova naloži.
-    Po vsakem samodejnem nalaganju se v orodni vrstici kratko prikaže obvestilo «↻ Znova naloženo».
 
     ### Zoom in Pisava
     | Tipka | Dejanje |
@@ -2515,7 +2471,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Вийти |
 
     Переглядач стежить за поточним файлом на наявність змін і перезавантажує його автоматично.
-    Використовуйте `--foreground` у командному рядку, щоб залишити підключеним до терміналу (лише Unix).
+
+    Після кожного перезавантаження на панелі інструментів ненадовго з'являється сповіщення «↻ Перезавантажено».
 
     ### Навігація
     | Клавіша | Дія |
@@ -2530,10 +2487,6 @@ help.text:
     | Enter  або  кнопка %{next} | Наступний збіг |
     | Shift-Enter  або  кнопка %{prev} | Попередній збіг |
     | Escape | Закрити рядок пошуку |
-
-    ### Автоматичне перезавантаження
-    Переглядач стежить за відкритим файлом на наявність змін на диску і перезавантажує його автоматично.
-    Після кожного автоматичного перезавантаження на панелі інструментів ненадовго з'являється сповіщення «↻ Перезавантажено».
 
     ### Масштаб і Шрифт
     | Клавіша | Дія |
@@ -2571,7 +2524,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Изход |
 
     Прегледачът следи текущия файл за промени и го презарежда автоматично.
-    Използвайте `--foreground` в командния ред, за да остане свързан с терминала (само Unix).
+
+    След всяко презареждане се появява кратко известие «↻ Презаредено» в лентата с инструменти.
 
     ### Навигация
     | Клавиш | Действие |
@@ -2586,10 +2540,6 @@ help.text:
     | Enter  или  бутон %{next} | Следващо съвпадение |
     | Shift-Enter  или  бутон %{prev} | Предишно съвпадение |
     | Escape | Затваряне на лентата за търсене |
-
-    ### Автоматично презареждане
-    Прегледачът следи отворения файл за промени на диска и го презарежда автоматично.
-    След всяко автоматично презареждане се появява кратко известие «↻ Презаредено» в лентата с инструменти.
 
     ### Мащаб и Шрифт
     | Клавиш | Действие |
@@ -2627,7 +2577,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Έξοδος |
 
     Η προβολή παρακολουθεί το τρέχον αρχείο για αλλαγές και το επαναφορτώνει αυτόματα.
-    Χρησιμοποιήστε `--foreground` στη γραμμή εντολών για να παραμείνει συνδεδεμένο με τον τερματικό (μόνο Unix).
+
+    Μια σύντομη ειδοποίηση «↻ Επαναφορτώθηκε» εμφανίζεται στη γραμμή εργαλείων μετά από κάθε επαναφόρτωση.
 
     ### Πλοήγηση
     | Πλήκτρο | Ενέργεια |
@@ -2642,10 +2593,6 @@ help.text:
     | Enter  ή  κουμπί %{next} | Επόμενη αντιστοιχία |
     | Shift-Enter  ή  κουμπί %{prev} | Προηγούμενη αντιστοιχία |
     | Escape | Κλείσιμο γραμμής αναζήτησης |
-
-    ### Αυτόματη επαναφόρτωση
-    Η προβολή παρακολουθεί το ανοιχτό αρχείο για αλλαγές στον δίσκο και το επαναφορτώνει αυτόματα.
-    Μια σύντομη ειδοποίηση «↻ Επαναφορτώθηκε» εμφανίζεται στη γραμμή εργαλείων μετά από κάθε αυτόματη επαναφόρτωση.
 
     ### Ζουμ και Γραμματοσειρά
     | Πλήκτρο | Ενέργεια |
@@ -2683,7 +2630,8 @@ help.text:
     | Cmd/Ctrl-w  /  Cmd/Ctrl-q | Verlaat |
 
     Die kyker dophou die huidige lêer vir veranderinge en herlaai outomaties.
-    Gebruik `--foreground` op die opdragreël om dit aan die terminaal gekoppel te hou (slegs Unix).
+
+    'n Kort «↻ Herlaai» kennisgewing verskyn in die nutsbalk na elke outomatiese herlaai.
 
     ### Navigasie
     | Sleutel | Aksie |
@@ -2698,10 +2646,6 @@ help.text:
     | Enter  of  knoppie %{next} | Volgende treffer |
     | Shift-Enter  of  knoppie %{prev} | Vorige treffer |
     | Escape | Sluit soekbalk |
-
-    ### Outomatiese herlaai
-    Die kyker dophou die oop lêer vir skyfveranderinge en herlaai dit outomaties.
-    'n Kort «↻ Herlaai» kennisgewing verskyn in die nutsbalk na elke outomatiese herlaai.
 
     ### Zoom en Lettertipe
     | Sleutel | Aksie |

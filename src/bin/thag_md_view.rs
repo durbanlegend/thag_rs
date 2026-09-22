@@ -104,8 +104,12 @@ const HIST_FWD_ICON: &str = "\u{25b6}";
 const OPEN_FILES_ICON: &str = "\u{1f4d6}\u{2026}";
 
 #[cfg(target_os = "macos")]
+const ALT: &str = "Opt";
+#[cfg(target_os = "macos")]
 const MOD: &str = "Cmd";
 
+#[cfg(not(target_os = "macos"))]
+const ALT: &str = "Alt";
 #[cfg(not(target_os = "macos"))]
 const MOD: &str = "Ctrl";
 
@@ -1389,7 +1393,8 @@ impl eframe::App for MarkdownApp {
         // ── Global keyboard shortcuts ─────────────────────────────────────────────────────
         // Collect all key states in one input() call to avoid re-locking the context.
         let (
-            close_key,
+            exit_key,
+            close_file_key,
             open_key,
             zoom_in_key,
             zoom_out_key,
@@ -1406,7 +1411,8 @@ impl eframe::App for MarkdownApp {
         ) = ui.ctx().input(|i| {
             use egui::Key;
             (
-                i.modifiers.command && (i.key_pressed(Key::W) || i.key_pressed(Key::Q)),
+                i.modifiers.command && i.modifiers.alt && i.key_pressed(Key::Q),
+                i.modifiers.command && i.key_pressed(Key::W),
                 i.modifiers.command && i.key_pressed(Key::O),
                 i.modifiers.command && i.key_pressed(Key::Equals),
                 i.modifiers.command && i.key_pressed(Key::Minus),
@@ -1446,9 +1452,11 @@ impl eframe::App for MarkdownApp {
         // Act on shortcuts (zoom/font) only when text field does not have focus.
         let wants_text = ui.ctx().egui_wants_keyboard_input();
 
-        if close_key {
+        if exit_key {
             eprintln!("Exiting app");
             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+        } else if close_file_key {
+            nav_action = NavAction::Close(ui.ctx().clone())
         } else if open_key {
             open_files_requested = true;
         } else if !wants_text {
@@ -1534,6 +1542,26 @@ impl eframe::App for MarkdownApp {
                 ui.separator();
 
                 if ui
+                    .selectable_label(new_show_toc, "§")
+                    .on_hover_text(t!("toolbar.toc_toggle", cmd = MOD).to_string())
+                    .clicked()
+                {
+                    new_show_toc = !new_show_toc;
+                }
+                if ui
+                    .selectable_label(new_search_open, "🔍")
+                    .on_hover_text(t!("toolbar.search_toggle", cmd = MOD).to_string())
+                    .clicked()
+                {
+                    new_search_open = !new_search_open;
+                    if new_search_open {
+                        self.search_focus = true;
+                    }
+                }
+
+                ui.separator();
+
+                if ui
                     .add_enabled(can_go_back, egui::Button::new(HIST_BACK_ICON))
                     .on_hover_text(&back_tip)
                     .clicked()
@@ -1550,7 +1578,7 @@ impl eframe::App for MarkdownApp {
                 }
                 if ui
                     .button("X")
-                    .on_hover_text(t!("toolbar.close_file_tip").to_string())
+                    .on_hover_text(t!("toolbar.close_file_tip", cmd = MOD).to_string())
                     .clicked()
                 {
                     nav_action = NavAction::Close(ui.ctx().clone());
@@ -1594,24 +1622,6 @@ impl eframe::App for MarkdownApp {
                 {
                     refresh_requested = true;
                 }
-                if ui
-                    .selectable_label(new_show_toc, "§")
-                    .on_hover_text(t!("toolbar.toc_toggle", cmd = MOD).to_string())
-                    .clicked()
-                {
-                    new_show_toc = !new_show_toc;
-                }
-                if ui
-                    .selectable_label(new_search_open, "🔍")
-                    .on_hover_text(t!("toolbar.search_toggle", cmd = MOD).to_string())
-                    .clicked()
-                {
-                    new_search_open = !new_search_open;
-                    if new_search_open {
-                        self.search_focus = true;
-                    }
-                }
-
                 // Transient auto-reload notice — fades after 2 s.
                 if show_reload_notice {
                     ui.separator();
@@ -1685,9 +1695,11 @@ impl eframe::App for MarkdownApp {
                 ui.separator();
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let cmd_opt: String = format!("{MOD}-{ALT}");
+
                     if ui
                         .button("🇽")
-                        .on_hover_text(t!("toolbar.close", cmd = MOD).to_string())
+                        .on_hover_text(t!("toolbar.close", cmd = cmd_opt).to_string())
                         .clicked()
                     {
                         ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
@@ -1983,15 +1995,7 @@ impl eframe::App for MarkdownApp {
             // ── Style the scroll bar that show_scrollable will create internally ─
             // These settings propagate into the inner ScrollArea because
             // show_scrollable inherits ui.style() from this outer ui.
-            {
-                let scroll = &mut ui.style_mut().spacing.scroll;
-                scroll.floating = true;
-                scroll.content_margin = egui::Margin::same(10);
-                scroll.bar_width = 10.0;
-                scroll.dormant_handle_opacity = 0.15;
-                scroll.interact_handle_opacity = 0.55;
-                scroll.active_handle_opacity = 0.80;
-            }
+            customise_scrollbar(ui);
 
             // ── Keyboard scrolling ───────────────────────────────────────────
             let user_scrolled = self.cache.handle_keyboard_scrolling(ui);
@@ -2184,11 +2188,11 @@ impl eframe::App for MarkdownApp {
         if self.show_help {
             let mut open = true;
             egui::Window::new(t!("help.window_title").to_string())
-                .resizable(true)
-                .default_size([1000.0, 700.0])
+                .auto_sized()
                 .collapsible(false)
                 .open(&mut open)
                 .show(ui, |ui| {
+                    customise_scrollbar(ui);
                     egui::ScrollArea::vertical().show(ui, |ui| {
                         let help_text =
                             t!("help.text", prev = "\u{276e}", next = "\u{276f}").to_string();
@@ -2208,6 +2212,17 @@ impl eframe::App for MarkdownApp {
             self.first_frame = false;
         }
     }
+}
+
+fn customise_scrollbar(ui: &mut egui::Ui) {
+    let scroll = &mut ui.style_mut().spacing.scroll;
+    scroll.floating = true;
+    scroll.content_margin = egui::Margin::same(10);
+    scroll.bar_inner_margin = 30.0;
+    scroll.bar_width = 10.0;
+    scroll.dormant_handle_opacity = 0.15;
+    scroll.interact_handle_opacity = 0.55;
+    scroll.active_handle_opacity = 0.80;
 }
 
 // ─── Fast SVG loader ──────────────────────────────────────────────────────────

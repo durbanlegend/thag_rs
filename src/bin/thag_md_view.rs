@@ -2,9 +2,9 @@
 [dependencies]
 eframe = { version = "0.36", features = ["wgpu"] }
 # egui_commonmark = { git = "https://github.com/durbanlegend/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
-egui_commonmark = { path = "/Users/donf/projects/egui_commonmark/egui_commonmark" }
+egui_commonmark = { path = "/Users/donf/projects/egui_commonmark/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
 
-egui_extras = { version = "0.36", features = ["svg"] }
+egui_extras = { version = "0.36", features = ["svg", "syntect"] }
 thag_proc_macros = { version = "1, thag-auto" }
 # thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 resvg = { version = "0.45", features = ["text"] }
@@ -1318,15 +1318,14 @@ impl MarkdownApp {
         }
     }
 
-    fn remove_search(&mut self, current_path_label: &str) {
-        let last_search_query = self.cache.search_query.clone();
+    fn remove_search(&mut self, id: &egui::Id) {
+        let search_query_mut = self.cache.search_query_mut(&id);
+        let last_search_query = search_query_mut.clone();
         // Remove search matches
-        self.cache.search_query = String::new();
-        self.cache
-            .update_search_matches(current_path_label, &self.content);
+        *search_query_mut = String::new();
+        self.cache.update_search_matches(id, &self.content);
         // Restore search box contents for when box is reopened
-        // self.cache.search_query.clone_from(&last_search_query);
-        self.cache.search_query = last_search_query;
+        *self.cache.search_query_mut(&id) = last_search_query;
     }
 }
 
@@ -1477,6 +1476,11 @@ impl eframe::App for MarkdownApp {
             }
         }
 
+        // Derive the viewer Id from the Ui context each frame. This scopes it
+        // to the widget hierarchy (emilk's preferred pattern) and avoids
+        // global hash collisions. Stable as long as the widget tree is stable.
+        let id = ui.make_persistent_id(current_path_label);
+
         // Feature toggles (independent of text focus).
         if cmd_t {
             new_show_toc = !show_toc;
@@ -1485,14 +1489,13 @@ impl eframe::App for MarkdownApp {
             new_search_open = !search_open;
             if new_search_open {
                 // Run the previous search if any
-                if !self.cache.search_query.is_empty() {
-                    self.cache
-                        .update_search_matches(&current_path_label, &self.content);
+                if !self.cache.search_query_mut(&id).is_empty() {
+                    self.cache.update_search_matches(&id, &self.content);
                 }
                 // Opening the bar — request focus for the text field.
                 self.search_focus = true;
             } else {
-                self.remove_search(&current_path_label);
+                self.remove_search(&id);
             }
         }
         if cmd_r && self.current_file_path.is_file() {
@@ -1504,7 +1507,7 @@ impl eframe::App for MarkdownApp {
         // Esc should close the search box and remove the search.
         if new_search_open && search_escape {
             new_search_open = false;
-            self.remove_search(&current_path_label);
+            self.remove_search(&id);
         }
 
         // ── Top panel: toolbar ────────────────────────────────────────────────────────────
@@ -1651,7 +1654,7 @@ impl eframe::App for MarkdownApp {
                         // Clear stale split-point cache so toggling ON triggers a fresh
                         // full render, and toggling OFF starts clean.
                         // self.cache = CommonMarkCache::default();
-                        self.cache.clear_scrollable();
+                        self.cache.clear_viewers();
                         add_code_block_themes(&mut self.cache);
                     }
                 }
@@ -1769,7 +1772,7 @@ impl eframe::App for MarkdownApp {
         if new_search_open {
             egui::Panel::top("search_bar").show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    let text_color = if self.cache.search_regex_error.is_some() {
+                    let text_color = if self.cache.search_regex_error(&id).is_some() {
                         ui.visuals().error_fg_color
                     } else {
                         ui.visuals().text_color()
@@ -1777,12 +1780,12 @@ impl eframe::App for MarkdownApp {
 
                     ui.label("🔍");
                     let response = ui.add(
-                        egui::TextEdit::singleline(&mut self.cache.search_query)
+                        egui::TextEdit::singleline(self.cache.search_query_mut(&id))
                             .text_color(text_color)
                             .hint_text(t!("search.placeholder").to_string())
                             .desired_width(280.0),
                     );
-                    if let Some(error) = &self.cache.search_regex_error {
+                    if let Some(error) = &self.cache.search_regex_error(&id) {
                         response.clone().on_hover_text(error);
                     }
 
@@ -1810,14 +1813,14 @@ impl eframe::App for MarkdownApp {
                          flag: SearchOptions,
                          label: egui::WidgetText,
                          tooltip: String| {
-                            let selected = self.cache.search_options.contains(flag);
+                            let selected = self.cache.search_options_mut(&id).contains(flag);
 
                             if ui
                                 .selectable_label(selected, label)
                                 .on_hover_text(tooltip)
                                 .clicked()
                             {
-                                self.cache.search_options.toggle(flag);
+                                self.cache.search_options_mut(&id).toggle(flag);
                                 search_options_changed = true;
                             }
                         };
@@ -1844,16 +1847,14 @@ impl eframe::App for MarkdownApp {
                     );
 
                     if search_options_changed {
-                        self.cache
-                            .update_search_matches(&current_path_label, &self.content);
+                        self.cache.update_search_matches(&id, &self.content);
                     }
 
                     if response.changed() {
-                        self.cache
-                            .update_search_matches(&current_path_label, &self.content);
+                        self.cache.update_search_matches(&id, &self.content);
                     }
-                    let match_count = self.cache.search_ranges().len();
-                    match self.cache.active_match() {
+                    let match_count = self.cache.search_ranges(&id).len();
+                    match self.cache.active_match(&id) {
                         Some(i) if match_count > 0 => ui.weak(format!("{} / {match_count}", i + 1)),
                         _ => ui.weak(t!("search.no_matches").to_string()),
                     };
@@ -1869,7 +1870,7 @@ impl eframe::App for MarkdownApp {
                         .clicked()
                         || (enter_pressed && ui.input(|i| i.modifiers.shift))
                     {
-                        self.cache.go_to_match(-1);
+                        self.cache.go_to_match(&id, -1);
                     }
                     if ui
                         .add_enabled(
@@ -1880,7 +1881,7 @@ impl eframe::App for MarkdownApp {
                         .clicked()
                         || (enter_pressed && !ui.input(|i| i.modifiers.shift))
                     {
-                        self.cache.go_to_match(1);
+                        self.cache.go_to_match(&id, 1);
                     }
 
                     if ui
@@ -1982,8 +1983,7 @@ impl eframe::App for MarkdownApp {
                                             entry.slug, entry.text
                                         );
                                     }
-                                    *self.cache.scroll_to_id_target_mut() =
-                                        Some(entry.slug.clone());
+                                    self.cache.scroll_to_heading(&id, Some(entry.slug.clone()));
                                 }
                             }
                         });
@@ -1998,7 +1998,7 @@ impl eframe::App for MarkdownApp {
             customise_scrollbar(ui);
 
             // ── Keyboard scrolling ───────────────────────────────────────────
-            let user_scrolled = self.cache.handle_keyboard_scrolling(ui);
+            let user_scrolled = self.cache.handle_keyboard_scrolling(&id, ui);
 
             // ── Font scale ──────────────────────────────────────────────────────────
             // Applying to the outer ui propagates into show_scrollable's
@@ -2061,13 +2061,10 @@ impl eframe::App for MarkdownApp {
                 .search_active_match_color(active_bg)
                 .enable_scroll_to_heading(true)
                 .viewport_cache(new_use_viewport_cache)
-                .show_scrollable(&current_path_label, ui, &mut self.cache, &self.content);
+                .show_scrollable(id, ui, &mut self.cache, &self.content);
 
-            self.cache.sync_scrollable_active_match(
-                &current_path_label,
-                self.use_viewport_cache,
-                user_scrolled,
-            );
+            self.cache
+                .sync_scrollable_active_match(&id, self.use_viewport_cache, user_scrolled);
         });
 
         // ── Intercept link clicks from egui_commonmark ────────────────────────────────────

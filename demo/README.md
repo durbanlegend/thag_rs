@@ -136,16 +136,16 @@ which will give identical output to the compiled script above.
  running concurrently, or conversely an outer `with_sys_alloc` ending in one thread
  could prematurely reset the current allocator to  `TaskAware` while another
  instance is still running in another thread. We can and do build in a check in
- the TaskAware branch to detect and ignore profiler code, but in practice there is
+ the `TaskAware` branch to detect and ignore profiler code, but in practice there is
  little sign of such races being a problem.
 
  Attempts to resolve this issue with thread-local storage have not borne fruit.
  For instance async tasks are by no means guaranteed to resume in the same thread
  after suspension.
- The ideal would seem to be a reentrant Mutex or RwLock with mutability - so far tried
+ The ideal would seem to be a reentrant Mutex or `RwLock` with mutability - so far tried
  without success, but a subject for another prototype.
  Dispatcher that routes allocation requests to the active allocator
- according to the USING_SYSTEM_ALLOCATOR variable for the current thread.
+ according to the `USING_SYSTEM_ALLOCATOR` static variable for the current thread.
  Task-aware allocator that tracks memory allocations
 
 **Purpose:** Prototype of a ring-fenced allocator for memory profiling.
@@ -188,7 +188,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/alloc_proto_atom
  running concurrently, or conversely an outer `with_sys_alloc` ending in one thread
  could prematurely reset the current allocator to  `TaskAware` while another
  instance is still running in another thread. We can and do build in a check in
- the TaskAware branch to detect and ignore profiler code, but in practice there is
+ the `TaskAware` branch to detect and ignore profiler code, but in practice there is
  little sign of such races being a problem.
 
  Attempts to resolve this issue with thread-local storage have not borne fruit.
@@ -295,7 +295,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark.rs
 
 ### Script: benchmark_firestorm.rs
 
-**Description:**  ChagtGPT-generated profiling synchronous time profiling benchmark: `firestorm` implementation`.
+**Description:**  ChagtGPT-generated profiling synchronous time profiling benchmark: `firestorm` implementation.
  See `demo/benchmark*.rs` for base code and `thag_profiler` implementation.
 
 
@@ -319,7 +319,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark_firest
 
 ### Script: benchmark_profile.rs
 
-**Description:**  ChagtGPT-generated profiling synchronous time profiling benchmark: `thag_profiler` implementation`.
+**Description:**  ChagtGPT-generated profiling synchronous time profiling benchmark: `thag_profiler` implementation.
  See `demo/benchmark*.rs` for base code and `firestorm` implementation.
 
 
@@ -448,7 +448,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cargo_show_
 
 ### Script: bpaf_cmd_chain.rs
 
-**Description:**  Example from bpaf crate docs2/src/adjacent_command/derive.rs.
+**Description:**  Example from bpaf crate `docs2/src/adjacent_command/derive.rs`.
 
  E.g. `thag demo/bpaf_cmd-chain.rs -- eat Fastfood drink --coffee sleep --time=5`
 
@@ -722,7 +722,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_builder
 
 **Description:**  Published example from `clap` tutorial (derive), with added displays.
 
- E.g. thag demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
+ E.g. `thag demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob`
 
 **Purpose:** Demonstrate `clap` CLI using the derive option
 
@@ -792,7 +792,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_
 
 ### Script: cmd_args.rs
 
-**Description:**  A prototype of the `cmd_args` module of thag_rs itself.
+**Description:**  A prototype of the `cmd_args` module of `thag_rs` itself.
 
  E.g. `thag -tv demo/cmd_args.rs -- -tv demo/hello.rs -- -fq Hello world`
 
@@ -869,9 +869,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args_clap.rs
  contrast better with black or white (background or foreground).
  Can't recall provenance, but the luminance formula is one of
  many discussed here:
- https://stackoverflow.com/questions/596216/formula-to-determine-perceived-brightness-of-rgb-color
+ `https://stackoverflow.com/questions/596216/formula-to-determine-perceived-brightness-of-rgb-color`
 
-**Purpose:** Choose black or white as a contrasting colour for a given colour.
+**Purpose:** Demo choosing a black or white background for best contrast.
 
 **Type:** Program
 
@@ -898,7 +898,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/color_contrast.r
 
 **Purpose:** Demo using `thag_rs` to develop a module outside of the project.
 
-**Crates:** `lazy_static`, `log`, `nu_ansi_term`, `strum`, `supports_color`, `termbg`, `thag_rs`
+**Crates:** `log`, `nu_ansi_term`, `strum`, `supports_color`, `termbg`, `thag_rs`
 
 **Type:** Program
 
@@ -1016,9 +1016,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config_with_test
 
 ### Script: context_demo.rs
 
-**Description:**  TermAttributes context pattern demo.
+**Description:**  `TermAttributes` context pattern demo.
 
-**Purpose:** Demonstrate TermAttributes context pattern for testing and temporary overrides
+**Purpose:** Demonstrate `TermAttributes` context pattern for testing and temporary overrides
 
 **Crates:** `thag_styling`
 
@@ -1064,7 +1064,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/correct_reset_re
 
 ### Script: count_main_methods.rs
 
-**Description:**  Prototype of a function required by thag_rs to count the main methods
+**Description:**  Prototype of a function required by `thag_rs` to count the main methods
  in a script to decide if it's a program or a snippet. Uses the `syn`
  visitor pattern. This is more reliable than a simple source code search
  which tends to find false positives in string literals and comments.
@@ -1089,12 +1089,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/count_main_metho
 
 ### Script: create_next_file.rs
 
-**Description:**  Prototype of creating files named sequentially from iter_000000.rs to
- iter_999999.rs in a thag_rs/demo subdirectory of the OS's temporary
+**Description:**  Prototype of creating files named sequentially from `iter_000000.rs` to
+ `iter_999999.rs` in a `thag_rs/demo` subdirectory of the OS's temporary
  directory. The need is to generate well-behaved and consistent human-readable
  names for temporary programs generated from rapid iteration expressions.
 
 **Purpose:** Demo sequential file creation and the kind of code that is well suited to generation by an LLM.
+
+**Crates:** `char`
 
 **Type:** Program
 
@@ -1177,7 +1179,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key
 
 ### Script: crokey_print_key_no_combiner.rs
 
-**Description:**  Published example of KeyCombination from the `crokey` crate.
+**Description:**  Published example of `KeyCombination` from the `crokey` crate.
 
  The latest version of this example is available in the [examples] folder
   in the `crokey` repository. At time of writing you can run it successfully just
@@ -1295,8 +1297,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channe
  an alternative to garbage collection.
 
  This is the published example from the `crossbeam-epoch` crate. For a more intuitive
- example, you can try the "Canary" example from https://github.com/ericseppanen/epoch_playground.
- and the associated blog post https://codeandbitters.com/learning-rust-crossbeam-epoch/.
+ example, you can try the `Canary` example from `https://github.com/ericseppanen/epoch_playground`.
+ and the associated blog post `https://codeandbitters.com/learning-rust-crossbeam-epoch/.`
  (Not included here due to implicit copyright). This will need at least a change from
  `rng.gen_range(0, bc_size)` to `rng.gen_range(0..bc_size)`, and optional updates to function naming.
 
@@ -1323,7 +1325,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_epoch_
 
 **Description:**  Published example from the `crossterm` crate.
 
- Url: https://github.com/crossterm-rs/crossterm/blob/master/README.md
+ Url: `https://github.com/crossterm-rs/crossterm/blob/master/README.md`
 
 **Purpose:** Demo crossterm terminal manipulation.
 
@@ -1349,7 +1351,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm.rs
  "Print a rectangle colored with magenta and use both direct execution and lazy execution."
  Direct execution with `execute` and lazy execution with `queue`.
 
- Url: https://docs.rs/crossterm/latest/crossterm/
+ Url: `https://docs.rs/crossterm/latest/crossterm/`
 
 **Purpose:** Demo `crossterm` command API.
 
@@ -1375,7 +1377,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_altern
  "Print a rectangle colored with magenta and use both direct execution and lazy execution."
  Direct execution with `execute` and lazy execution with `queue`.
 
- Url: https://docs.rs/crossterm/latest/crossterm/
+ Url: `https://docs.rs/crossterm/latest/crossterm/`
 
 **Purpose:** Demo `crossterm` command API.
 
@@ -1399,7 +1401,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_comman
 
 **Description:**  Published example from the `crossterm` crate.
 
- Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/event-read.rs
+ Url: `https://github.com/crossterm-rs/crossterm/blob/master/examples/event-read.rs`
  "Demonstrates how to block read events."
 
 **Purpose:** Demo running crate example code, `crossterm` events.
@@ -1424,7 +1426,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_event_
 
 **Description:**  Published example from the `crossterm` crate.
 
- Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/key-display.rs
+ Url: `https://github.com/crossterm-rs/crossterm/blob/master/examples/key-display.rs`
  "Demonstrates the display format of key events.
 
  This example demonstrates the display format of key events, which is useful for displaying in
@@ -2215,108 +2217,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_markdown_vi
 
 ---
 
-### Script: egui_markdown_viewer_cached.rs
-
-**Description:**  A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
- `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the
- current markdown file, so navigation between linked documents works correctly.
- Supports back/forward history, light/dark/system theme switching via `egui_theme_switch`, zoom,
- font scaling, opening a new file (Cmd/Ctrl-O), a left-side table of contents panel (§ / Cmd/Ctrl-T),
- text search with match counter and section navigation (Cmd/Ctrl-F), refresh from disk (Cmd/Ctrl-R),
- live file watching (auto-reloads when the file changes on disk), and a help screen (F1).
- Improved readability over the egui defaults: near-black text in light mode,
- near-white in dark mode, warm paper background, higher-contrast code block backgrounds, and
- GitHub-style syntax highlighting for code blocks.
- On Unix systems, launching from a terminal automatically detaches the process so the terminal
- is returned immediately (use --no-detach / --foreground to suppress this).
-
- Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
- an image produces an invisible zero-size hyperlink. If you want a clickable link alongside an image,
- add an explicit text link in the markdown below it. You may also notice that it does not handle banners
- well.
- The MSRV of this program is 1.92.
- Documents at or above this byte count get the viewport-cache toggle shown in
- the toolbar and have caching auto-enabled.  Below this size the simple
- full-document render path is always used (accurate + fast enough).
- Help text rendered in the F1 help window.
- Applies contrast colours to both egui themes; font sizes are always left at
- egui defaults so toggling never causes a scroll-position jump.
-
- `enhanced = true`  — high-contrast colours (near-white/near-black text, warm backgrounds).
- `enhanced = false` — stock egui colours.
-
- Called once at startup and again whenever the toolbar "Contrast+/-" toggle changes.
- `image_loading_spinners` is kept `false` in both modes.
- An entry in the table of contents, derived from one ATX heading in the document.
- Converts heading text to a URL-safe slug: lowercased, non-alphanumeric runs replaced by `-`.
- Parses an ATX heading line and returns `(level, plain_text)`.
- `plain_text` is the heading content with any trailing `{…}` attribute block stripped.
- Returns `None` for non-heading lines, indented lines, or malformed ATX syntax.
- Returns the explicit `{#id}` from a heading line, if present.
- Scans `raw` markdown, builds a `Vec<TocEntry>` from headings, and returns a version
- of the content with `{#slug}` attributes injected into every heading that lacks one.
-
- **Uses pulldown-cmark as the heading oracle** rather than a hand-rolled fence
- tracker. This guarantees that the TOC and injected IDs are consistent with what
- the renderer sees. A custom fence tracker diverges from pulldown-cmark in edge
- cases such as XML-like tags (`<context>`, `<files>`) being treated as type-6 HTML
- blocks that can swallow a code-fence opener — leading to headings that are
- unreachable by the scroll mechanism.
- Rewrites relative image paths in Markdown to absolute `file://` URIs so they
- load correctly regardless of platform CWD behaviour.
-
- Paths that already carry a URI scheme (`http://`, `file://`, `data:`, …) are
- left untouched. If a relative path cannot be resolved (file does not exist)
- it is also left untouched so existing error behaviour is preserved.
-
- Note: processes the raw text, so a path inside a fenced code block is also
- rewritten if it matches the image syntax — an acceptable trade-off for the
- cross-platform fix.
- Converts an absolute `Path` to a `file://` URI that is valid on all platforms.
- Windows paths (`C:\…`) become `file:///C:/…`; Unix paths become `file:///…`.
- Append byte-offset positions of all case-insensitive occurrences of `query`
- within a single pulldown-cmark text event into `out`.
- `span_start` is the event's `src_span.start` (byte offset into the full source).
- A code-fence problem detected before rendering.
- Scan `content` for fence problems without a full parser.
-
- A fence boundary is a line with ≤ 3 leading spaces that starts with `\`\`\``
- or `~~~` (matching the same rule used by `extract_toc_and_inject_ids`).
-
- Two invariants are checked:
- - **(a)** Total boundary count must be even — odd means at least one unclosed.
- - **(b)** Every *typed* boundary (one with a language tag) must be
-   odd-numbered in sequence; an even-numbered typed boundary means the
-   previous typed opener was never closed.
- Return a one-line description of a fence error suitable for `eprintln!`.
- Build a markdown error page to display instead of a broken file.
- The error renders nicely in the viewer; the user can fix the file and
- press Cmd/Ctrl-R to reload.
- On Unix systems: if any stdio stream is a real terminal and `--no-detach`/`--foreground`
- is not present, spawn a detached child with a new session and exit the parent immediately,
- freeing the terminal. Errors (e.g. can't find the current exe) fall through silently so
- the viewer still runs in the foreground.
- Pending navigation action triggered by the toolbar buttons.
- The state holder for our egui app.
-
-**Purpose:** GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature
-
-**Crates:** `eframe`, `egui_commonmark`, `egui_extras`, `egui_theme_switch`, `inquire`, `log`, `notify`, `pulldown_cmark`, `resvg`, `rfd`, `thag_styling`
-
-**Type:** Program
-
-**Categories:** crates, gui, tools
-
-**Link:** [egui_markdown_viewer_cached.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_markdown_viewer_cached.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_markdown_viewer_cached.rs
-```
-
----
-
 ### Script: egui_markdown_viewer_instrumented.rs
 
 **Description:**  A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
@@ -2384,36 +2284,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_markdown_vi
 
 ---
 
-### Script: egui_markdown_viewer_svg_instrumented.rs
+### Script: egui_syntect_highlighting.rs
 
-**Description:**  A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
- `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the
- current markdown file, so navigation between linked documents works correctly. Supports back/forward history
- and light/dark/system theme switching via `egui_theme_switch`.
- Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
- an image produces an invisible zero-size hyperlink. If you want a clickable link alongside an image,
- add an explicit text link in the markdown below it. You may also notice that it does not handle banners
- well.
- See the `md-viewer` crate for a professional quality installable example using `egui_commonmark`
- vendored to address some issues.
- Pending navigation action triggered by the toolbar buttons.
- The state holder for our egui app.
- System font paths for fallback (Linux and Windows common paths)
+**Description:**  Minimal egui app: highlight a Rust snippet with a syntect theme loaded from a `.tmTheme` file.
 
-**Purpose:** Prototype a markdown viewer using the `egui_commonmark` crate.
+ Usage: `thag demo/egui_syntect_highlighting.rs -- path/to/MyTheme.tmTheme`
+ (defaults to `theme.tmTheme` in the current directory)
+ A tiny word counter.
 
-**Crates:** `eframe`, `egui_commonmark`, `egui_theme_switch`, `env`, `inquire`, `log`, `thag_profiler`, `thag_styling`
+**Purpose:** demo and test `egui_extras` code block formatting
+
+**Crates:** `eframe`, `egui_extras`, `syntect`
 
 **Type:** Program
 
-**Categories:** crates, demo, gui, prototype, tools
+**Categories:** crates, demo, styling, technique
 
-**Link:** [egui_markdown_viewer_svg_instrumented.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_markdown_viewer_svg_instrumented.rs)
+**Link:** [egui_syntect_highlighting.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_syntect_highlighting.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_markdown_viewer_svg_instrumented.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_syntect_highlighting.rs
 ```
 
 ---
@@ -2975,43 +2867,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_ite
 
 ---
 
-### Script: fib_doubling_iterative_ibig_instrumented.rs
-
-**Description:**  Very fast non-recursive calculation of an individual Fibonacci number using the
- Fibonacci doubling identity. See also `demo/fib_doubling_recursive.rs` for the
- original recursive implementation and the back story.
-
- This version is derived from `demo/fib_doubling_recursive_ibig.rs` with the following
- changes:
-
- 1. Instead of calculating the `Fi` values in descending order as soon as they are
- identified, add them to a list and then calculate them from the list in ascending
- order.
-
- 2. The list tends to end up containing strings of 3 or more commonly 4 consecutive
- `i` values for which `Fi` must be calculated. For any `i` that is the 3rd or
- subsequent entry in such a consecutive run, that is, for which Fi-2 and Fi-1 have
- already been calculated, compute Fi cheaply as Fi-2 + Fi-1 instead of using the
- normal multiplication formula.
-
-**Purpose:** Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
-
-**Crates:** `ibig`, `thag_profiler`
-
-**Type:** Program
-
-**Categories:** big_numbers, learning, math, recreational, technique
-
-**Link:** [fib_doubling_iterative_ibig_instrumented.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_ibig_instrumented.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_ibig_instrumented.rs -- 100
-```
-
----
-
 ### Script: fib_doubling_iterative_rug.rs
 
 **Description:**  Very fast non-recursive calculation of an individual Fibonacci number using the
@@ -3190,7 +3045,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_
 
 ### Script: fib_doubling_recursive_ibig_cached.rs
 
-**Description:** / Very fast recursive calculation of an individual Fibonacci number using the
+**Description:**  Very fast recursive calculation of an individual Fibonacci number using the
  Fibonacci doubling identity. See also `demo/fib_doubling_iterative.rs` and
  `demo/fib_doubling_iterative_purge.rs` for non-recursive variations.
 
@@ -3215,7 +3070,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_
 
 **Purpose:** Demo fast efficient Fibonacci with big numbers and limited, cached recursion.
 
-**Crates:** `ibig`, `syn`, `thag_demo_proc_macros`
+**Crates:** `ibig`, `thag_demo_proc_macros`
 
 **Type:** Program
 
@@ -4455,11 +4310,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_gen_styles
 
 **Description:**  Demo of an advanced generic macro to generate lazy static variables.
  See also `demo/macro_lazy_static_var_errs.rs` for a more meaningful usage example.
- match my_lazy_var {
-     Ok(value) => println!("Initialized value: {}", value),
-     Err(e) => eprintln!("Failed to initialize: {}", e),
- }
- ```
 
 **Purpose:** Demonstrate a handy alternative to the `lazy_static` crate.
 
@@ -4708,10 +4558,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/mintty_color_det
 ### Script: mock_edit.rs
 
 **Description:**  Used to debug a doctest.
+ Stuck on `thag_rs` v1.0.1 due to `mockall` dependency on `syn` v2.
 
 **Purpose:** Debugging script.
 
-**Crates:** `crossterm`, `mockall`, `thag_rs`
+**Crates:** `crossterm`, `mockall`, `thag_rs`, `thag_styling`
 
 **Type:** Snippet
 
@@ -5625,10 +5476,10 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ra_ap_syntax_tre
 
 ### Script: ratatui_integration_demo.rs
 
-**Description:**  Simple Ratatui + thag_styling Integration Demo
+**Description:**  Simple Ratatui + `thag_styling` Integration Demo
 
  This demo shows how to create a basic themed TUI application using ratatui
- and thag_styling's semantic role system.
+ and `thag_styling`'s semantic role system.
 
  E.g.:
  ```
@@ -8602,271 +8453,27 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_convert_the
 
 ---
 
-### Script: thag_md_theme_anim.rs
+### Script: thag_gen_help.rs
 
-**Description:**  A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
- `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the
- current markdown file, so navigation between linked documents works correctly.
- Supports back/forward history, light/dark/system theme switching via `egui_theme_switch`, zoom,
- font scaling, opening a new file (Cmd/Ctrl-O), a left-side table of contents panel (§ / Cmd/Ctrl-T),
- text search with match counter and section navigation (Cmd/Ctrl-F), refresh from disk (Cmd/Ctrl-R),
- live file watching (auto-reloads when the file changes on disk), and a help screen (F1).
- Improved readability over the egui defaults: near-black text in light mode,
- near-white in dark mode, warm paper background, higher-contrast code block backgrounds, and
- GitHub-style syntax highlighting for code blocks.
- On Unix systems, launching from a terminal automatically detaches the process so the terminal
- is returned immediately (use --no-detach / --foreground to suppress this).
+**Description:**  Minimal prospective `thag` tool to generate help text for a Rust source file from its Doc comments.
+ Very basic - for now the Rust source file's location is hard-coded.
 
- Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
- an image produces an invisible zero-size hyperlink. If you want a clickable link alongside an image,
- add an explicit text link in the markdown below it. You may also notice that it does not handle banners
- well.
- The MSRV of this program is 1.92.
- Applies contrast colours to both egui themes; font sizes are always left at
- egui defaults so toggling never causes a scroll-position jump.
+ Usage: `thag demo/thag_gen_help.rs
 
- `enhanced = true`  — high-contrast colours (near-white/near-black text, warm backgrounds).
- `enhanced = false` — stock egui colours.
+**Purpose:** demo and test `egui_extras` code block formatting
 
- Called once at startup and again whenever the toolbar "Contrast+/-" toggle changes.
- `image_loading_spinners` is kept `false` in both modes.
- Adjusts a Color32 by a given factor (e.g., 1.2 for +20% brightness).
- An entry in the table of contents, derived from one ATX heading in the document.
- Converts heading text to a URL-safe slug: lowercased, non-alphanumeric runs replaced by `-`.
- Parses an ATX heading line and returns `(level, plain_text)`.
- `plain_text` is the heading content with any trailing `{…}` attribute block stripped.
- Returns `None` for non-heading lines, indented lines, or malformed ATX syntax.
- Returns the explicit `{#id}` from a heading line, if present.
- Scans `raw` markdown, builds a `Vec<TocEntry>` from headings, and returns a version
- of the content with `{#slug}` attributes injected into every heading that lacks one.
+**Crates:** `env`, `thag_common`
 
- **Uses pulldown-cmark as the heading oracle** rather than a hand-rolled fence
- tracker. This guarantees that the TOC and injected IDs are consistent with what
- the renderer sees. A custom fence tracker diverges from pulldown-cmark in edge
- cases such as XML-like tags (`<context>`, `<files>`) being treated as type-6 HTML
- blocks that can swallow a code-fence opener — leading to headings that are
- unreachable by the scroll mechanism.
- Rewrites relative image paths in Markdown to absolute `file://` URIs so they
- load correctly regardless of platform CWD behaviour.
+**Type:** Snippet
 
- Paths that already carry a URI scheme (`http://`, `file://`, `data:`, …) are
- left untouched. If a relative path cannot be resolved (file does not exist)
- it is also left untouched so existing error behaviour is preserved.
+**Categories:** technique, tools
 
- Note: processes the raw text, so a path inside a fenced code block is also
- rewritten if it matches the image syntax — an acceptable trade-off for the
- cross-platform fix.
- Converts an absolute `Path` to a `file://` URI that is valid on all platforms.
- Windows paths (`C:\…`) become `file:///C:/…`; Unix paths become `file:///…`.
- Append byte-offset positions of all case-insensitive occurrences of `query`
- within a single pulldown-cmark text event into `out`.
- `span_start` is the event's `src_span.start` (byte offset into the full source).
- A code-fence problem detected before rendering.
- Scan `content` for fence problems without a full parser.
-
- A fence boundary is a line with ≤ 3 leading spaces that starts with a triple backtick
- or triple tilde (`~~~`) (matching the same rule used by `extract_toc_and_inject_ids`).
-
- Two invariants are checked:
- - **(a)** Total boundary count must be even — odd means at least one unclosed.
- - **(b)** Every *typed* boundary (one with a language tag) must be
-   odd-numbered in sequence; an even-numbered typed boundary means the
-   previous typed opener was never closed.
- Return a one-line description of a fence error suitable for `eprintln!`.
- Build a markdown error page to display instead of a broken file.
- The error renders nicely in the viewer; the user can fix the file and
- press Cmd/Ctrl-R to reload.
- On Unix systems: if any stdio stream is a real terminal and `--no-detach`/`--foreground`
- is not present, spawn a detached child with a new session and exit the parent immediately,
- freeing the terminal. Errors (e.g. can't find the current exe) fall through silently so
- the viewer still runs in the foreground.
- Detect the preferred UI locale from the operating system.
- Uses `sys-locale` which reads native OS APIs (CFPreferences on macOS,
- `GetUserDefaultLocaleName` on Windows, POSIX env-vars on Linux).
- Falls back to `"en"` when no usable locale is detected.
- Pending navigation action triggered by the toolbar buttons.
- The state holder for our egui app.
-
-**Purpose:** GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature
-
-**Crates:** `eframe`, `egui_commonmark`, `egui_extras`, `egui_theme_lerp`, `egui_theme_switch`, `inquire`, `log`, `notify`, `pulldown_cmark`, `resvg`, `rfd`, `rust_i18n`, `sys_locale`, `thag_styling`
-
-**Type:** Program
-
-**Categories:** crates, gui, tools
-
-**Link:** [thag_md_theme_anim.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_md_theme_anim.rs)
+**Link:** [thag_gen_help.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_gen_help.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_md_theme_anim.rs
-```
-
----
-
-### Script: thag_md_theme_i18n.rs
-
-**Description:**  A version of src/bin/thag_md_viewer with internationalization.
- This script requires the `thag_rs` project to be present and pointed to by the standard
- THAG_DEV_PATH environment variable.
- The MSRV of this program is 1.92.
- Applies contrast colours to both egui themes; font sizes are always left at
- egui defaults so toggling never causes a scroll-position jump.
-
- `enhanced = true`  — high-contrast colours (near-white/near-black text, warm backgrounds).
- `enhanced = false` — stock egui colours.
-
- Called once at startup and again whenever the toolbar "Contrast+/-" toggle changes.
- `image_loading_spinners` is kept `false` in both modes.
- Adjusts a Color32 by a given factor (e.g., 1.2 for +20% brightness).
- An entry in the table of contents, derived from one ATX heading in the document.
- Converts heading text to a URL-safe slug: lowercased, non-alphanumeric runs replaced by `-`.
- Parses an ATX heading line and returns `(level, plain_text)`.
- `plain_text` is the heading content with any trailing `{…}` attribute block stripped.
- Returns `None` for non-heading lines, indented lines, or malformed ATX syntax.
- Returns the explicit `{#id}` from a heading line, if present.
- Scans `raw` markdown, builds a `Vec<TocEntry>` from headings, and returns a version
- of the content with `{#slug}` attributes injected into every heading that lacks one.
-
- **Uses pulldown-cmark as the heading oracle** rather than a hand-rolled fence
- tracker. This guarantees that the TOC and injected IDs are consistent with what
- the renderer sees. A custom fence tracker diverges from pulldown-cmark in edge
- cases such as XML-like tags (`<context>`, `<files>`) being treated as type-6 HTML
- blocks that can swallow a code-fence opener — leading to headings that are
- unreachable by the scroll mechanism.
- Rewrites relative image paths in Markdown to absolute `file://` URIs so they
- load correctly regardless of platform CWD behaviour.
-
- Paths that already carry a URI scheme (`http://`, `file://`, `data:`, …) are
- left untouched. If a relative path cannot be resolved (file does not exist)
- it is also left untouched so existing error behaviour is preserved.
-
- Note: processes the raw text, so a path inside a fenced code block is also
- rewritten if it matches the image syntax — an acceptable trade-off for the
- cross-platform fix.
- Converts an absolute `Path` to a `file://` URI that is valid on all platforms.
- Windows paths (`C:\…`) become `file:///C:/…`; Unix paths become `file:///…`.
- Append byte-offset positions of all case-insensitive occurrences of `query`
- within a single pulldown-cmark text event into `out`.
- `span_start` is the event's `src_span.start` (byte offset into the full source).
- A code-fence problem detected before rendering.
- Scan `content` for fence problems without a full parser.
-
- A fence boundary is a line with ≤ 3 leading spaces that starts with a triple backtick
- or triple tilde (`~~~`) (matching the same rule used by `extract_toc_and_inject_ids`).
-
- Two invariants are checked:
- - **(a)** Total boundary count must be even — odd means at least one unclosed.
- - **(b)** Every *typed* boundary (one with a language tag) must be
-   odd-numbered in sequence; an even-numbered typed boundary means the
-   previous typed opener was never closed.
- Return a one-line description of a fence error suitable for `eprintln!`.
- Build a markdown error page to display instead of a broken file.
- The error renders nicely in the viewer; the user can fix the file and
- press Cmd/Ctrl-R to reload.
- On Unix systems: if any stdio stream is a real terminal and `--no-detach`/`--foreground`
- is not present, spawn a detached child with a new session and exit the parent immediately,
- freeing the terminal. Errors (e.g. can't find the current exe) fall through silently so
- the viewer still runs in the foreground.
- Detect the preferred UI locale from the operating system.
- Uses `sys-locale` which reads native OS APIs (CFPreferences on macOS,
- `GetUserDefaultLocaleName` on Windows, POSIX env-vars on Linux).
- Falls back to `"en"` when no usable locale is detected.
- Pending navigation action triggered by the toolbar buttons.
- The state holder for our egui app.
-
-**Purpose:** GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature
-
-**Crates:** `eframe`, `egui_commonmark`, `egui_extras`, `inquire`, `log`, `notify`, `pulldown_cmark`, `resvg`, `rfd`, `rust_i18n`, `sys_locale`, `thag_proc_macros`, `thag_styling`
-
-**Type:** Program
-
-**Categories:** crates, gui, tools
-
-**Link:** [thag_md_theme_i18n.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_md_theme_i18n.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_md_theme_i18n.rs
-```
-
----
-
-### Script: thag_md_view_instr.rs
-
-**Description:**  A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
- `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the
- current markdown file, so navigation between linked documents works correctly.
- Supports back/forward history, light/dark/system theme switching via `egui_theme_switch`, zoom,
- font scaling, opening a new file (Cmd/Ctrl-O), a left-side table of contents panel (§ / Cmd/Ctrl-T),
- text search with match counter and section navigation (Cmd/Ctrl-F), refresh from disk (Cmd/Ctrl-R),
- live file watching (auto-reloads when the file changes on disk), and a help screen (F1).
- Improved readability over the egui defaults: near-black text in light mode,
- near-white in dark mode, warm paper background, higher-contrast code block backgrounds, and
- GitHub-style syntax highlighting for code blocks.
- On Unix systems, launching from a terminal automatically detaches the process so the terminal
- is returned immediately (use --no-detach / --foreground to suppress this).
-
- Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
- an image produces an invisible zero-size hyperlink. If you want a clickable link alongside an image,
- add an explicit text link in the markdown below it. You may also notice that it does not handle banners
- well.
- The MSRV of this program is 1.92.
- Help text rendered in the F1 help window.
- Applies contrast colours to both egui themes; font sizes are always left at
- egui defaults so toggling never causes a scroll-position jump.
-
- `enhanced = true`  — high-contrast colours (near-white/near-black text, warm backgrounds).
- `enhanced = false` — stock egui colours.
-
- Called once at startup and again whenever the toolbar "Contrast+/-" toggle changes.
- `image_loading_spinners` is kept `false` in both modes.
- An entry in the table of contents, derived from one ATX heading in the document.
- Converts heading text to a URL-safe slug: lowercased, non-alphanumeric runs replaced by `-`.
- Parses an ATX heading line and returns `(level, plain_text)`.
- `plain_text` is the heading content with any trailing `{…}` attribute block stripped.
- Returns `None` for non-heading lines, indented lines, or malformed ATX syntax.
- Returns the explicit `{#id}` from a heading line, if present.
- Scans `raw` markdown, builds a `Vec<TocEntry>` from ATX headings, and returns a version
- of the content with `{#slug}` attributes injected into every heading that lacks one.
- Rewrites relative image paths in Markdown to absolute `file://` URIs so they
- load correctly regardless of platform CWD behaviour.
-
- Paths that already carry a URI scheme (`http://`, `file://`, `data:`, …) are
- left untouched. If a relative path cannot be resolved (file does not exist)
- it is also left untouched so existing error behaviour is preserved.
-
- Note: processes the raw text, so a path inside a fenced code block is also
- rewritten if it matches the image syntax — an acceptable trade-off for the
- cross-platform fix.
- Converts an absolute `Path` to a `file://` URI that is valid on all platforms.
- Windows paths (`C:\…`) become `file:///C:/…`; Unix paths become `file:///…`.
- Append byte-offset positions of all case-insensitive occurrences of `query`
- within a single pulldown-cmark text event into `out`.
- `span_start` is the event's `src_span.start` (byte offset into the full source).
- On Unix systems: if any stdio stream is a real terminal and `--no-detach`/`--foreground`
- is not present, spawn a detached child with a new session and exit the parent immediately,
- freeing the terminal. Errors (e.g. can't find the current exe) fall through silently so
- the viewer still runs in the foreground.
- Pending navigation action triggered by the toolbar buttons.
- The state holder for our egui app.
-
-**Purpose:** GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature
-
-**Crates:** `eframe`, `egui_commonmark`, `egui_extras`, `egui_theme_switch`, `inquire`, `log`, `notify`, `pulldown_cmark`, `resvg`, `rfd`, `thag_profiler`, `thag_styling`
-
-**Type:** Program
-
-**Categories:** crates, gui, tools
-
-**Link:** [thag_md_view_instr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_md_view_instr.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_md_view_instr.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_gen_help.rs
 ```
 
 ---

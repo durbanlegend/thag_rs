@@ -12,8 +12,11 @@ syntect = { version = "5.3", default-features = false, features = ["default-fanc
  */
 /// Minimal egui app: highlight a Rust snippet with a syntect theme loaded from a `.tmTheme` file.
 ///
-/// Usage: `cargo run --release -- path/to/MyTheme.tmTheme`
+/// Usage: `thag demo/egui_syntect_highlighting.rs -- path/to/MyTheme.tmTheme`
 /// (defaults to `theme.tmTheme` in the current directory)
+//# Purpose: demo and test `egui_extras` code block formatting
+//# Categories: crates, demo, styling, technique
+//# Argument: PATH: Path to a `syntect` `.tmTheme` file. There are a few examples in the `thag_rs/assets/sublime_themes` directory and `egui_extras` has its own.
 use eframe::egui;
 use egui_extras::syntax_highlighting::{self, CodeTheme, SyntectSettings};
 use syntect::highlighting::{Theme, ThemeSet};
@@ -83,29 +86,27 @@ impl eframe::App for App {
             frame = frame.fill(bg);
         }
 
-        egui::CentralPanel::default()
-            .frame(frame)
-            .show_inside(ui, |ui| {
-                // Only used to pick font size / dark-vs-light fallback; the colours come from the .tmTheme.
-                let code_theme = CodeTheme::from_style(ui.style());
+        egui::CentralPanel::default().frame(frame).show(ui, |ui| {
+            // Only used to pick font size / dark-vs-light fallback; the colours come from the .tmTheme.
+            let code_theme = CodeTheme::from_style(ui.style());
 
-                let job = syntax_highlighting::highlight_with(
-                    ui.ctx(),
-                    ui.style(),
-                    &code_theme,
-                    CODE,
-                    "rs", // syntax name ("Rust") or file extension
-                    &self.settings,
+            let job = syntax_highlighting::highlight_with(
+                ui.ctx(),
+                ui.style(),
+                &code_theme,
+                CODE,
+                "rs", // syntax name ("Rust") or file extension
+                &self.settings,
+            );
+
+            egui::ScrollArea::both().auto_shrink(false).show(ui, |ui| {
+                ui.add(
+                    egui::Label::new(job)
+                        .selectable(true)
+                        .wrap_mode(egui::TextWrapMode::Extend),
                 );
-
-                egui::ScrollArea::both().auto_shrink(false).show(ui, |ui| {
-                    ui.add(
-                        egui::Label::new(job)
-                            .selectable(true)
-                            .wrap_mode(egui::TextWrapMode::Extend),
-                    );
-                });
             });
+        });
     }
 }
 

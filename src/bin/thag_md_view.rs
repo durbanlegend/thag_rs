@@ -16,7 +16,7 @@ rust-i18n = "4"
 sys-locale = "0.3"
 
 [features]
-default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_commonmark/svg","egui_commonmark/fetch"]
+default = ["eframe/wgpu","egui_commonmark/svg","egui_commonmark/fetch"]
 
 # Make sure the result runs fast
 [profile.dev]
@@ -2055,8 +2055,8 @@ impl eframe::App for MarkdownApp {
             // visible viewport on all subsequent frames.  The source_id is
             // keyed to the file path so navigating to a new file resets state.
             CommonMarkViewer::new()
-                .syntax_theme_dark("Dunkel_Theme")
-                .syntax_theme_light("Slush_and_Poppies")
+                .syntax_theme_dark("Dunkel_Theme") // Must be one listed in THEME_BYTES
+                .syntax_theme_light("Slush_and_Poppies") // Must be one listed in THEME_BYTES
                 .search_match_color(match_bg)
                 .search_active_match_color(active_bg)
                 .enable_scroll_to_heading(true)

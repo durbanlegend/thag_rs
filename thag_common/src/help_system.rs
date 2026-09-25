@@ -165,6 +165,18 @@ impl HelpSystem {
                                 help.options.push((value.to_string(), String::new()));
                             }
                         }
+                        // //# Arg: <>: <description>
+                        // The second colon separates the argument string from the description.
+                        // If no second colon is present, the whole value is treated as the
+                        // argument string with an empty description.
+                        "argument" => {
+                            if let Some((arg, desc)) = value.split_once(':') {
+                                help.args
+                                    .push((arg.trim().to_string(), desc.trim().to_string()));
+                            } else {
+                                help.args.push((value.to_string(), String::new()));
+                            }
+                        }
                         _ => {}
                     }
                 }
@@ -257,9 +269,7 @@ macro_rules! help_system {
     }};
 
     // Simplified version - just create with tool name
-    ($tool_name:expr) => {{
-        $crate::help_system::HelpSystem::new().with_version(env!("CARGO_PKG_VERSION"))
-    }};
+    ($tool_name:expr) => {{ $crate::help_system::HelpSystem::new().with_version(env!("CARGO_PKG_VERSION")) }};
 }
 
 /// Convenience function to check for help and exit if found

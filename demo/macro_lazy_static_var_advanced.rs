@@ -48,11 +48,11 @@
 //     Err("Initialization failed"),
 //     "ErrorProneLazyVar"
 // );
-/// match my_lazy_var {
-///     Ok(value) => println!("Initialized value: {}", value),
-///     Err(e) => eprintln!("Failed to initialize: {}", e),
-/// }
-/// ```
+// match my_lazy_var {
+//     Ok(value) => println!("Initialized value: {}", value),
+//     Err(e) => eprintln!("Failed to initialize: {}", e),
+// }
+// ```
 #[macro_export]
 macro_rules! lazy_static_var {
     // With type, debug name, and dereference

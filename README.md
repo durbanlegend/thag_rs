@@ -659,7 +659,8 @@ You may provide optional valid (Cargo.toml) metadata in a toml block as describe
 All of this happens quite fast: the real bottleneck is the familiar Cargo build process downloading and compiling your dependencies on the initial build. Cargo build output is displayed in real time by default so that there are no mystery delays. If you rerun the compiled script it should be almost immediate.
 
 In this way `thag_rs` attempts to handle any valid (or invalid) Rust script, be it a program, snippet or expression. It tries to generate a dedicated Cargo.toml for your script from `use` statements in your code, although for precision and (marginally?) better speed you may need or wish to embed your own in a toml block:
-```/*
+```toml
+/*
 [toml]
 [dependencies]
 ...

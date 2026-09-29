@@ -10,11 +10,11 @@ egui_extras = { version = "0.36", features = ["syntect"] }
 # Same feature set egui_extras uses (pure-Rust regex), so we don't pull in a second regex engine.
 syntect = { version = "5.3", default-features = false, features = ["default-fancy"] }
  */
-/// Minimal egui app: highlight a Rust snippet with a syntect theme loaded from a `.tmTheme` file.
+/// Minimal egui app: highlight a Rust snippet with a `syntect` theme loaded from a `.tmTheme` file.
 ///
-/// Usage: `thag demo/egui_syntect_highlighting.rs -- path/to/MyTheme.tmTheme`
+/// E.g.: `thag demo/egui_syntect_highlighting.rs -- $THAG_DEV_PATH/assets/sublime_themes/Gruvbox_Light.tmTheme`
 /// (defaults to `theme.tmTheme` in the current directory)
-//# Purpose: demo and test `egui_extras` code block formatting
+//# Purpose: demo and test `syntect` code block formatting
 //# Categories: crates, demo, styling, technique
 //# Argument: PATH: Path to a `syntect` `.tmTheme` file. There are a few examples in the `thag_rs/assets/sublime_themes` directory and `egui_extras` has its own.
 use eframe::egui;

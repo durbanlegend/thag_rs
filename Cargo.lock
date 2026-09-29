@@ -2079,7 +2079,6 @@ dependencies = [
  "egui_commonmark_backend",
  "egui_extras",
  "pulldown-cmark",
- "resvg",
 ]
 
 [[package]]
@@ -2089,8 +2088,8 @@ dependencies = [
  "bitflags 2.13.1",
  "egui 0.36.2",
  "egui_extras",
+ "fancy-regex 0.16.2",
  "pulldown-cmark",
- "regex",
  "syntect",
 ]
 

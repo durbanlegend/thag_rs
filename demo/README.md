@@ -1,5 +1,9 @@
 ## Running the scripts in `demo` and `src/bin`
 
+### License requirements
+
+All demos are licensed under MIT/Apache-2.0, except for the script/s in the /demo/eupl directory, which use the EUPL-1.2 to comply with the `giallo` crate library requirements.
+
 ### Commonality of scripts and tools
 
 The scripts in src/bin are integrated `thag_rs` tools, in other words they are declared in Cargo.toml and are normally installed as commands. However, if you have cloned the `thag_rs` project you can run them like any other `thag` script.
@@ -2286,13 +2290,13 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_markdown_vi
 
 ### Script: egui_syntect_highlighting.rs
 
-**Description:**  Minimal egui app: highlight a Rust snippet with a syntect theme loaded from a `.tmTheme` file.
+**Description:**  Minimal egui app: highlight a Rust snippet with a `syntect` theme loaded from a `.tmTheme` file.
 
- Usage: `thag demo/egui_syntect_highlighting.rs -- path/to/MyTheme.tmTheme`
+ E.g.: `thag demo/egui_syntect_highlighting.rs -- $THAG_DEV_PATH/assets/sublime_themes/Gruvbox_Light.tmTheme`
  (defaults to `theme.tmTheme` in the current directory)
  A tiny word counter.
 
-**Purpose:** demo and test `egui_extras` code block formatting
+**Purpose:** demo and test `syntect` code block formatting
 
 **Crates:** `eframe`, `egui_extras`, `syntect`
 
@@ -2306,6 +2310,43 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_markdown_vi
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_syntect_highlighting.rs
+```
+
+---
+
+### Script: egui_syntect_highlighting_lite.rs
+
+**Description:**  Minimal egui app: highlight a Rust snippet with a syntect theme loaded from a `.tmTheme` file.
+
+ No `egui_extras` dependency: we call `syntect` ourselves and build the `egui::text::LayoutJob`
+ by hand. This also lets us pin syntect's own feature set down to just what loading one fixed
+ theme and highlighting one fixed language needs (see Cargo.toml).
+ Unfortunately, it's not significantly smaller than `demo/egui_syntect_highlighting.rs`.
+
+/ E.g.: `thag demo/egui_syntect_highlighting_lite.rs -- $THAG_DEV_PATH/assets/sublime_themes/Gruvbox_Light.tmTheme`
+ (defaults to `theme.tmTheme` in the current directory)
+ A tiny word counter.
+ Run `syntect`'s line highlighter over `code` and turn its output straight into an
+ `egui::text::LayoutJob`, using colors (and italic/underline) from `theme`.
+
+ This is the "essential" part of what `egui_extras::syntax_highlighting::highlight_with`
+ does internally, minus the memoization (we only need to do this once, since our code
+ string is fixed) and minus the indirection through `egui_extras`'s own `CodeTheme`.
+
+**Purpose:** demo and test `egui_extras` code block formatting
+
+**Crates:** `eframe`, `syntect`
+
+**Type:** Program
+
+**Categories:** crates, demo, styling, technique
+
+**Link:** [egui_syntect_highlighting_lite.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_syntect_highlighting_lite.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_syntect_highlighting_lite.rs
 ```
 
 ---
@@ -4310,6 +4351,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_gen_styles
 
 **Description:**  Demo of an advanced generic macro to generate lazy static variables.
  See also `demo/macro_lazy_static_var_errs.rs` for a more meaningful usage example.
+ match my_lazy_var {
+     Ok(value) => println!("Initialized value: {}", value),
+     Err(e) => eprintln!("Failed to initialize: {}", e),
+ }
+ ```
 
 **Purpose:** Demonstrate a handy alternative to the `lazy_static` crate.
 
@@ -8455,18 +8501,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_convert_the
 
 ### Script: thag_gen_help.rs
 
-**Description:**  Minimal prospective `thag` tool to generate help text for a Rust source file from its Doc comments.
- Very basic - for now the Rust source file's location is hard-coded.
-
- Usage: `thag demo/thag_gen_help.rs
-
-**Purpose:** demo and test `egui_extras` code block formatting
+**Description:** 
+**Purpose:** 
 
 **Crates:** `env`, `thag_common`
 
 **Type:** Snippet
 
-**Categories:** technique, tools
+**Categories:** missing
 
 **Link:** [thag_gen_help.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_gen_help.rs)
 

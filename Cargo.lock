@@ -2074,6 +2074,7 @@ dependencies = [
 [[package]]
 name = "egui_commonmark"
 version = "0.25.0"
+source = "git+https://github.com/lampsitter/egui_commonmark#04d0c6d6a0c32778f4e4802ff3757eedf828d20a"
 dependencies = [
  "egui 0.36.2",
  "egui_commonmark_backend",
@@ -2084,6 +2085,7 @@ dependencies = [
 [[package]]
 name = "egui_commonmark_backend"
 version = "0.25.0"
+source = "git+https://github.com/lampsitter/egui_commonmark#04d0c6d6a0c32778f4e4802ff3757eedf828d20a"
 dependencies = [
  "bitflags 2.13.1",
  "egui 0.36.2",
@@ -9759,3 +9761,7 @@ dependencies = [
  "syn 3.0.5",
  "winnow 1.0.4",
 ]
+
+[[patch.unused]]
+name = "egui_commonmark"
+version = "0.25.0"

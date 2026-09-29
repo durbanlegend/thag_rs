@@ -52,7 +52,7 @@ use egui::{
     Color32,
     load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint},
 };
-use egui_commonmark::{CommonMarkCache, CommonMarkViewer, SearchOptions};
+use egui_commonmark::{CommonMarkCache, CommonMarkScrollOptions, CommonMarkViewer, SearchOptions};
 use notify::{RecursiveMode, Watcher};
 use pulldown_cmark::{Event, Options, Parser, Tag};
 use rfd::FileDialog;
@@ -2060,8 +2060,13 @@ impl eframe::App for MarkdownApp {
                 .search_match_color(match_bg)
                 .search_active_match_color(active_bg)
                 .enable_scroll_to_heading(true)
-                .viewport_cache(new_use_viewport_cache)
-                .show_scrollable(id, ui, &mut self.cache, &self.content);
+                .show_scrollable(
+                    id,
+                    ui,
+                    &mut self.cache,
+                    &CommonMarkScrollOptions::default().viewport_cache(new_use_viewport_cache),
+                    &self.content,
+                );
 
             self.cache
                 .sync_scrollable_active_match(&id, self.use_viewport_cache, user_scrolled);

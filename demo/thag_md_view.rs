@@ -800,7 +800,7 @@ fn main() -> eframe::Result<()> {
     fonts.font_data.insert(
         preferred_font.to_owned(),
         egui::FontData::from_static(include_bytes!(
-            "../../assets/fonts/Inter-VariableFont_opsz,wght.ttf"
+            "../assets/fonts/Inter-VariableFont_opsz,wght.ttf"
         ))
         .into(),
     );
@@ -816,7 +816,7 @@ fn main() -> eframe::Result<()> {
     let monospace_font = "Hack";
     fonts.font_data.insert(
         monospace_font.to_owned(),
-        egui::FontData::from_static(include_bytes!("../../assets/fonts/Hack-Regular.ttf")).into(),
+        egui::FontData::from_static(include_bytes!("../assets/fonts/Hack-Regular.ttf")).into(),
     );
 
     // Put it in monospace list

@@ -1,6 +1,6 @@
 ## Running the built-in tools
 
-`thag_rs` includes several built-in tools that are compiled as separate binaries. These tools are available after installing `thag_rs` with the `tools` feature enabled. The `thag_md_view` markdown viewer requires the `gui_viewer` feature enabled (which includes `tools`) owing to its larger `egui` dependencies.
+`thag_rs` includes several built-in tools that are compiled as separate binaries. These tools are available after installing `thag_rs` with the `tools` feature enabled.
 
 ### Installation with tools
 
@@ -764,109 +764,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_legible.
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_markdown.rs
-```
-
----
-
-### Script: thag_md_view.rs
-
-**Description:**  A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
- `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the
- current markdown file, so navigation between linked documents works correctly.
- Supports back/forward history, light/dark/system theme switching via `egui_theme_switch`, zoom,
- font scaling, opening a new file (Cmd/Ctrl-O), a left-side table of contents panel (§ / Cmd/Ctrl-T),
- text search with match counter and section navigation (Cmd/Ctrl-F), refresh from disk (Cmd/Ctrl-R),
- live file watching (auto-reloads when the file changes on disk), and a help screen (F1).
- Improved readability over the egui defaults: near-black text in light mode,
- near-white in dark mode, warm paper background, higher-contrast code block backgrounds, and
- GitHub-style syntax highlighting for code blocks.
- On Unix systems, launching from a terminal automatically detaches the process so the terminal
- is returned immediately (use --no-detach / --foreground to suppress this).
-
- Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
- an image produces an invisible zero-size hyperlink. If you want a clickable link alongside an image,
- add an explicit text link in the markdown below it. You may also notice that it does not handle banners
- well.
- The MSRV of this program is 1.92.
- Applies contrast colours to both egui themes; font sizes are always left at
- egui defaults so toggling never causes a scroll-position jump.
-
- `enhanced = true`  — high-contrast colours (near-white/near-black text, warm backgrounds).
- `enhanced = false` — stock egui colours.
-
- Called once at startup and again whenever the toolbar "Contrast+/-" toggle changes.
- `image_loading_spinners` is kept `false` in both modes.
- Adjusts a Color32 by a given factor (e.g., 1.2 for +20% brightness).
- An entry in the table of contents, derived from one ATX heading in the document.
- Converts heading text to a URL-safe slug: lowercased, non-alphanumeric runs replaced by `-`.
- Parses an ATX heading line and returns `(level, plain_text)`.
- `plain_text` is the heading content with any trailing `{…}` attribute block stripped.
- Returns `None` for non-heading lines, indented lines, or malformed ATX syntax.
- Returns the explicit `{#id}` from a heading line, if present.
- Scans `raw` markdown, builds a `Vec<TocEntry>` from headings, and returns a version
- of the content with `{#slug}` attributes injected into every heading that lacks one.
-
- **Uses pulldown-cmark as the heading oracle** rather than a hand-rolled fence
- tracker. This guarantees that the TOC and injected IDs are consistent with what
- the renderer sees. A custom fence tracker diverges from pulldown-cmark in edge
- cases such as XML-like tags (`<context>`, `<files>`) being treated as type-6 HTML
- blocks that can swallow a code-fence opener — leading to headings that are
- unreachable by the scroll mechanism.
- Rewrites relative image paths in Markdown to absolute `file://` URIs so they
- load correctly regardless of platform CWD behaviour.
-
- Paths that already carry a URI scheme (`http://`, `file://`, `data:`, …) are
- left untouched. If a relative path cannot be resolved (file does not exist)
- it is also left untouched so existing error behaviour is preserved.
-
- Note: processes the raw text, so a path inside a fenced code block is also
- rewritten if it matches the image syntax — an acceptable trade-off for the
- cross-platform fix.
- Converts an absolute `Path` to a `file://` URI that is valid on all platforms.
- Windows paths (`C:\…`) become `file:///C:/…`; Unix paths become `file:///…`.
- Append byte-offset positions of all case-insensitive occurrences of `query`
- within a single pulldown-cmark text event into `out`.
- `span_start` is the event's `src_span.start` (byte offset into the full source).
- A code-fence problem detected before rendering.
- Scan `content` for fence problems without a full parser.
-
- A fence boundary is a line with ≤ 3 leading spaces that starts with a triple backtick
- or triple tilde (`~~~`) (matching the same rule used by `extract_toc_and_inject_ids`).
-
- Two invariants are checked:
- - **(a)** Total boundary count must be even — odd means at least one unclosed.
- - **(b)** Every *typed* boundary (one with a language tag) must be
-   odd-numbered in sequence; an even-numbered typed boundary means the
-   previous typed opener was never closed.
- Return a one-line description of a fence error suitable for `eprintln!`.
- Build a markdown error page to display instead of a broken file.
- The error renders nicely in the viewer; the user can fix the file and
- press Cmd/Ctrl-R to reload.
- On Unix systems: if any stdio stream is a real terminal and `--no-detach`/`--foreground`
- is not present, spawn a detached child with a new session and exit the parent immediately,
- freeing the terminal. Errors (e.g. can't find the current exe) fall through silently so
- the viewer still runs in the foreground.
- Detect the preferred UI locale from the operating system.
- Uses `sys-locale` which reads native OS APIs (`CFPreferences` on macOS,
- `GetUserDefaultLocaleName` on Windows, POSIX env-vars on Linux).
- Falls back to `"en"` when no usable locale is detected.
- Pending navigation action triggered by the toolbar buttons.
- The state holder for our egui app.
-
-**Purpose:** GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature
-
-**Crates:** `eframe`, `egui_commonmark`, `egui_extras`, `inquire`, `log`, `notify`, `pulldown_cmark`, `resvg`, `rfd`, `rust_i18n`, `sys_locale`, `thag_proc_macros`, `thag_styling`
-
-**Type:** Program
-
-**Categories:** crates, gui, tools
-
-**Link:** [thag_md_view.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_md_view.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_md_view.rs
 ```
 
 ---

@@ -256,11 +256,7 @@ Full `thag` binary install with additional tools (recommended):
 cargo install thag_rs --features tools
 ```
 
-To include the markdown viewer tool `thag_md_view`:
-
-```bash
-cargo install thag_rs --features tools,gui_viewer
-```
+The GUI markdown viewer formerly shipped as `thag_md_view` now lives in its own project, [workman](https://github.com/durbanlegend/workman). The original program is preserved as a demo script in [demo/thag_md_view.rs](demo/thag_md_view.rs).
 
 [The additional tools](src/bin/README.md)
 
@@ -645,7 +641,7 @@ You have the choice of installing `thag_rs` (recommended), or you may prefer to 
 
 * Installing gives you speed out of the box and a simpler command-line interface without invoking Cargo yourself. You have a choice:
 ```bash
-cargo install thag_rs [--features [tools,gui_viewer]]
+cargo install thag_rs [--features tools]
 ```
 or choose an appropriate installer for your environment from the Github releases page `https://github.com/durbanlegend/thag_rs/releases`.
 

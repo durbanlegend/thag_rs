@@ -75,6 +75,7 @@
 
 mod cached;
 mod compile_time_assert;
+mod copy_i18n_locales;
 mod derive_builder;
 mod derive_constructor;
 mod derive_display;
@@ -88,6 +89,7 @@ mod timing;
 
 use crate::cached::cached_impl;
 use crate::compile_time_assert::compile_time_assert_impl;
+use crate::copy_i18n_locales::copy_i18n_locales_impl;
 use crate::derive_builder::derive_builder_impl;
 use crate::derive_constructor::derive_constructor_impl;
 use crate::derive_display::derive_display_impl;
@@ -599,4 +601,11 @@ fn expand_output(name: &str, output: &TokenStream) {
             }
         }
     }
+}
+
+/// Copy the i18n `locales` directory structure from the `thag` project directory $THAG_DEV_PATH
+/// to the CARGO_MANIFEST_DIR of the invoking script so that `rust_i18n::i18n!` will find them.
+#[proc_macro]
+pub fn copy_i18n_locales(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(false, "copy_i18n_locales", &input, copy_i18n_locales_impl)
 }

@@ -1,5 +1,5 @@
 #![allow(unused_variables)]
-use crate::{ProfileError, ProfileResult, debug_log, internal_doc, safe_alloc};
+use crate::{debug_log, internal_doc, safe_alloc, ProfileError, ProfileResult};
 use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use parking_lot::{Mutex, RwLock};
 use std::{
@@ -26,7 +26,7 @@ use crate::{
     fn_name,
     mem_attribution::{deregister_profile, get_next_profile_id, register_profile},
     mem_tracking::{
-        TASK_PATH_REGISTRY, TaskGuard, TaskMemoryContext, activate_task, create_memory_task,
+        activate_task, create_memory_task, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
     },
 };
 
@@ -46,8 +46,8 @@ use std::{
     io::{BufRead, BufReader, Write},
     path::Path,
     sync::{
-        OnceLock,
         atomic::{AtomicBool, AtomicU64},
+        OnceLock,
     },
     time::SystemTime,
 };
@@ -56,7 +56,7 @@ use std::{
 use regex::Regex;
 
 #[cfg(feature = "full_profiling")]
-use std::sync::{Arc, atomic::AtomicUsize};
+use std::sync::{atomic::AtomicUsize, Arc};
 
 // Single atomic for runtime profiling state
 #[cfg(feature = "time_profiling")]
@@ -3626,7 +3626,7 @@ pub(crate) mod test_utils {
     /// * `profile_type` - The type of profiling to enable
     #[cfg(feature = "full_profiling")]
     pub fn initialize_profiling_for_test(profile_type: ProfileType) -> crate::ProfileResult<()> {
-        use crate::profiling::{TEST_MODE_ACTIVE, enable_profiling};
+        use crate::profiling::{enable_profiling, TEST_MODE_ACTIVE};
         use std::sync::atomic::Ordering;
 
         // Set test mode active to prevent #[profiled] from creating duplicate entries

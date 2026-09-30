@@ -11,13 +11,13 @@ use std::{
 };
 use thag_proc_macros::{safe_eprintln, safe_println};
 use thag_rs::ast::Ast;
-use thag_rs::builder::{build, display_timings, generate, run, BuildState, ScriptState};
+use thag_rs::builder::{BuildState, ScriptState, build, display_timings, generate, run};
 use thag_rs::cmd_args::Cli;
 use thag_rs::code_utils::{self};
 use thag_rs::config::DependencyInference;
 #[cfg(debug_assertions)]
 use thag_rs::debug_timings;
-use thag_rs::{escape_path_for_windows, execute, ProcFlags, EXECUTABLE_CACHE_SUBDIR, TMPDIR};
+use thag_rs::{EXECUTABLE_CACHE_SUBDIR, ProcFlags, TMPDIR, escape_path_for_windows, execute};
 
 // Set environment variables before running tests
 fn set_up() {
@@ -85,6 +85,7 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
         args: vec![],
         features: None,
         thag_auto_processed: false,
+        edition: 2021,
     }
 }
 
@@ -242,6 +243,7 @@ name = "bitflags_t"
         args: vec![],
         features: None,
         thag_auto_processed: false,
+        edition: 2021,
     };
     dbg!(&build_state);
     let proc_flags = ProcFlags::empty();

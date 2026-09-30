@@ -1,4 +1,4 @@
-/// A prototype of the `cmd_args` module of thag_rs itself.
+/// A prototype of the `cmd_args` module of `thag_rs` itself.
 ///
 /// E.g. `thag -tv demo/cmd_args.rs -- -tv demo/hello.rs -- -fq Hello world`
 //# Purpose: Prototype CLI.
@@ -133,6 +133,9 @@ pub fn get_args() -> Cli {
     Cli::parse()
 }
 
+// Validates the command-line arguments
+// # Errors
+// Will return `Err` if there is a missing script name or missing .rs suffix.
 pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
@@ -247,13 +250,13 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
 
         if !is_loop && (args.toml.is_some() || args.begin.is_some() || args.end.is_some()) {
             if args.toml.is_some() {
-                eprintln!("Option {} ({}) requires --loop (-l)", "--toml", "-T");
+                eprintln!("Option --toml (-T) requires --loop (-l)");
             }
             if args.begin.is_some() {
-                eprintln!("Option {} ({}) requires --loop (-l)", "--begin", "-B");
+                eprintln!("Option --begin (-B) requires --loop (-l)");
             }
             if args.end.is_some() {
-                eprintln!("Option {} ({}) requires --loop (-l)", "--end", "-E");
+                eprintln!("Option --end (-E) requires --loop (-l)");
             }
             return Err("Missing --loop option".into());
         }

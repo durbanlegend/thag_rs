@@ -19,10 +19,9 @@ simplelog = ["dep:simplelog"]
 //# Categories: prototype, technique
 use edit::edit_file;
 use firestorm::{profile_fn, profile_method};
-use home;
 use mockall::{automock, predicate::str};
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 #[cfg(target_os = "windows")]
 use std::env;
 use std::{
@@ -32,7 +31,7 @@ use std::{
     path::PathBuf,
 };
 use thag_rs::{
-    debug_log, lazy_static_var, svprtln, ColorSupport, Role, TermBgLuma, ThagResult, Verbosity, V,
+    ColorSupport, Role, TermBgLuma, ThagResult, V, Verbosity, debug_log, lazy_static_var, svprtln,
 };
 
 /// Initializes and returns the configuration.
@@ -95,19 +94,16 @@ impl Dependencies {
         if !self.global_excluded_features.is_empty() {
             #[cfg(debug_assertions)]
             let before_len = filtered.len();
-            filtered = filtered
-                .into_iter()
-                .filter(|f| {
-                    let keep = !self
-                        .global_excluded_features
-                        .iter()
-                        .any(|ex| f.contains(ex));
-                    if !keep {
-                        debug_log!("Excluding feature '{}' due to global exclusion", f);
-                    }
-                    keep
-                })
-                .collect();
+            filtered.retain(|f| {
+                let keep = !self
+                    .global_excluded_features
+                    .iter()
+                    .any(|ex| f.contains(ex));
+                if !keep {
+                    debug_log!("Excluding feature '{}' due to global exclusion", f);
+                }
+                keep
+            });
             #[cfg(debug_assertions)]
             if filtered.len() < before_len {
                 debug_log!(
@@ -125,16 +121,13 @@ impl Dependencies {
             // Remove excluded features
             if let Some(ref excluded_features) = override_config.excluded_features {
                 // let before_len = filtered.len();
-                filtered = filtered
-                    .into_iter()
-                    .filter(|f| {
-                        let keep = !excluded_features.contains(f);
-                        if !keep {
-                            debug_log!("Excluding feature '{}' due to crate-specific override", f);
-                        }
-                        keep
-                    })
-                    .collect();
+                filtered.retain(|f| {
+                    let keep = !excluded_features.contains(f);
+                    if !keep {
+                        debug_log!("Excluding feature '{}' due to crate-specific override", f);
+                    }
+                    keep
+                });
             }
 
             // Add required features
@@ -150,29 +143,23 @@ impl Dependencies {
 
         // Apply other existing filters
         if self.exclude_unstable_features {
-            filtered = filtered
-                .into_iter()
-                .filter(|f| {
-                    let keep = !f.contains("unstable");
-                    if !keep {
-                        debug_log!("Excluding unstable feature '{}'", f);
-                    }
-                    keep
-                })
-                .collect();
+            filtered.retain(|f| {
+                let keep = !f.contains("unstable");
+                if !keep {
+                    debug_log!("Excluding unstable feature '{}'", f);
+                }
+                keep
+            });
         }
 
         if self.exclude_std_feature {
-            filtered = filtered
-                .into_iter()
-                .filter(|f| {
-                    let keep = f != "std";
-                    if !keep {
-                        debug_log!("Excluding std feature");
-                    }
-                    keep
-                })
-                .collect();
+            filtered.retain(|f| {
+                let keep = f != "std";
+                if !keep {
+                    debug_log!("Excluding std feature");
+                }
+                keep
+            });
         }
 
         // Always include specified features
@@ -305,7 +292,7 @@ pub fn load(context: &dyn Context) -> ThagResult<Option<Config>> {
     profile_fn!(load);
     let config_path = context.get_config_path();
 
-    eprintln!("config_path={config_path:?}");
+    eprintln!("config_path={}", config_path.display());
 
     if config_path.exists() {
         let config_str = fs::read_to_string(config_path).map_err(|e| e.to_string())?;
@@ -328,7 +315,7 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
     profile_fn!(edit);
     let config_path = context.get_config_path();
 
-    eprintln!("config_path={config_path:?}");
+    eprintln!("config_path={}", config_path.display());
 
     let exists = config_path.exists();
     if !exists {
@@ -354,7 +341,7 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
 "#;
         file.write_all(text.as_bytes())?;
     }
-    eprintln!("About to edit {config_path:#?}");
+    eprintln!("About to edit {}", config_path.display());
     if context.is_real() {
         edit_file(&config_path)?;
     }

@@ -19,7 +19,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 /// RGB color representation
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Rgb {
     pub r: u8,
     pub g: u8,
@@ -39,9 +39,9 @@ impl Rgb {
     /// Calculate luminance to determine if light or dark
     pub fn luminance(&self) -> f32 {
         // Using standard luminance formula
-        let r = self.r as f32 / 255.0;
-        let g = self.g as f32 / 255.0;
-        let b = self.b as f32 / 255.0;
+        let r = f32::from(self.r) / 255.0;
+        let g = f32::from(self.g) / 255.0;
+        let b = f32::from(self.b) / 255.0;
         0.299 * r + 0.587 * g + 0.114 * b
     }
 
@@ -331,9 +331,9 @@ fn compare_methods(osc11: Option<Rgb>, palette0: Option<Rgb>) {
 
 /// Calculate color distance (simple Euclidean)
 fn color_distance(c1: Rgb, c2: Rgb) -> f32 {
-    let dr = c1.r as f32 - c2.r as f32;
-    let dg = c1.g as f32 - c2.g as f32;
-    let db = c1.b as f32 - c2.b as f32;
+    let dr = f32::from(c1.r) - f32::from(c2.r);
+    let dg = f32::from(c1.g) - f32::from(c2.g);
+    let db = f32::from(c1.b) - f32::from(c2.b);
     (dr * dr + dg * dg + db * db).sqrt()
 }
 

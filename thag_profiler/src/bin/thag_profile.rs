@@ -6,11 +6,12 @@ thag_styling = { version = "1, thag-auto", default-features = false, features = 
 */
 use chrono::{DateTime, Local};
 use inferno::flamegraph::{
-    self, Options, Palette,
+    self,
     color::{BasicPalette, MultiPalette},
+    Options, Palette,
 };
 use inline_colorization::{color_cyan, color_reset};
-use inquire::{InquireError, MultiSelect, Select, set_global_render_config};
+use inquire::{set_global_render_config, InquireError, MultiSelect, Select};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
@@ -24,8 +25,8 @@ use std::{
 use strum::Display;
 use thag_proc_macros::timing;
 use thag_profiler::{
-    ProfileError, ProfileResult, enhance_svg_accessibility, extract_filename_timestamp,
-    profiling::ProfileStats, thousands,
+    enhance_svg_accessibility, extract_filename_timestamp, profiling::ProfileStats, thousands,
+    ProfileError, ProfileResult,
 };
 use thag_styling::themed_inquire_config;
 
@@ -1304,7 +1305,11 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
                     if let Some(op_size) = parts.last() {
                         // Parse operation and size
                         let (operation, size) = if let Ok(size) = op_size.parse::<i64>() {
-                            if size >= 0 { ('+', size) } else { ('-', size) }
+                            if size >= 0 {
+                                ('+', size)
+                            } else {
+                                ('-', size)
+                            }
                         } else {
                             return None;
                         };

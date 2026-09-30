@@ -15,10 +15,10 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode},
 };
 
-const HELP: &str = r#"Key display
+const HELP: &str = r"Key display
  - Press any key to see its display format
  - Use Esc to quit
-"#;
+";
 
 fn main() -> io::Result<()> {
     println!("{}", HELP);

@@ -29,10 +29,11 @@ use edit::edit_file;
 use nu_ansi_term::Color as NuColor;
 use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
 use reedline::{
-    default_emacs_keybindings, Color as ReedLineColor, ColumnarMenu, DefaultCompleter,
-    DefaultHinter, DefaultValidator, EditCommand, Emacs, ExampleHighlighter, FileBackedHistory,
-    HistoryItem, KeyCode, KeyModifiers, Keybindings, MenuBuilder, Prompt, PromptEditMode,
-    PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
+    Color as ReedLineColor, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
+    EditCommand, Emacs, ExampleHighlighter, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers,
+    Keybindings, MenuBuilder, Prompt, PromptEditMode, PromptHistorySearch,
+    PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
+    default_emacs_keybindings,
 };
 use regex::Regex;
 use std::{
@@ -41,7 +42,7 @@ use std::{
     collections::HashMap,
     error::Error,
     fmt::{Debug, Write as _},
-    fs::{self, read_to_string, OpenOptions},
+    fs::{self, OpenOptions, read_to_string},
     io::{BufWriter, Write},
     path::{Path, PathBuf},
     str::FromStr,
@@ -50,6 +51,9 @@ use std::{
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 use thag_profiler::{enable_profiling, profiled};
 use thag_rs::{
+    Ast, BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, ITER_SCRIPT_NAME,
+    ITER_SUBDIR, KeyCombination, KeyDisplayLine, ProcFlags, ScriptState, TMPDIR, ThagError,
+    ThagResult, V,
     builder::process_expr,
     cmd_args::set_verbosity,
     code_utils::{self, clean_up, display_dir_contents, extract_ast_expr},
@@ -58,16 +62,14 @@ use thag_rs::{
     manifest::extract,
     re, svprtln,
     tui_editor::{
-        script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
-        ManagedTerminal, RataStyle,
+        EditData, Entry, History, KeyAction, KeyDisplay, ManagedTerminal, RataStyle,
+        script_key_handler, tui_edit,
     },
-    vprtln, Ast, BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
-    KeyDisplayLine, ProcFlags, ScriptState, ThagError, ThagResult, ITER_SCRIPT_NAME, ITER_SUBDIR,
-    TMPDIR, V,
+    vprtln,
 };
 use thag_styling::{
-    display_terminal_attributes, display_theme_details, display_theme_roles, ColorInitStrategy,
-    Role, Style, TermAttributes, ThemedStyle,
+    ColorInitStrategy, Role, Style, TermAttributes, ThemedStyle, display_terminal_attributes,
+    display_theme_details, display_theme_roles,
 };
 use tui_textarea::{Input, TextArea};
 
@@ -110,6 +112,7 @@ fn get_args() -> Cli {
                 cargo: false,
                 test_only: false,
                 clean: None,
+                edition: None,
             }
         }
     }
@@ -200,42 +203,111 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
     ["MoveWordLeft", "Move one word to the left"],
     ["MoveBigWordLeft", "Move one WORD to the left"],
     ["MoveWordRight", "Move one word to the right"],
-    ["MoveWordRightStart", "Move one word to the right, stop at start of word"],
-    ["MoveBigWordRightStart", "Move one WORD to the right, stop at start of WORD"],
-    ["MoveWordRightEnd", "Move one word to the right, stop at end of word"],
-    ["MoveBigWordRightEnd", "Move one WORD to the right, stop at end of WORD"],
+    [
+        "MoveWordRightStart",
+        "Move one word to the right, stop at start of word",
+    ],
+    [
+        "MoveBigWordRightStart",
+        "Move one WORD to the right, stop at start of WORD",
+    ],
+    [
+        "MoveWordRightEnd",
+        "Move one word to the right, stop at end of word",
+    ],
+    [
+        "MoveBigWordRightEnd",
+        "Move one WORD to the right, stop at end of WORD",
+    ],
     ["MoveToPosition", "Move to position"],
-    ["InsertChar", "Insert a character at the current insertion point"],
-    ["InsertString", "Insert a string at the current insertion point"],
-    ["InsertNewline", "Insert the system specific new line character"],
+    [
+        "InsertChar",
+        "Insert a character at the current insertion point",
+    ],
+    [
+        "InsertString",
+        "Insert a string at the current insertion point",
+    ],
+    [
+        "InsertNewline",
+        "Insert the system specific new line character",
+    ],
     ["ReplaceChars", "Replace characters with string"],
-    ["Backspace", "Backspace delete from the current insertion point"],
+    [
+        "Backspace",
+        "Backspace delete from the current insertion point",
+    ],
     ["Delete", "Delete in-place from the current insertion point"],
-    ["CutChar", "Cut the grapheme right from the current insertion point"],
-    ["BackspaceWord", "Backspace delete a word from the current insertion point"],
-    ["DeleteWord", "Delete in-place a word from the current insertion point"],
+    [
+        "CutChar",
+        "Cut the grapheme right from the current insertion point",
+    ],
+    [
+        "BackspaceWord",
+        "Backspace delete a word from the current insertion point",
+    ],
+    [
+        "DeleteWord",
+        "Delete in-place a word from the current insertion point",
+    ],
     ["Clear", "Clear the current buffer"],
     ["ClearToLineEnd", "Clear to the end of the current line"],
-    ["Complete", "Insert completion: entire completion if there is only one possibility, or else up to shared prefix."],
+    [
+        "Complete",
+        "Insert completion: entire completion if there is only one possibility, or else up to shared prefix.",
+    ],
     ["CutCurrentLine", "Cut the current line"],
-    ["CutFromStart", "Cut from the start of the buffer to the insertion point"],
-    ["CutFromLineStart", "Cut from the start of the current line to the insertion point"],
-    ["CutToEnd", "Cut from the insertion point to the end of the buffer"],
-    ["CutToLineEnd", "Cut from the insertion point to the end of the current line"],
+    [
+        "CutFromStart",
+        "Cut from the start of the buffer to the insertion point",
+    ],
+    [
+        "CutFromLineStart",
+        "Cut from the start of the current line to the insertion point",
+    ],
+    [
+        "CutToEnd",
+        "Cut from the insertion point to the end of the buffer",
+    ],
+    [
+        "CutToLineEnd",
+        "Cut from the insertion point to the end of the current line",
+    ],
     ["CutWordLeft", "Cut the word left of the insertion point"],
     ["CutBigWordLeft", "Cut the WORD left of the insertion point"],
     ["CutWordRight", "Cut the word right of the insertion point"],
-    ["CutBigWordRight", "Cut the WORD right of the insertion point"],
-    ["CutWordRightToNext", "Cut the word right of the insertion point and any following space"],
-    ["CutBigWordRightToNext", "Cut the WORD right of the insertion point and any following space"],
-    ["PasteCutBufferBefore", "Paste the cut buffer in front of the insertion point (Emacs, vi P)"],
-    ["PasteCutBufferAfter", "Paste the cut buffer in front of the insertion point (vi p)"],
+    [
+        "CutBigWordRight",
+        "Cut the WORD right of the insertion point",
+    ],
+    [
+        "CutWordRightToNext",
+        "Cut the word right of the insertion point and any following space",
+    ],
+    [
+        "CutBigWordRightToNext",
+        "Cut the WORD right of the insertion point and any following space",
+    ],
+    [
+        "PasteCutBufferBefore",
+        "Paste the cut buffer in front of the insertion point (Emacs, vi P)",
+    ],
+    [
+        "PasteCutBufferAfter",
+        "Paste the cut buffer in front of the insertion point (vi p)",
+    ],
     ["UppercaseWord", "Upper case the current word"],
     ["LowercaseWord", "Lower case the current word"],
     ["CapitalizeChar", "Capitalize the current character"],
     ["SwitchcaseChar", "Switch the case of the current character"],
-    ["SwapWords", "Swap the current word with the word to the right"],
-    ["SwapGraphemes", "Swap the current grapheme/character with the one to the right"],
+    [
+        "SwapWords",
+        "Swap the current word with the word to the right",
+    ],
+    [
+        "SwapGraphemes",
+        "Swap the current grapheme/character with the one to the right",
+    ],
     ["Undo", "Undo the previous edit command"],
     ["Redo", "Redo an edit command from the undo history"],
     ["CutRightUntil", "CutUntil right until char"],
@@ -249,7 +321,10 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
     ["SelectAll", "Select whole input buffer"],
     ["CutSelection", "Cut selection to local buffer"],
     ["CopySelection", "Copy selection to local buffer"],
-    ["Paste", "Paste content from local buffer at the current cursor position"],
+    [
+        "Paste",
+        "Paste content from local buffer at the current cursor position",
+    ],
 ];
 
 // ITER mode lets you type or paste a Rust expression to be evaluated.
@@ -747,7 +822,7 @@ fn tui(
         | KeyAction::TogglePopup => {
             return Err(
                 format!("Logic error: {key_action:?} should not return from tui_edit").into(),
-            )
+            );
         }
         // KeyAction::SaveAndExit => false,
         KeyAction::Submit => {

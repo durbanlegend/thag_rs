@@ -9,7 +9,7 @@ debug = true
 strip = false
 */
 
-/// ChagtGPT-generated profiling synchronous time profiling benchmark: `thag_profiler` implementation`.
+/// ChagtGPT-generated profiling synchronous time profiling benchmark: `thag_profiler` implementation.
 /// See `demo/benchmark*.rs` for base code and `firestorm` implementation.
 ///
 //# Purpose: For checking and comparison of profiling tools

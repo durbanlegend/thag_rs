@@ -1,6 +1,6 @@
 use crate::{
-    ColorSupport, PaletteMethods, StylingError, StylingResult, TermBgLuma, ThemeError, V,
-    preload_themes, vprtln,
+    preload_themes, vprtln, ColorSupport, PaletteMethods, StylingError, StylingResult, TermBgLuma,
+    ThemeError, V,
 };
 
 // Type alias for compatibility with PaletteMethods proc macro
@@ -12,8 +12,8 @@ use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::sync::OnceLock;
 use std::sync::atomic::AtomicBool;
+use std::sync::OnceLock;
 use strum::{Display, EnumIter, IntoEnumIterator};
 
 #[cfg(feature = "color_detect")]
@@ -4327,8 +4327,8 @@ mod tests {
     use serial_test::serial;
     use std::io::Write;
     use std::path::Path;
-    use std::sync::Mutex;
     use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Mutex;
     use thag_common::Verbosity;
 
     static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
@@ -4545,25 +4545,19 @@ mod tests {
         let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
 
         // Should succeed with TrueColor support and dark background
-        assert!(
-            theme
-                .validate(&ColorSupport::TrueColor, &TermBgLuma::Dark)
-                .is_ok()
-        );
+        assert!(theme
+            .validate(&ColorSupport::TrueColor, &TermBgLuma::Dark)
+            .is_ok());
 
         // Should fail with insufficient color support
-        assert!(
-            theme
-                .validate(&ColorSupport::Color256, &TermBgLuma::Dark)
-                .is_err()
-        );
+        assert!(theme
+            .validate(&ColorSupport::Color256, &TermBgLuma::Dark)
+            .is_err());
 
         // Should fail with wrong background
-        assert!(
-            theme
-                .validate(&ColorSupport::TrueColor, &TermBgLuma::Light)
-                .is_err()
-        );
+        assert!(theme
+            .validate(&ColorSupport::TrueColor, &TermBgLuma::Light)
+            .is_err());
 
         let output = get_test_output();
         flush_test_output(); // Write captured output to stdout
@@ -4679,7 +4673,7 @@ mod tests {
 
         let _output = get_test_output();
         flush_test_output(); // Write captured output to stdout
-        // Output might be empty for paint tests, but should not crash
+                             // Output might be empty for paint tests, but should not crash
     }
 
     #[test]

@@ -1,4 +1,3 @@
-use ctrlc;
 use std::sync::mpsc::channel;
 
 /// Published example from the `ctrlc` crate: "Cross platform handling of Ctrl-C signals."

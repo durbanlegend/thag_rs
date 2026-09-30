@@ -91,12 +91,12 @@ use std::sync::OnceLock;
 pub use {
     errors::{ProfileError, ProfileResult},
     profiling::{
-        Profile, ProfileConfiguration, ProfileType, disable_profiling, extract_filename_timestamp,
-        is_profiling_enabled,
+        disable_profiling, extract_filename_timestamp, is_profiling_enabled, Profile,
+        ProfileConfiguration, ProfileType,
     },
     thag_common::{
-        V, init_verbosity, lazy_static_var, re, set_global_verbosity, set_verbosity, static_lazy,
-        warn_once,
+        init_verbosity, lazy_static_var, re, set_global_verbosity, set_verbosity, static_lazy,
+        warn_once, V,
     },
     thag_proc_macros::{fn_name, internal_doc},
 };
@@ -114,7 +114,7 @@ pub use profiling::{
 ///
 /// These are primarily for internal debugging and development.
 #[internal_doc]
-pub use logging::{DebugLogger, flush_debug_log, get_debug_log_path};
+pub use logging::{flush_debug_log, get_debug_log_path, DebugLogger};
 
 /// Private module for internal macro implementations.
 ///
@@ -129,10 +129,10 @@ pub mod __private {
 /// Memory profiling functionality (available with `full_profiling` feature).
 #[cfg(feature = "full_profiling")]
 pub use {
-    mem_attribution::{ProfileRef, find_profile, register_profile},
+    mem_attribution::{find_profile, register_profile, ProfileRef},
     mem_tracking::{
-        Allocator, Dispatcher, TaskGuard, TaskMemoryContext, TrackingAllocator, create_memory_task,
-        current_allocator, get_last_active_task, record_allocation,
+        create_memory_task, current_allocator, get_last_active_task, record_allocation, Allocator,
+        Dispatcher, TaskGuard, TaskMemoryContext, TrackingAllocator,
     },
 };
 
@@ -145,7 +145,7 @@ pub use profiling::extract_path;
 #[cfg(feature = "demo")]
 pub use {
     thag_proc_macros::timing,
-    visualization::{AnalysisType, prompted_analysis},
+    visualization::{prompted_analysis, AnalysisType},
 };
 
 // ============================================================================

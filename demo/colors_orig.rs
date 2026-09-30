@@ -68,35 +68,35 @@ impl ThemeStyle for YinYangStyle {
         if let Ok(theme) = theme_result {
             let style = match theme {
                 Theme::Light => match *self {
-                    YinYangStyle::Error => Style::new().fg::<Red>().bold(),
-                    YinYangStyle::Warning => Style::new().fg::<Magenta>().bold(),
-                    YinYangStyle::Emphasis => Style::new().fg::<Yellow>().bold(),
-                    YinYangStyle::OuterPrompt => Style::new().fg::<Blue>().bold(),
-                    YinYangStyle::InnerPrompt => Style::new().fg::<Cyan>().bold(),
-                    YinYangStyle::Info => Style::new().fg::<Black>(),
-                    YinYangStyle::Debug => Style::new().fg::<Cyan>(),
+                    Self::Error => Style::new().fg::<Red>().bold(),
+                    Self::Warning => Style::new().fg::<Magenta>().bold(),
+                    Self::Emphasis => Style::new().fg::<Yellow>().bold(),
+                    Self::OuterPrompt => Style::new().fg::<Blue>().bold(),
+                    Self::InnerPrompt => Style::new().fg::<Cyan>().bold(),
+                    Self::Info => Style::new().fg::<Black>(),
+                    Self::Debug => Style::new().fg::<Cyan>(),
                 },
                 Theme::Dark => match *self {
-                    YinYangStyle::Error => Style::new().fg::<Red>().bold(),
-                    YinYangStyle::Warning => Style::new().fg::<Magenta>().bold(),
-                    YinYangStyle::Emphasis => Style::new().fg::<Yellow>().bold(),
-                    YinYangStyle::OuterPrompt => Style::new().fg::<Blue>().bold(),
-                    YinYangStyle::InnerPrompt => Style::new().fg::<Green>().bold(),
-                    YinYangStyle::Info => Style::new().fg::<White>(),
-                    YinYangStyle::Debug => Style::new().fg::<Cyan>(),
+                    Self::Error => Style::new().fg::<Red>().bold(),
+                    Self::Warning => Style::new().fg::<Magenta>().bold(),
+                    Self::Emphasis => Style::new().fg::<Yellow>().bold(),
+                    Self::OuterPrompt => Style::new().fg::<Blue>().bold(),
+                    Self::InnerPrompt => Style::new().fg::<Green>().bold(),
+                    Self::Info => Style::new().fg::<White>(),
+                    Self::Debug => Style::new().fg::<Cyan>(),
                 },
             };
             Some(style)
         } else if let Some(_support) = supports_color::on(Stream::Stdout) {
             // If supports colour, default to dark theme - safer
             let style: Style = match *self {
-                YinYangStyle::Error => Style::new().fg::<Red>().bold(),
-                YinYangStyle::Warning => Style::new().fg::<Magenta>().bold(),
-                YinYangStyle::Emphasis => Style::new().fg::<Yellow>().bold(),
-                YinYangStyle::OuterPrompt => Style::new().fg::<Blue>().bold(),
-                YinYangStyle::InnerPrompt => Style::new().fg::<Green>().bold(),
-                YinYangStyle::Info => Style::new().fg::<White>(),
-                YinYangStyle::Debug => Style::new().fg::<Cyan>(),
+                Self::Error => Style::new().fg::<Red>().bold(),
+                Self::Warning => Style::new().fg::<Magenta>().bold(),
+                Self::Emphasis => Style::new().fg::<Yellow>().bold(),
+                Self::OuterPrompt => Style::new().fg::<Blue>().bold(),
+                Self::InnerPrompt => Style::new().fg::<Green>().bold(),
+                Self::Info => Style::new().fg::<White>(),
+                Self::Debug => Style::new().fg::<Cyan>(),
             };
             Some(style)
         } else {
@@ -106,13 +106,13 @@ impl ThemeStyle for YinYangStyle {
 
     fn to_string(&self) -> String {
         match *self {
-            YinYangStyle::Error => String::from("error"),
-            YinYangStyle::Warning => String::from("warning"),
-            YinYangStyle::Emphasis => String::from("emphasis"),
-            YinYangStyle::OuterPrompt => String::from("outer_prompt"),
-            YinYangStyle::InnerPrompt => String::from("inner_prompt"),
-            YinYangStyle::Info => String::from("info"),
-            YinYangStyle::Debug => String::from("debug"),
+            Self::Error => String::from("error"),
+            Self::Warning => String::from("warning"),
+            Self::Emphasis => String::from("emphasis"),
+            Self::OuterPrompt => String::from("outer_prompt"),
+            Self::InnerPrompt => String::from("inner_prompt"),
+            Self::Info => String::from("info"),
+            Self::Debug => String::from("debug"),
         }
     }
 }

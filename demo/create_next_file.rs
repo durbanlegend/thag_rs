@@ -2,8 +2,8 @@ use std::env;
 use std::fs;
 use std::path::Path;
 
-/// Prototype of creating files named sequentially from iter_000000.rs to
-/// iter_999999.rs in a thag_rs/demo subdirectory of the OS's temporary
+/// Prototype of creating files named sequentially from `iter_000000.rs` to
+/// `iter_999999.rs` in a `thag_rs/demo` subdirectory of the OS's temporary
 /// directory. The need is to generate well-behaved and consistent human-readable
 /// names for temporary programs generated from rapid iteration expressions.
 //# Purpose: Demo sequential file creation and the kind of code that is well suited to generation by an LLM.
@@ -27,7 +27,7 @@ fn main() {
                 let stem = path.file_stem().unwrap();
                 let num_str = stem.to_str().unwrap().trim_start_matches("iter_");
                 // println!("stem={stem:?}; num_str={num_str}");
-                if num_str.len() == 6 && num_str.chars().all(|c| c.is_numeric()) {
+                if num_str.len() == 6 && num_str.chars().all(char::is_numeric) {
                     Some(num_str.parse::<u32>().unwrap())
                 } else {
                     None
@@ -41,15 +41,17 @@ fn main() {
     println!("existing_files={existing_files:?}");
 
     let next_file_num = match existing_files.as_slice() {
-        [] => 0, // No existing files, start with 000000
-        _ if existing_files.contains(&999999) => {
+        [] => 0, // No existing files, start with 000_000
+        _ if existing_files.contains(&999_999) => {
             // Wrap around and find the first gap
-            for i in 0..999999 {
+            for i in 0..999_999 {
                 if !existing_files.contains(&i) {
                     return create_file(&demo_dir, i);
                 }
             }
-            panic!("Cannot create new file: all possible filenames already exist in the demo directory.");
+            panic!(
+                "Cannot create new file: all possible filenames already exist in the demo directory."
+            );
         }
         _ => existing_files.iter().max().unwrap() + 1, // Increment from highest existing number
     };
@@ -62,5 +64,5 @@ fn create_file(demo_dir: &Path, num: u32) {
     let filename = format!("iter_{}.rs", padded_num);
     let path = demo_dir.join(&filename);
     fs::File::create(path.clone()).expect("Failed to create file");
-    println!("Created file: {path:#?}");
+    println!("Created file: {}", path.display());
 }

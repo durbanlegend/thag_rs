@@ -40,15 +40,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (dest_dir, demo_dest) = loop {
         println!("Select where you want to save the new `demo` directory");
-        let dest_dir = match select_directory(&mut navigator, false) {
-            Ok(path) => path,
-            Err(_) => {
-                println!("\nNo directory selected. Exiting.\n");
-                return Ok(());
-            }
+        let Ok(dest_dir) = select_directory(&mut navigator, false) else {
+            println!("\nNo directory selected. Exiting.\n");
+            return Ok(());
         };
-
-        // // `select_directory` already handles this.
+        // `select_directory` already handles this.
         // fs::create_dir_all(&dest_dir)?;
 
         // Check if demo already exists in destination

@@ -1,5 +1,9 @@
 ## Running the scripts in `demo` and `src/bin`
 
+### License requirements
+
+All demos are licensed under MIT/Apache-2.0, except for the script/s in the /demo/eupl directory, which use the EUPL-1.2 to comply with the `giallo` crate library requirements.
+
 ### Commonality of scripts and tools
 
 The scripts in src/bin are integrated `thag_rs` tools, in other words they are declared in Cargo.toml and are normally installed as commands. However, if you have cloned the `thag_rs` project you can run them like any other `thag` script.

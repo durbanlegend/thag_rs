@@ -12,7 +12,7 @@ default = ["thag_styling/color_detect"]
 /// and tests the parsing logic for detecting attributes in ANSI sequences.
 //# Purpose: Debug ANSI code generation and attribute detection
 //# Categories: styling, debugging, testing
-use thag_styling::{ColorInitStrategy, Role, Styleable, Styler, TermAttributes};
+use thag_styling::{ColorInitStrategy, Styleable, TermAttributes};
 
 fn main() {
     // Initialize styling system

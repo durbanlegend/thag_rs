@@ -21,7 +21,7 @@ default = ["time_profiling", "debug_logging"]
 use std::error::Error;
 use std::io::Write;
 // use std::path::PathBuf;
-use thag_profiler::{DebugLogger, profiling};
+use thag_profiler::{profiling, DebugLogger};
 use thag_styling::{
     auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config,
 };

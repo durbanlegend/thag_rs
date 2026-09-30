@@ -87,13 +87,15 @@ impl Config {
 
         #[cfg(debug_assertions)]
         debug!(
-            "1. config_path={config_path:#?}, exists={}",
+            "1. config_path={}, exists={}",
+            config_path.display(),
             config_path.exists()
         );
 
         if !config_path.exists() {
             let path = config_path.parent().ok_or(ThagError::NoneOption(format!(
-                "No parent for {config_path:#?}"
+                "No parent for {}",
+                config_path.display()
             )))?;
             fs::create_dir_all(path)?;
 
@@ -106,7 +108,8 @@ impl Config {
 
                 #[cfg(debug_assertions)]
                 debug!(
-                    "2. dist_config={user_config:#?}, exists={}",
+                    "2. dist_config={}, exists={}",
+                    user_config.display(),
                     user_config.exists()
                 );
                 if user_config.exists() {
@@ -126,7 +129,8 @@ impl Config {
 
         #[cfg(debug_assertions)]
         debug!(
-            "4. config_path={config_path:#?}, exists={}",
+            "4. config_path={}, exists={}",
+            config_path.display(),
             config_path.exists()
         );
         let config_str = fs::read_to_string(&config_path)?;
@@ -249,7 +253,7 @@ impl Dependencies {
                     override_config
                         .excluded_features
                         .as_ref()
-                        .map_or(true, |excluded_features| !excluded_features.contains(f))
+                        .is_none_or(|excluded_features| !excluded_features.contains(f))
                 };
                 if !keep {
                     debug!("Excluding feature '{}' due to crate-specific override", f);
@@ -258,7 +262,7 @@ impl Dependencies {
             });
 
             // Add required features
-            if let Some(ref required_features) = &override_config.required_features {
+            if let Some(required_features) = &override_config.required_features {
                 for f in required_features {
                     if f.is_empty() {
                         continue;
@@ -335,7 +339,7 @@ impl Dependencies {
                 .cloned()
                 .collect();
 
-            if let Some(ref required_features) = &override_config.required_features {
+            if let Some(required_features) = &override_config.required_features {
                 for feature in required_features {
                     if feature.is_empty() {
                         continue;
@@ -507,7 +511,7 @@ impl<'de> de::Deserialize<'de> for DependencyInference {
 #[derive(Clone, Debug, Deserialize, Documented, DocumentedFields, Serialize)]
 pub struct Colors {
     /// Color support override. Sets the terminal's color support level. The alternative is
-    /// to leave it up to thag_rs, which depending on the platform may call 3rd-party crates
+    /// to leave it up to `thag_rs`, which depending on the platform may call 3rd-party crates
     /// to interrogate the terminal, which could cause misbehaviour, or may choose a default,
     /// which might not take advantage of the full capabilities of the terminal.
     /// If the terminal can't handle your chosen level, this may cause unwanted control strings
@@ -536,10 +540,10 @@ impl Default for Colors {
 #[derive(Clone, Debug, Default, Deserialize, Documented, DocumentedFields, Serialize)]
 #[serde(default)]
 pub struct ProcMacros {
-    /// Absolute or relative path to bank proc macros crate, e.g. bank/proc_macros.
+    /// Absolute or relative path to bank proc macros crate, e.g. `bank/proc_macros`.
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub bank_proc_macro_crate_path: Option<String>,
-    /// Absolute or relative path to demo proc macros crate, e.g. demo/proc_macros.
+    /// Absolute or relative path to demo proc macros crate, e.g. `demo/proc_macros`.
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub demo_proc_macro_crate_path: Option<String>,
 }
@@ -668,7 +672,7 @@ pub fn get_context() -> Arc<dyn Context> {
 pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
     let config_path = context.get_config_path();
 
-    debug!("config_path={config_path:?}");
+    debug!("config_path={}", config_path.display());
 
     if !config_path.exists() {
         sprtln!(
@@ -694,7 +698,7 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
 #[allow(clippy::unnecessary_wraps)]
 pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
     let config_path = context.get_config_path();
-    debug!("config_path={config_path:?}");
+    debug!("config_path={}", config_path.display());
 
     let exists = config_path.exists();
     if !exists {
@@ -710,7 +714,7 @@ pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
         fs::write(&config_path, DEFAULT_CONFIG)?;
     }
 
-    eprintln!("About to edit {config_path:#?}");
+    eprintln!("About to edit {}", config_path.display());
     if context.is_real() {
         edit_file(&config_path)?;
     }

@@ -20,7 +20,7 @@
 /// running concurrently, or conversely an outer `with_sys_alloc` ending in one thread
 /// could prematurely reset the current allocator to  `TaskAware` while another
 /// instance is still running in another thread. We can and do build in a check in
-/// the TaskAware branch to detect and ignore profiler code, but in practice there is
+/// the `TaskAware` branch to detect and ignore profiler code, but in practice there is
 /// little sign of such races being a problem.
 ///
 /// Attempts to resolve this issue with thread-local storage have not borne fruit.
@@ -31,7 +31,6 @@
 //# Purpose: Prototype of a ring-fenced allocator for memory profiling.
 //# Categories: profiling, prototype
 use parking_lot::Mutex;
-use std::sync::Arc;
 use std::sync::LazyLock;
 use std::{
     alloc::{GlobalAlloc, Layout, System},
@@ -109,8 +108,8 @@ pub enum Allocator {
 impl fmt::Display for Allocator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Allocator::TaskAware => write!(f, "TaskAware"),
-            Allocator::System => write!(f, "System"),
+            Self::TaskAware => write!(f, "TaskAware"),
+            Self::System => write!(f, "System"),
         }
     }
 }

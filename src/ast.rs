@@ -1,7 +1,7 @@
 //!
 //! AST analysis and dependency inference capability for `thag_rs`.
 //!
-use crate::{BUILT_IN_CRATES, ThagResult};
+use crate::{ThagResult, BUILT_IN_CRATES};
 use phf::phf_set;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
@@ -16,19 +16,19 @@ use std::{
 };
 use strum::Display;
 use syn::{
-    self,
+    self, parse_file,
+    visit::Visit,
     BinOp::{
         AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, DivAssign, MulAssign, RemAssign,
         ShlAssign, ShrAssign, SubAssign,
     },
     Expr, File, Item, ItemMod, ItemUse, ReturnType, Stmt,
     Type::Tuple,
-    TypePath, UseRename, UseTree, parse_file,
-    visit::Visit,
+    TypePath, UseRename, UseTree,
 };
-use thag_common::{V, debug_log, re};
+use thag_common::{debug_log, re, V};
 use thag_profiler::profiled;
-use thag_styling::{Role, sveprtln};
+use thag_styling::{sveprtln, Role};
 
 #[cfg(debug_assertions)]
 use {crate::debug_timings, std::time::Instant};

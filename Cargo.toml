@@ -67,6 +67,7 @@ features = ["tools"]
 # features = ["document-features"]
 all-features = true
 
+
 [lib]
 name = "thag_rs"
 path = "src/lib.rs"
@@ -256,6 +257,11 @@ name = "thag_version_bump"
 path = "src/bin/thag_version_bump.rs"
 required-features = ["tools"]
 
+# [[bin]]
+# name = "thag_profile_benchmark"
+# path = "src/bin/thag_profile_benchmark.rs"
+# required-features = ["tools"]
+
 [dependencies]
 anyhow = { version = "1.0", optional = true }
 arboard = { version = "3.4", optional = true }
@@ -275,20 +281,25 @@ dirs = "7.0"
 document-features = { version = "0.2", optional = true }
 documented = "0.10"
 edit = { version = "0.1", optional = true }
+egui-theme-switch = { version = "0.8", optional = true }
+
 heck = { version = "0.5", optional = true }
 inquire = { version = "0.9", optional = true }
 log = "0.4"
 mockall = { version = "0.15", optional = true }
+
 nu-ansi-term = { version = "0.50", optional = true }
 pathdiff = { version = "0.2", optional = true }
 phf = { version = "0.14", features = ["macros"] }
 prettyplease = { version = "0.3", optional = true }
 proc-macro2 = "1.0"
+
 quote = { version = "1.0", optional = true }
 ratatui = { version = "0.30", optional = true }
 reedline = { version = "0.51", optional = true }
 regex = "1.11"
 reqwest = { version = "0.13", features = ["blocking", "json", "rustls"], default-features = false, optional = true }
+
 scopeguard = { version = "1.2", optional = true }
 semver = "1.0"
 serde = { version = "1", features = ["derive"] }
@@ -408,6 +419,7 @@ document-features = ["dep:document-features"]
 
 ## Error handling
 error_handling = []
+
 
 ## All features
 full = ["color_detect", "iter"]  # Simplified as iter includes everything

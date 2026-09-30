@@ -1,0 +1,2400 @@
+/*[toml]
+[dependencies]
+eframe = { version = "0.36", features = ["wgpu"] }
+# egui_commonmark = { git = "https://github.com/durbanlegend/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
+egui_commonmark = { path = "/Users/donf/projects/egui_commonmark/egui_commonmark", features = ["better_syntax_highlighting", "svg", "fetch"] }
+
+egui_extras = { version = "0.36", features = ["svg", "syntect"] }
+thag_proc_macros = { version = "1, thag-auto" }
+# thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
+resvg = { version = "0.45", features = ["text"] }
+fontdb = { version = "0.23", features = ["fs"] }
+notify = { version = "8" }
+pulldown-cmark = { version = "0.13" }
+rfd = { version = "0.15" }
+rust-i18n = "4"
+sys-locale = "0.3"
+
+[features]
+default = ["eframe/wgpu","egui_commonmark/svg","egui_commonmark/fetch"]
+
+# Make sure the result runs fast
+[profile.dev]
+opt-level = 3       # Apply maximum performance optimizations
+debug = true
+*/
+/// A fast lightweight multi-lingual GUI markdown viewer.
+///
+/// Relative links are resolved relative to the parent directory of the
+/// current markdown file, so navigation between linked documents works correctly.
+///
+/// Features:
+/// - Support for 28 languages, according to your LOCALE or LANG system/environment variable. E.g. LOCALE=fr.
+/// - Multi-file navigation: files can be selected or dragged and dropped singly or in batches as and when needed.
+/// - Large document support.
+/// - Light/dark/system theme switching.
+/// - Zoom and font scaling with reset.
+/// - Optional table of contents sidebar.
+/// - Full-document search with options for case Iin)sensitive, whole word and regular expression searches.
+/// - Search across mixed text and code spans and link anchors.
+/// - Automatic live file watching and refresh
+///
+/// On Unix systems, launching from a terminal automatically detaches the process so the terminal
+/// is returned immediately (use --foreground to suppress this).
+//# Purpose: A GUI markdown viewer with navigation, zoom, and file-open support. Requires the `gui_viewer` feature when built as a tool, on account of its significant additional dependencies.
+//# Categories: crates, gui, tools
+//# Usage: thag_md_view [OPTIONS] [PATH]
+//# Option: --foreground: Stay attached to the launching terminal (Unix only). Primarily for debugging.
+//# Option: --version (-V): Print version number and exit.
+//# Argument: [PATH]: Optional initial markdown file to open
+use eframe::egui;
+use egui::{
+    Color32,
+    load::{BytesPoll, ImageLoadResult, ImageLoader, ImagePoll, LoadError, SizeHint},
+};
+use egui_commonmark::{CommonMarkCache, CommonMarkScrollOptions, CommonMarkViewer, SearchOptions};
+use notify::{RecursiveMode, Watcher};
+use pulldown_cmark::{Event, Options, Parser, Tag};
+use rfd::FileDialog;
+use rust_i18n::t;
+use std::{
+    collections::HashMap,
+    env,
+    path::{Path, PathBuf},
+    sync::{
+        Arc, Mutex,
+        mpsc::{self, Receiver},
+    },
+    time::{Duration, Instant},
+};
+use thag_proc_macros::copy_resource_dir;
+
+const CMD_LINE_HELP: &str = r"A fast lightweight multi-lingual GUI markdown viewer.
+
+Relative links are resolved relative to the parent directory of the
+current markdown file, so navigation between linked documents works correctly.
+
+Features:
+- Support for 28 languages, according to your LOCALE or LANG system/environment variable. E.g. LOCALE=fr.
+- Multi-file navigation: files can be selected or dragged and dropped singly or in batches as and when needed.
+- Large document support.
+- Light/dark/system theme switching.
+- Zoom and font scaling with reset.
+- Optional table of contents sidebar.
+- Full-document search with options for case Iin)sensitive, whole word and regular expression searches.
+- Search across mixed text and code spans and link anchors.
+- Automatic live file watching and refresh
+
+On Unix systems, launching from a terminal automatically detaches the process so the terminal
+is returned immediately (use --foreground to suppress this).
+
+USAGE:
+    thag_md_view [OPTIONS] [PATH]
+
+OPTIONS:
+    -h, --help       Print help
+    --foreground     Stay attached to the launching terminal (Unix only). Primarily for debugging.
+    --version (-V)   Print version number and exit.
+
+ARGUMENTS:
+    [PATH]           Optional initial markdown file to open";
+
+const HIST_BACK_ICON: &str = "\u{25c0}";
+const HIST_FWD_ICON: &str = "\u{25b6}";
+const OPEN_FILES_ICON: &str = "\u{1f4d6}\u{2026}";
+
+#[cfg(target_os = "macos")]
+const ALT: &str = "Opt";
+#[cfg(target_os = "macos")]
+const MOD: &str = "Cmd";
+
+#[cfg(not(target_os = "macos"))]
+const ALT: &str = "Alt";
+#[cfg(not(target_os = "macos"))]
+const MOD: &str = "Ctrl";
+
+/// Documents at or above this byte count get the viewport-cache toggle shown in
+/// the toolbar and have caching auto-enabled.  Below this size the simple
+/// full-document render path is always used (accurate + fast enough).
+const VIEWPORT_CACHE_THRESHOLD: usize = 200_000; // 200 KB
+
+copy_resource_dir!("THAG_DEV_PATH", "locales");
+rust_i18n::i18n!("locales", fallback = "en");
+
+copy_resource_dir!(
+    "THAG_DEV_PATH",
+    "assets/sublime_themes",
+    "assets/sublime_themes"
+);
+
+macro_rules! theme_bytes {
+    ($($theme:literal),+ $(,)?) => {
+        &[
+            $(
+                (
+                    $theme,
+                    include_bytes!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/assets/sublime_themes/",
+                        $theme,
+                        ".tmTheme"
+                    ))
+                ),
+            )+
+        ]
+    };
+}
+
+const THEME_BYTES: &[(&str, &[u8])] = theme_bytes!("Dunkel_Theme", "Slush_and_Poppies",);
+
+/// Applies contrast colours to both egui themes; font sizes are always left at
+/// egui defaults so toggling never causes a scroll-position jump.
+///
+/// `enhanced = true`  — high-contrast colours (near-white/near-black text, warm backgrounds).
+/// `enhanced = false` — stock egui colours.
+///
+/// Called once at startup and again whenever the toolbar "Contrast+/-" toggle changes.
+/// `image_loading_spinners` is kept `false` in both modes.
+#[allow(dead_code)]
+fn apply_style(ctx: &egui::Context, enhanced: bool) {
+    const BRIGHTEN: f32 = 1.3;
+    const DARKEN: f32 = 1.0 / BRIGHTEN;
+    // ── Dark mode ─────────────────────────────────────────────────────────────────────────
+    ctx.global_style_mut(|style| {
+        // Show the url of a hyperlink on hover
+        style.url_in_tooltip = true;
+        // Reduce the tooltip delay down to 0.0 seconds (or something low like 0.05)
+        style.interaction.tooltip_delay = 0.0;
+        // Don't enforce tooltip delays within this many seconds of viewing the first tooltip
+        style.interaction.tooltip_grace_time = 3.0;
+        // Optional: Show tooltips even if the mouse is still drifting
+        // style.interaction.show_tooltips_only_when_still = false;
+    });
+    ctx.set_visuals_of(egui::Theme::Dark, {
+        let mut v = egui::Visuals::dark();
+        if enhanced {
+            v.widgets.noninteractive.fg_stroke.color = Color32::from_gray(240);
+            v.code_bg_color = Color32::from_gray(100);
+            v.hyperlink_color = Color32::from_rgb(100, 185, 255);
+        }
+        v.image_loading_spinners = false; // always off in a document reader
+        v
+    });
+
+    // ── Light mode ────────────────────────────────────────────────────────────────────────
+    ctx.set_visuals_of(egui::Theme::Light, {
+        let mut v = egui::Visuals::light();
+        if enhanced {
+            v.widgets.noninteractive.fg_stroke.color = Color32::from_gray(5);
+            v.panel_fill = Color32::from_rgb(255, 255, 255);
+            v.window_fill = Color32::from_rgb(255, 255, 255);
+            v.code_bg_color = Color32::from_rgb(225, 225, 230);
+            v.hyperlink_color = Color32::from_rgb(0, 100, 210);
+        } else {
+            v.code_bg_color = Color32::from_rgb(225, 225, 230);
+        }
+        v.image_loading_spinners = false; // always off in a document reader
+        v
+    });
+
+    // Balance monospace font size in inline code and fenced code blocks
+    // against proportional font size.
+    // In egui 0.35+ font styles are stored per-theme, so set both.
+    for theme in [egui::Theme::Dark, egui::Theme::Light] {
+        ctx.style_mut_of(theme, |style| {
+            use egui::{FontFamily, FontId, TextStyle};
+            style.text_styles.insert(
+                TextStyle::Monospace,
+                FontId::new(12.0, FontFamily::Monospace),
+            );
+        });
+    }
+}
+
+use egui::ecolor::Hsva;
+
+/// Adjusts a Color32 by a given factor (e.g., 1.2 for +20% brightness).
+#[allow(dead_code)]
+fn adjust_color(color: Color32, factor: f32) -> Color32 {
+    let mut hsva = Hsva::from(color);
+    // Scale the Value (brightness) component, keeping it clamped between 0.0 and 1.0
+    hsva.v = (hsva.v * factor).clamp(0.0, 1.0);
+    let color = Color32::from(hsva);
+    // eprintln!("color: {:?}", color);
+    color
+}
+
+// ─── TOC / heading extraction ──────────────────────────────────────────────────
+
+/// An entry in the table of contents, derived from one ATX heading in the document.
+#[derive(Clone)]
+struct TocEntry {
+    /// Heading depth 1–6.
+    level: u8,
+    /// Display text (raw heading text; may include inline markup such as `**bold**`).
+    text: String,
+    /// The `{#slug}` injected into the rendered content, used as the scroll target.
+    slug: String,
+}
+
+/// Converts heading text to a URL-safe slug: lowercased, non-alphanumeric runs replaced by `-`.
+fn slugify(text: &str) -> String {
+    let mut slug = String::with_capacity(text.len());
+    let mut prev_sep = true; // start true to drop any leading hyphens
+    for ch in text.chars() {
+        if ch.is_alphanumeric() {
+            slug.push(ch.to_ascii_lowercase());
+            prev_sep = false;
+        } else if !prev_sep {
+            slug.push('-');
+            prev_sep = true;
+        }
+    }
+    if slug.ends_with('-') {
+        slug.pop();
+    }
+    slug
+}
+
+/// Parses an ATX heading line and returns `(level, plain_text)`.
+/// `plain_text` is the heading content with any trailing `{…}` attribute block stripped.
+/// Returns `None` for non-heading lines, indented lines, or malformed ATX syntax.
+#[allow(clippy::cast_possible_truncation)]
+fn parse_heading_line(line: &str) -> Option<(u8, &str)> {
+    let hashes = line.bytes().take_while(|&b| b == b'#').count();
+    if hashes == 0 || hashes > 6 {
+        return None;
+    }
+    // ATX heading must have a space after the `#` run.
+    let rest = line[hashes..].strip_prefix(' ')?;
+    let text = rest.trim_end();
+    if text.is_empty() {
+        return None;
+    }
+    // Strip any trailing `{#id}` / `{.class}` attribute block.
+    let plain = text.rfind('{').map_or(text, |brace| {
+        let attr = text[brace..].trim_end();
+        if attr.ends_with('}') {
+            text[..brace].trim_end()
+        } else {
+            text
+        }
+    });
+    Some((hashes as u8, plain))
+}
+
+/// Returns the explicit `{#id}` from a heading line, if present.
+fn extract_heading_id(line: &str) -> Option<&str> {
+    let brace = line.rfind('{')?;
+    let attr = line[brace..].trim_end();
+    if attr.starts_with("{#") && attr.ends_with('}') {
+        Some(&attr[2..attr.len() - 1])
+    } else {
+        None
+    }
+}
+
+/// Scans `raw` markdown, builds a `Vec<TocEntry>` from headings, and returns a version
+/// of the content with `{#slug}` attributes injected into every heading that lacks one.
+///
+/// **Uses pulldown-cmark as the heading oracle** rather than a hand-rolled fence
+/// tracker. This guarantees that the TOC and injected IDs are consistent with what
+/// the renderer sees. A custom fence tracker diverges from pulldown-cmark in edge
+/// cases such as XML-like tags (`<context>`, `<files>`) being treated as type-6 HTML
+/// blocks that can swallow a code-fence opener — leading to headings that are
+/// unreachable by the scroll mechanism.
+fn extract_toc_and_inject_ids(raw: &str) -> (String, Vec<TocEntry>) {
+    let pc_opts = Options::ENABLE_TABLES
+        | Options::ENABLE_TASKLISTS
+        | Options::ENABLE_STRIKETHROUGH
+        | Options::ENABLE_FOOTNOTES
+        | Options::ENABLE_HEADING_ATTRIBUTES;
+
+    // Pass 1 — ask pulldown-cmark where headings actually begin.
+    let heading_starts: Vec<usize> = Parser::new_ext(raw, pc_opts)
+        .into_offset_iter()
+        .filter_map(|(event, span)| {
+            matches!(event, Event::Start(Tag::Heading { .. })).then_some(span.start)
+        })
+        .collect();
+
+    // Pass 2 — rebuild content, injecting `{#slug}` at each pulldown-cmark-verified heading.
+    let mut out = String::with_capacity(raw.len() + heading_starts.len() * 24);
+    let mut toc: Vec<TocEntry> = Vec::new();
+    let mut slug_counts: HashMap<String, usize> = HashMap::new();
+    let mut pos = 0usize; // read cursor into `raw`
+
+    for line_start in heading_starts {
+        // Emit everything between the last position and this heading.
+        out.push_str(&raw[pos..line_start]);
+
+        // Extract the heading line (up to but not including the trailing `\n`).
+        let newline = raw[line_start..]
+            .find('\n')
+            .map_or(raw.len(), |p| line_start + p);
+        let line = &raw[line_start..newline];
+
+        // Use our ATX parser to get the level and plain text.
+        if let Some((level, plain_text)) = parse_heading_line(line) {
+            let (slug, injected) = extract_heading_id(line).map_or_else(
+                || {
+                    let base = slugify(plain_text);
+                    let n = slug_counts.entry(base.clone()).or_insert(0);
+                    let slug = if *n == 0 { base } else { format!("{base}-{n}") };
+                    *n += 1;
+                    let with_id = format!("{} {{#{slug}}}", line.trim_end());
+                    (slug, with_id)
+                },
+                |id| (id.to_string(), line.to_string()),
+            );
+            toc.push(TocEntry {
+                level,
+                text: plain_text.to_string(),
+                slug,
+            });
+            out.push_str(&injected);
+        } else {
+            // pulldown-cmark found a heading our ATX parser doesn't recognise
+            // (e.g. setext style). Pass it through without injection.
+            out.push_str(line);
+        }
+
+        // Advance past the newline (or to end-of-file).
+        pos = if newline < raw.len() {
+            out.push('\n');
+            newline + 1
+        } else {
+            newline
+        };
+    }
+
+    // Emit the tail of the file after the last heading.
+    out.push_str(&raw[pos..]);
+
+    (out, toc)
+}
+
+// ─── Image path absolutization ─────────────────────────────────────────────────
+
+/// Rewrites relative image paths in Markdown to absolute `file://` URIs so they
+/// load correctly regardless of platform CWD behaviour.
+///
+/// Paths that already carry a URI scheme (`http://`, `file://`, `data:`, …) are
+/// left untouched. If a relative path cannot be resolved (file does not exist)
+/// it is also left untouched so existing error behaviour is preserved.
+///
+/// Note: processes the raw text, so a path inside a fenced code block is also
+/// rewritten if it matches the image syntax — an acceptable trade-off for the
+/// cross-platform fix.
+fn absolutize_image_paths(content: &str, base_dir: &Path) -> String {
+    let mut out = String::with_capacity(content.len() + 128);
+    let mut rest = content;
+
+    while let Some(bang) = rest.find("![") {
+        out.push_str(&rest[..bang]);
+        rest = &rest[bang..];
+
+        // Find `](`  — alt text must not contain `]`
+        let Some(close_bracket) = rest.find("](") else {
+            out.push_str(&rest[..2]);
+            rest = &rest[2..];
+            continue;
+        };
+
+        let prefix = &rest[..close_bracket + 2]; // `![alt](`
+        rest = &rest[close_bracket + 2..];
+
+        let Some(close_paren) = rest.find(')') else {
+            out.push_str(prefix);
+            continue;
+        };
+
+        let inner = &rest[..close_paren]; // path, possibly with `"title"`
+        rest = &rest[close_paren + 1..];
+
+        // Split optional title: `path "title"` or `path 'title'`
+        let (raw_path, title_suffix) = inner
+            .find(" \"")
+            .or_else(|| inner.find(" '"))
+            .map_or_else(|| (inner.trim(), ""), |i| (&inner[..i], &inner[i..]));
+
+        let is_schemed = raw_path.starts_with("http://")
+            || raw_path.starts_with("https://")
+            || raw_path.starts_with("file://")
+            || raw_path.starts_with("data:");
+
+        out.push_str(prefix);
+        if is_schemed {
+            out.push_str(inner);
+        } else if let Ok(abs) = base_dir.join(raw_path).canonicalize() {
+            out.push_str(&path_to_file_uri(&abs));
+            out.push_str(title_suffix);
+        } else {
+            // File not found — leave unchanged so the viewer shows a
+            // broken-image placeholder rather than silently doing nothing.
+            out.push_str(inner);
+        }
+        out.push(')');
+    }
+    out.push_str(rest);
+    out
+}
+
+fn path_to_file_uri(path: &Path) -> String {
+    let s = path.to_string_lossy().into_owned();
+    #[cfg(windows)]
+    {
+        let s = s.replace('\\', "/");
+    }
+    // Unix absolute paths start with `/`; Windows paths start with the drive letter.
+    if s.starts_with('/') {
+        format!("file://{s}") // file:// + /unix/path = file:///unix/path
+    } else {
+        format!("file:///{s}") // file:/// + C:/... = file:///C:/...
+    }
+}
+
+// ─── Code fence pre-screening ────────────────────────────────────────────────
+
+/// A code-fence problem detected before rendering.
+enum FenceError {
+    /// Total fence boundary count is odd — at least one fence is unclosed.
+    OddCount { total: usize },
+    /// An even-numbered boundary carries a language tag, meaning the preceding
+    /// typed opener was never closed.
+    UnclosedBeforeTyped {
+        at_line: usize,
+        at_header: String,
+        prev_typed: Option<(usize, String)>,
+    },
+}
+
+/// Scan `content` for fence problems without a full parser.
+///
+/// A fence boundary is a line with ≤ 3 leading spaces that starts with a triple backtick
+/// or triple tilde (`~~~`) (matching the same rule used by `extract_toc_and_inject_ids`).
+///
+/// Two invariants are checked:
+/// - **(a)** Total boundary count must be even — odd means at least one unclosed.
+/// - **(b)** Every *typed* boundary (one with a language tag) must be
+///   odd-numbered in sequence; an even-numbered typed boundary means the
+///   previous typed opener was never closed.
+fn validate_code_fences(content: &str) -> Result<(), FenceError> {
+    let mut fence_count = 0usize;
+    let mut last_typed: Option<(usize, String)> = None;
+
+    for (idx, line) in content.lines().enumerate() {
+        let line_num = idx + 1;
+        let trimmed = line.trim_start_matches(' ');
+        if line.len() - trimmed.len() > 3 {
+            continue;
+        }
+        let is_backtick = trimmed.starts_with("```");
+        let is_tilde = trimmed.starts_with("~~~");
+        if !is_backtick && !is_tilde {
+            continue;
+        }
+
+        fence_count += 1;
+
+        // Strip all leading fence chars to get the language tag (if any).
+        let lang = if is_backtick {
+            trimmed.trim_start_matches('`')
+        } else {
+            trimmed.trim_start_matches('~')
+        }
+        .trim();
+
+        if !lang.is_empty() {
+            if fence_count.is_multiple_of(2) {
+                // Even-numbered typed boundary → previous opener was never closed.
+                return Err(FenceError::UnclosedBeforeTyped {
+                    at_line: line_num,
+                    at_header: trimmed.trim_end().to_string(),
+                    prev_typed: last_typed,
+                });
+            }
+            last_typed = Some((line_num, trimmed.trim_end().to_string()));
+        }
+    }
+
+    if !fence_count.is_multiple_of(2) {
+        return Err(FenceError::OddCount { total: fence_count });
+    }
+    Ok(())
+}
+
+/// Return a one-line description of a fence error suitable for `eprintln!`.
+fn fence_err_brief(err: &FenceError, path: &Path) -> String {
+    let p = path.display();
+    match err {
+        FenceError::OddCount { total } => {
+            format!("malformed code fence in '{p}': odd boundary count ({total} total)")
+        }
+        FenceError::UnclosedBeforeTyped {
+            at_line,
+            at_header,
+            prev_typed,
+        } => match prev_typed {
+            Some((pl, ph)) => format!(
+                "malformed code fence in '{p}': unclosed fence between \
+                     '{ph}' (line {pl}) and '{at_header}' (line {at_line})"
+            ),
+            None => format!(
+                "malformed code fence in '{p}': unclosed fence before \
+                     '{at_header}' (line {at_line})"
+            ),
+        },
+    }
+}
+
+/// Build a markdown error page to display instead of a broken file.
+/// The error renders nicely in the viewer; the user can fix the file and
+/// press Cmd/Ctrl-R to reload.
+fn fence_error_content(path: &Path, err: &FenceError) -> String {
+    let file = path.display();
+    let mod_key = MOD;
+    match err {
+        FenceError::OddCount { total } => format!(
+            "# \u{26a0} Malformed Code Fence\n\n\
+             Cannot render `{file}`.\n\n\
+             **Odd number of fence boundaries detected ({total} total)** \u{2014} \
+             at least one code fence is unclosed.\n\n\
+             Please fix the file, then press **{mod_key}-R** to reload."
+        ),
+        FenceError::UnclosedBeforeTyped {
+            at_line,
+            at_header,
+            prev_typed,
+        } => {
+            let location = match prev_typed {
+                Some((pl, ph)) => {
+                    format!("between `{ph}` on line {pl} and `{at_header}` on line {at_line}")
+                }
+                None => format!("before `{at_header}` on line {at_line}"),
+            };
+            format!(
+                "# \u{26a0} Malformed Code Fence\n\n\
+                 Cannot render `{file}`.\n\n\
+                 **Unclosed code fence detected** \u{2014} {location}.\n\n\
+                 Please fix the file, then press **{mod_key}-R** to reload."
+            )
+        }
+    }
+}
+
+/// On Unix systems: if any stdio stream is a real terminal and `--foreground` is not
+/// present, spawn a detached child with a new session and exit the parent immediately,
+/// freeing the terminal. Errors (e.g. can't find the current exe) fall through silently
+/// so that the viewer still runs in the foreground.
+#[cfg(unix)]
+fn detach_if_tty() {
+    use std::io::IsTerminal;
+    use std::os::unix::process::CommandExt;
+
+    // Already non-interactive, or user explicitly requested foreground.
+    let is_tty = std::io::stdin().is_terminal()
+        || std::io::stdout().is_terminal()
+        || std::io::stderr().is_terminal();
+    if !is_tty {
+        return;
+    }
+    let args_os: Vec<_> = env::args_os().collect();
+    let already_detached = args_os.iter().any(|a| a == "--foreground");
+    if already_detached {
+        return;
+    }
+
+    let Ok(exe) = env::current_exe() else { return };
+
+    // Build child args: skip argv[0] (exe), append marker so the child skips this block.
+    let mut child_args: Vec<std::ffi::OsString> = args_os.into_iter().skip(1).collect();
+    child_args.push("--foreground".into());
+
+    let result = unsafe {
+        std::process::Command::new(&exe)
+            .args(&child_args)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .pre_exec(|| {
+                // Create a new session so the child is fully detached from the
+                // controlling terminal.
+                unsafe extern "C" {
+                    fn setsid() -> std::ffi::c_int;
+                }
+                if setsid() == -1 {
+                    Err(std::io::Error::last_os_error())
+                } else {
+                    Ok(())
+                }
+            })
+            .spawn()
+    };
+    if result.is_ok() {
+        std::process::exit(0);
+    }
+    // spawn failed — fall through and run in the foreground.
+}
+
+/// Detect the preferred UI locale from the operating system.
+/// Uses `sys-locale` which reads native OS APIs (`CFPreferences` on macOS,
+/// `GetUserDefaultLocaleName` on Windows, POSIX env-vars on Linux).
+/// Falls back to `"en"` when no usable locale is detected.
+fn detect_locale() -> String {
+    env::var("LOCALE").unwrap_or_else(|_| {
+        // eprintln!("No LOCALE env var");
+        env::var("LANG").unwrap_or_else(|_| {
+            eprintln!("No LANG env var");
+            sys_locale::get_locale()
+                .filter(|loc| !loc.is_empty() && loc != "C" && loc != "POSIX")
+                .unwrap_or_else(|| "en".to_string())
+        })
+    })
+}
+
+#[allow(clippy::cast_precision_loss, clippy::too_many_lines)]
+fn main() -> eframe::Result<()> {
+    // Hard size limit — refuse immediately so the GUI doesn't freeze.
+    const MAX_BYTES: usize = 50_000_000;
+
+    // Set the UI locale from the operating system before any translatable string is used.
+    let locale = detect_locale();
+    rust_i18n::set_locale(&locale);
+    // dbg!(&locale);
+
+    // Strip internal markers before processing positional arguments.
+    let args: Vec<String> = env::args().filter(|a| a != "--foreground").collect();
+
+    if args.contains(&"--help".to_string()) || args.contains(&"-h".to_string()) {
+        eprintln!("{CMD_LINE_HELP}");
+        return Ok(());
+    }
+
+    if args.contains(&"--version".to_string()) || args.contains(&"-V".to_string()) {
+        eprintln!(
+            "{} version {}",
+            PathBuf::from(&args[0])
+                .file_name()
+                .unwrap()
+                .to_string_lossy(),
+            env!("CARGO_PKG_VERSION")
+        );
+        return Ok(());
+    }
+
+    let selected_file: Option<PathBuf> = if args.len() > 1 {
+        let input_path = Path::new(&args[1]);
+        if !input_path.exists() {
+            eprintln!("Error: Input file does not exist: {}", input_path.display());
+            std::process::exit(1);
+        }
+        if input_path.is_dir() {
+            eprintln!("Error: Input path is a directory: {}", input_path.display());
+            let _ = env::set_current_dir(input_path);
+            None
+        } else if input_path.extension().is_some_and(|e| e == "md") {
+            Some(input_path.to_path_buf())
+        } else {
+            eprintln!(
+                "Error: Input file has unsupported extension: {}; must be `md`",
+                input_path.display()
+            );
+            std::process::exit(1);
+        }
+    } else {
+        None
+    };
+
+    #[cfg(unix)]
+    detach_if_tty();
+
+    let (canonical_initial_path, raw_content, markdown_content, toc) = selected_file.map_or_else(
+        || {
+            let canonical_initial_path = env::current_dir()
+                .unwrap_or_default()
+                .canonicalize()
+                .unwrap_or_default();
+            let raw_content = t!(
+                "welcome.instruction",
+                cmd = MOD,
+                open_files = OPEN_FILES_ICON,
+                hist_back = HIST_BACK_ICON,
+                hist_forward = HIST_FWD_ICON
+            )
+            .to_string();
+            let (id_injected, toc) = extract_toc_and_inject_ids(&raw_content);
+            let markdown_content = absolutize_image_paths(&id_injected, &canonical_initial_path);
+            (canonical_initial_path, raw_content, markdown_content, toc)
+        },
+        |file| {
+            let selected_path = PathBuf::from(&file);
+            let canonical_initial_path = selected_path.canonicalize().unwrap_or(selected_path);
+            let initial_base_dir = canonical_initial_path
+                .parent()
+                .unwrap_or_else(|| Path::new("."))
+                .to_path_buf();
+            // Keep CWD in sync for canonicalize() calls inside the viewer.
+            let _ = env::set_current_dir(&initial_base_dir);
+
+            let raw_content =
+                std::fs::read_to_string(&canonical_initial_path).unwrap_or_else(|_| {
+                    format!(
+                        "# Error\nFailed to read `{}`.",
+                        canonical_initial_path.display()
+                    )
+                });
+            let raw_content = if raw_content.len() > MAX_BYTES {
+                let size_mb = raw_content.len() as f64 / 1e6;
+                eprintln!(
+                    "thag_md_view: file too large ({size_mb:.1} MB): {}",
+                    canonical_initial_path.display()
+                );
+                format!(
+                    "# ⚠ File Too Large\n\n\
+                  Cannot render `{}`.\n\n\
+                  **File size: {size_mb:.1} MB** — exceeds the {:.0} MB limit.\n\n\
+                  Rendering files this large would make the UI unresponsive.\n\
+                  Consider splitting the file into smaller sections.",
+                    canonical_initial_path.display(),
+                    MAX_BYTES as f64 / 1e6,
+                )
+            } else {
+                raw_content
+            };
+            // Pre-screen for malformed code fences before any processing.
+            let raw_content = match validate_code_fences(&raw_content) {
+                Ok(()) => raw_content,
+                Err(ref fence_err) => {
+                    eprintln!(
+                        "thag_md_view: {}",
+                        fence_err_brief(fence_err, &canonical_initial_path)
+                    );
+                    fence_error_content(&canonical_initial_path, fence_err)
+                }
+            };
+            // Extract TOC headings and inject {#slug} attributes, then absolutize image paths.
+            let (id_injected, toc) = extract_toc_and_inject_ids(&raw_content);
+            let markdown_content = absolutize_image_paths(&id_injected, &initial_base_dir);
+            (canonical_initial_path, raw_content, markdown_content, toc)
+        },
+    );
+
+    let options = eframe::NativeOptions {
+        renderer: eframe::Renderer::Wgpu,
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([1200.0, 800.0])
+            .with_title(format!(
+                "thag_md_view: {}",
+                canonical_initial_path.display()
+            )),
+        ..Default::default()
+    };
+
+    // Load new default fonts
+    let mut fonts = egui::FontDefinitions::default();
+
+    let preferred_font = "Inter";
+
+    // Register the font data
+    fonts.font_data.insert(
+        preferred_font.to_owned(),
+        egui::FontData::from_static(include_bytes!(
+            "../assets/fonts/Inter-VariableFont_opsz,wght.ttf"
+        ))
+        .into(),
+    );
+
+    // Put it in proportional list
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Proportional)
+        .unwrap()
+        .insert(0, preferred_font.to_owned());
+
+    // Do the same for monospace
+    let monospace_font = "Hack";
+    fonts.font_data.insert(
+        monospace_font.to_owned(),
+        egui::FontData::from_static(include_bytes!("../assets/fonts/Hack-Regular.ttf")).into(),
+    );
+
+    // Put it in monospace list
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Monospace)
+        .unwrap()
+        .insert(0, monospace_font.to_owned());
+
+    // Add it to end of proportional list as a fallback, e.g. displaying widgets in help screen
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Proportional)
+        .unwrap()
+        .push(monospace_font.to_owned());
+
+    eframe::run_native(
+        "Markdown Viewer",
+        options,
+        Box::new(move |cc| {
+            cc.egui_ctx.set_fonts(fonts);
+            // Register our fast SVG loader BEFORE the first frame triggers
+            // egui_commonmark's `prepare_show`, which calls `install_image_loaders`.
+            // Since `install_image_loaders` skips any loader whose ID is already
+            // registered, the default `SvgLoader::default()` (which calls the
+            // 20-second `load_system_fonts()`) is never constructed.
+            cc.egui_ctx.add_image_loader(Arc::new(FastSvgLoader::new()));
+            apply_style(&cc.egui_ctx, true);
+
+            Ok(Box::new(MarkdownApp::new(
+                markdown_content,
+                raw_content,
+                canonical_initial_path,
+                toc,
+                cc.egui_ctx.clone(),
+            )))
+        }),
+    )
+}
+
+/// Pending navigation action triggered by the toolbar buttons.
+enum NavAction {
+    None,
+    Back,
+    Close(egui::Context),
+    Forward,
+    History(usize),
+}
+
+/// The state holder for our egui app.
+#[allow(clippy::struct_excessive_bools)]
+struct MarkdownApp {
+    /// Processed markdown text currently loaded (image paths absolutized, heading IDs injected).
+    content: String,
+    /// Raw file content as read from disk, used for text search.
+    raw_content: String,
+    /// The canonicalized path of the file we are viewing (so we know its parent folder).
+    current_file_path: PathBuf,
+    /// Required by `egui_commonmark` for rendering images/styles.
+    cache: CommonMarkCache,
+    /// Ordered list of visited file paths.
+    history: Vec<PathBuf>,
+    /// Current position within `history`.
+    history_index: usize,
+    /// Multiplicative scale applied to content text only (toolbar stays at 1×).
+    font_scale: f32,
+    /// Table of contents entries extracted from the current document.
+    toc: Vec<TocEntry>,
+    /// Whether the TOC side panel is visible.
+    show_toc: bool,
+    /// Whether the search bar is visible.
+    search_open: bool,
+    /// When `true`, the search text field will grab keyboard focus on the next frame.
+    search_focus: bool,
+    /// Whether the F1 help window is visible.
+    show_help: bool,
+    /// Separate cache for the help window's `CommonMarkViewer`.
+    help_cache: CommonMarkCache,
+    /// Heading positions extracted from `self.content` (content-relative bytes, not
+    /// raw-content bytes). Used by `scroll_to_active_match` for accurate section
+    /// navigation — avoids the offset errors that arise when comparing content
+    /// positions against `toc.byte_start` values (which are raw-content relative).
+    content_heading_positions: Vec<(usize, String)>, // (content byte start, slug)
+    // ── File watcher ──────────────────────────────────────────────────────────
+    /// Stored `egui::Context` so background threads can call `request_repaint()`.
+    egui_ctx: egui::Context,
+    /// Active `notify` watcher; keeping it alive via ownership.
+    watcher: Option<notify::RecommendedWatcher>,
+    /// Bridge-thread channel: a `()` arrives whenever the watched file changes.
+    watcher_rx: Option<Receiver<()>>,
+    /// When set, a brief "reloaded" notice is shown in the toolbar until this instant.
+    last_reload: Option<Instant>,
+    /// `true` until the end of the very first frame; used to request key-window focus
+    /// on startup so that keyboard shortcuts work without requiring a prior mouse click.
+    first_frame: bool,
+    /// Whether the viewport-cache performance mode is active.
+    /// Auto-enabled for documents ≥ [`VIEWPORT_CACHE_THRESHOLD`] bytes.
+    /// Hidden from the UI for smaller documents.
+    use_viewport_cache: bool,
+}
+
+impl MarkdownApp {
+    fn new(
+        content: String,
+        raw_content: String,
+        path: PathBuf,
+        toc: Vec<TocEntry>,
+        ctx: egui::Context,
+    ) -> Self {
+        let content_len = &content.len();
+        let mut app = Self {
+            content,
+            raw_content,
+            current_file_path: path.clone(),
+            cache: CommonMarkCache::default(),
+            history: if path.is_file() { vec![path] } else { vec![] },
+            history_index: 0,
+            font_scale: 1.0,
+            toc,
+            show_toc: true,
+            search_open: false,
+            search_focus: false,
+            show_help: false,
+            help_cache: CommonMarkCache::default(),
+            egui_ctx: ctx,
+            content_heading_positions: Vec::new(),
+            watcher: None,
+            watcher_rx: None,
+            last_reload: None,
+            first_frame: true,
+            use_viewport_cache: content_len >= &VIEWPORT_CACHE_THRESHOLD,
+        };
+        // eprintln!("CWD={}", std::env::current_dir().unwrap().display());
+        add_code_block_themes(&mut app.cache);
+        app.start_watching();
+        app.build_content_headings();
+        app
+    }
+
+    /// (Re-)arm the file watcher for `self.current_file_path`.
+    ///
+    /// Drops any previous watcher first. Uses a `notify::RecommendedWatcher` — on macOS
+    /// that is `FSEvents`, on Linux `inotify`, on Windows `ReadDirectoryChanges`. A bridge
+    /// thread applies a short quiet-period debounce before forwarding a wake signal so
+    /// that editors performing multi-step atomic writes don't trigger duplicate reloads.
+    fn start_watching(&mut self) {
+        // Drop the old watcher; this closes the raw channel sender in the bridge thread,
+        // causing the bridge thread to exit its recv() loop cleanly.
+        self.watcher = None;
+        self.watcher_rx = None;
+
+        let path = self.current_file_path.clone();
+
+        // Raw notify channel: carries every individual FS event.
+        let (raw_tx, raw_rx) = mpsc::channel::<notify::Result<notify::Event>>();
+
+        match notify::recommended_watcher(raw_tx) {
+            Ok(mut w) => {
+                if let Err(e) = w.watch(&path, RecursiveMode::NonRecursive) {
+                    eprintln!("thag_md_view: cannot watch {}: {e}", path.display());
+                    return;
+                }
+
+                // Bridge channel: only carries the "something changed" signal.
+                let (bridge_tx, bridge_rx) = mpsc::channel::<()>();
+                let ctx = self.egui_ctx.clone();
+                let watch_path = path.clone();
+
+                std::thread::Builder::new()
+                    .name("thag-md-watcher".into())
+                    .spawn(move || {
+                        while let Ok(result) = raw_rx.recv() {
+                            match result {
+                                Ok(event) => {
+                                    // Skip pure read events; react to anything that
+                                    // changes file content or inode (atomic-write editors
+                                    // like vim perform a rename/create rather than a
+                                    // modify, so we must catch Create events too).
+                                    if matches!(event.kind, notify::EventKind::Access(_)) {
+                                        continue;
+                                    }
+                                    // Only act if our file is in the affected paths.
+                                    // (Watching non-recursively means other files in the
+                                    // same dir shouldn't arrive, but be defensive.)
+                                    if !event.paths.iter().any(|p| p == &watch_path) {
+                                        continue;
+                                    }
+                                    // Debounce: collect rapid follow-on events
+                                    // (e.g. a write followed immediately by metadata
+                                    // updates) into one reload.
+                                    std::thread::sleep(Duration::from_millis(120));
+                                    while raw_rx.try_recv().is_ok() {}
+                                    if bridge_tx.send(()).is_err() {
+                                        break; // receiver dropped; exit
+                                    }
+                                    ctx.request_repaint();
+                                }
+                                Err(e) => {
+                                    eprintln!("thag_md_view: watcher error: {e}");
+                                }
+                            }
+                        }
+                    })
+                    .expect("failed to spawn watcher bridge thread");
+
+                self.watcher = Some(w);
+                self.watcher_rx = Some(bridge_rx);
+            }
+            Err(e) => {
+                eprintln!("thag_md_view: failed to create file watcher: {e}");
+            }
+        }
+    }
+
+    const fn can_go_back(&self) -> bool {
+        self.history_index > 0
+    }
+
+    const fn can_go_forward(&self) -> bool {
+        self.history_index + 1 < self.history.len()
+    }
+
+    /// Load `path` from disk and update content, TOC, raw content, and CWD.
+    /// Returns `true` on success. Re-arms the file watcher for the new path.
+    #[allow(clippy::cast_precision_loss)]
+    fn load_file(&mut self, path: PathBuf) -> bool {
+        match std::fs::read_to_string(&path) {
+            Ok(raw) => {
+                // Hard size limit: refuse files that would make the UI unusable.
+                const MAX_BYTES: usize = 50_000_000; // 50 MB
+                if raw.len() > MAX_BYTES {
+                    let size_mb = raw.len() as f64 / 1e6;
+                    let err = format!(
+                        "# ⚠ File Too Large\n\n\
+                         Cannot render `{}`.\n\n\
+                         **File size: {size_mb:.1} MB** — exceeds the {:.0} MB limit.\n\n\
+                         Rendering files this large would make the UI unresponsive.\n\
+                         Consider splitting the file into smaller sections.",
+                        path.display(),
+                        MAX_BYTES as f64 / 1e6,
+                    );
+                    eprintln!(
+                        "thag_md_view: file too large ({size_mb:.1} MB): {}",
+                        path.display()
+                    );
+                    // Still "load" the error page so the watcher can detect a fix.
+                    let base_dir = path
+                        .parent()
+                        .unwrap_or_else(|| Path::new("."))
+                        .to_path_buf();
+                    let _ = env::set_current_dir(&base_dir);
+                    let (id_injected, toc) = extract_toc_and_inject_ids(&err);
+                    self.content = absolutize_image_paths(&id_injected, &base_dir);
+                    self.raw_content = err;
+                    self.current_file_path = path;
+                    self.toc = toc;
+                    self.cache = CommonMarkCache::default();
+                    add_code_block_themes(&mut self.cache);
+                    self.use_viewport_cache = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
+                    self.start_watching();
+                    self.build_content_headings();
+                    return true;
+                }
+                // Pre-screen for malformed code fences.
+                let raw = match validate_code_fences(&raw) {
+                    Ok(()) => raw,
+                    Err(ref fence_err) => {
+                        eprintln!("thag_md_view: {}", fence_err_brief(fence_err, &path));
+                        fence_error_content(&path, fence_err)
+                    }
+                };
+                let base_dir = path
+                    .parent()
+                    .unwrap_or_else(|| Path::new("."))
+                    .to_path_buf();
+                // Keep CWD in sync for future canonicalize() calls.
+                let _ = env::set_current_dir(&base_dir);
+                let (id_injected, toc) = extract_toc_and_inject_ids(&raw);
+                self.content = absolutize_image_paths(&id_injected, &base_dir);
+                self.raw_content = raw;
+                self.current_file_path = path;
+                self.toc = toc;
+                // Clear the cache so egui_commonmark doesn't carry over stale state.
+                self.cache = CommonMarkCache::default();
+                add_code_block_themes(&mut self.cache);
+                self.use_viewport_cache = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
+                // Re-arm the watcher for the (possibly different) new file.
+                self.start_watching();
+                // Build content-relative heading positions for accurate scroll navigation.
+                self.build_content_headings();
+                true
+            }
+            Err(e) => {
+                eprintln!("Failed to read {}: {e}", path.display());
+                false
+            }
+        }
+    }
+
+    /// Reload the current file from disk without changing history.
+    fn reload_file(&mut self) -> bool {
+        let path = self.current_file_path.clone();
+        if path.is_file() {
+            if self.load_file(path) {
+                self.last_reload = Some(Instant::now());
+            }
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Navigate one step back in history. Returns `true` on success.
+    fn go_back(&mut self) -> bool {
+        if self.can_go_back() {
+            self.history_index -= 1;
+            let path = self.history[self.history_index].clone();
+            eprintln!(
+                "Succeeded in self.go_back(), self.history_index={}",
+                self.history_index
+            );
+            self.load_file(path)
+        } else {
+            eprintln!(
+                "Failed self.go_back(), self.history_index={0}",
+                self.history_index
+            );
+            false
+        }
+    }
+
+    /// Navigate one step forward in history. Returns `true` on success.
+    fn go_forward(&mut self) -> bool {
+        if self.can_go_forward() {
+            self.history_index += 1;
+            let path = self.history[self.history_index].clone();
+            eprintln!(
+                "Succeeded in self.go_forward(), self.history_index={}",
+                self.history_index
+            );
+            self.load_file(path)
+        } else {
+            eprintln!(
+                "Failed self.go_forward(), self.history_index={0}",
+                self.history_index
+            );
+            false
+        }
+    }
+
+    /// Close current file and try to go one step back in history, or failing that,
+    /// one step forward.
+    /// Returns `true` on success.
+    fn close(&mut self, ctx: &egui::Context) -> bool {
+        let remove_hist_index = self.history_index;
+        let success = self.go_back() || self.go_forward();
+        eprintln!(
+            "success={success}, remove_hist_index={remove_hist_index}, self.history={:?}",
+            self.history
+        );
+        if success {
+            match self.history.len() {
+                0 => false,
+                1 => {
+                    let _ = self.history.remove(0);
+                    true
+                }
+                _ => {
+                    let _ = self.history.remove(remove_hist_index);
+                    if remove_hist_index < self.history.len() {
+                        // Shift index back
+                        self.history_index = self.history_index.saturating_sub(1);
+                    }
+                    true
+                }
+            }
+        } else {
+            match self.history.len() {
+                0 => {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    true
+                }
+                1 => {
+                    let _ = self.history.remove(0);
+                    self.welcome(ctx);
+                    true
+                }
+                _ => {
+                    unreachable!()
+                }
+            }
+        }
+    }
+
+    fn welcome(&mut self, ctx: &egui::Context) {
+        self.raw_content = t!(
+            "welcome.instruction",
+            cmd = MOD,
+            open_files = OPEN_FILES_ICON,
+            hist_back = HIST_BACK_ICON,
+            hist_forward = HIST_FWD_ICON
+        )
+        .to_string();
+        let canonical_initial_path = env::current_dir()
+            .unwrap_or_default()
+            .canonicalize()
+            .unwrap_or_default();
+        let (id_injected, toc) = extract_toc_and_inject_ids(&self.raw_content);
+        self.content = absolutize_image_paths(&id_injected, &canonical_initial_path);
+        self.toc = toc;
+        // let new_show_toc = true;
+        self.show_toc = true;
+        self.current_file_path = canonical_initial_path;
+        ctx.send_viewport_cmd(egui::ViewportCommand::Title(format!(
+            "thag_md_view: {}",
+            self.current_file_path.display()
+        )));
+    }
+
+    /// Load a specific entry from the history stack. Returns `true` on success.
+    fn load_history(&mut self, n: usize) -> bool {
+        self.history_index = n;
+        let path = self.history[self.history_index].clone();
+        self.load_file(path)
+    }
+
+    /// Resolve a clicked relative link, load it, and push it onto history (discarding any
+    /// forward entries). Returns `true` on success so the caller can update the window title.
+    fn handle_link_click(&mut self, clicked_url: &str) -> bool {
+        // Strip any fragment identifier (#anchor) — it's not part of the file path.
+        let url_path = match clicked_url.split_once('#') {
+            Some((path, _fragment)) => path,
+            None => clicked_url,
+        };
+        if url_path.is_empty() {
+            return false; // Pure anchor link with no file component.
+        }
+
+        // Resolve relative to the current file's directory.
+        // `current_file_path` is always canonicalized (absolute), so `parent()` is reliable.
+        let current_dir = self
+            .current_file_path
+            .parent()
+            .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
+        let mut target_path = current_dir.join(url_path);
+        // Canonicalize to resolve '..' / '.' and confirm the file exists.
+        // Setting CWD first (in load_file) ensures canonicalize works for relative fallbacks.
+        if let Ok(canonical) = target_path.canonicalize() {
+            target_path = canonical;
+        }
+
+        if self.load_file(target_path.clone()) {
+            // Discard forward history and record the new entry.
+            self.history.truncate(self.history_index + 1);
+            self.history.push(target_path);
+            self.history_index = self.history.len() - 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Populate `content_heading_positions` by parsing `self.content` with
+    /// pulldown-cmark. These content-relative positions are used instead of
+    /// `toc.byte_start` (which is raw-content-relative) when scrolling to the
+    /// section containing a search match.
+    ///
+    /// Pairs headings by document order with `self.toc` entries rather than
+    /// relying on `id: Some(...)` — robust even if a heading's injected
+    /// `{#slug}` is absent or unparsed for any reason.
+    fn build_content_headings(&mut self) {
+        self.content_heading_positions.clear();
+        let opts = Options::ENABLE_TABLES
+            | Options::ENABLE_TASKLISTS
+            | Options::ENABLE_STRIKETHROUGH
+            | Options::ENABLE_FOOTNOTES
+            | Options::ENABLE_HEADING_ATTRIBUTES;
+        let mut toc_idx = 0usize;
+        for (event, span) in Parser::new_ext(&self.content, opts).into_offset_iter() {
+            if let Event::Start(Tag::Heading { .. }) = event {
+                if let Some(entry) = self.toc.get(toc_idx) {
+                    self.content_heading_positions
+                        .push((span.start, entry.slug.clone()));
+                }
+                toc_idx += 1;
+            }
+        }
+    }
+
+    fn load_and_register_history(&mut self, path: PathBuf) -> bool {
+        let canonical = path.canonicalize().unwrap_or(path);
+        if self.load_file(canonical.clone()) {
+            self.history.truncate(self.history_index + 1);
+            self.history.push(canonical);
+            self.history_index = self.history.len() - 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn remove_search(&mut self, id: &egui::Id) {
+        let search_query_mut = self.cache.search_query_mut(&id);
+        let last_search_query = search_query_mut.clone();
+        // Remove search matches
+        *search_query_mut = String::new();
+        self.cache.update_search_matches(id, &self.content);
+        // Restore search box contents for when box is reopened
+        *self.cache.search_query_mut(&id) = last_search_query;
+    }
+}
+
+fn add_code_block_themes(cache: &mut CommonMarkCache) {
+    for (theme, bytes) in THEME_BYTES {
+        cache.add_syntax_theme_from_bytes(*theme, bytes).unwrap();
+    }
+}
+
+impl eframe::App for MarkdownApp {
+    #[allow(clippy::cast_precision_loss, clippy::too_many_lines)]
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        const RED_ALERT: usize = 10_000_000;
+        const AMBER_ALERT: usize = 2_000_000;
+
+        // ── Poll file watcher ─────────────────────────────────────────────────────────────
+        // Drain all pending "file changed" signals from the bridge thread.
+        // We set a flag rather than reloading immediately so the reload happens
+        // after all panels are drawn this frame (avoids a mid-frame content swap).
+        let mut watcher_triggered = false;
+        if let Some(rx) = &self.watcher_rx {
+            while rx.try_recv().is_ok() {
+                watcher_triggered = true;
+            }
+        }
+
+        // ── Pre-compute read-only snapshots for use in closures ───────────────────────────
+        let can_go_back = self.can_go_back();
+        let can_go_forward = self.can_go_forward();
+        let back_tip = self
+            .history_index
+            .checked_sub(1)
+            .and_then(|i| self.history.get(i))
+            .map(|p| p.display().to_string())
+            .unwrap_or_default();
+        let forward_tip = self
+            .history
+            .get(self.history_index + 1)
+            .map(|p| p.display().to_string())
+            .unwrap_or_default();
+        let current_path_label = self.current_file_path.display().to_string();
+        let font_scale = self.font_scale;
+        let show_toc = self.show_toc;
+        let search_open = self.search_open;
+        let show_help = self.show_help;
+        // Is the auto-reload notice still within its 2-second display window?
+        let show_reload_notice = self
+            .last_reload
+            .is_some_and(|t| t.elapsed() < Duration::from_secs(2));
+        let doc_is_large = self.content.len() >= VIEWPORT_CACHE_THRESHOLD;
+        let use_viewport_cache = self.use_viewport_cache & doc_is_large;
+
+        // ── Mutable locals updated by keyboard / buttons, applied at end of frame ─────────
+        let mut nav_action = NavAction::None;
+        let mut open_files_requested = false;
+        let mut refresh_requested = false;
+        let mut new_font_scale = self.font_scale;
+        let mut new_show_toc = show_toc;
+        let mut new_search_open = search_open;
+        let mut new_show_help = show_help;
+        let mut new_use_viewport_cache = use_viewport_cache;
+        let font_scale_label = format!("Aa {:.0}%", self.font_scale * 100.0);
+
+        // ── Global keyboard shortcuts ─────────────────────────────────────────────────────
+        // Collect all key states in one input() call to avoid re-locking the context.
+        let (
+            exit_key,
+            close_file_key,
+            open_key,
+            zoom_in_key,
+            zoom_out_key,
+            zoom_reset_key,
+            font_enlarge_key,
+            font_reduce_key,
+            font_reset_key,
+            cmd_t,
+            cmd_f,
+            cmd_r,
+            f1_key,
+            search_escape,
+            escape_key,
+        ) = ui.ctx().input(|i| {
+            use egui::Key;
+            (
+                i.modifiers.command && i.modifiers.alt && i.key_pressed(Key::Q),
+                i.modifiers.command && i.key_pressed(Key::W),
+                i.modifiers.command && i.key_pressed(Key::O),
+                i.modifiers.command && i.key_pressed(Key::Equals),
+                i.modifiers.command && i.key_pressed(Key::Minus),
+                i.modifiers.command && i.key_pressed(Key::Z),
+                i.modifiers.command && i.modifiers.shift && i.key_pressed(Key::A),
+                i.modifiers.command && i.key_pressed(Key::A),
+                i.modifiers.command && i.key_pressed(Key::Num0),
+                i.modifiers.command && i.key_pressed(Key::T),
+                i.modifiers.command && i.key_pressed(Key::F),
+                i.modifiers.command && i.key_pressed(Key::R),
+                i.key_pressed(Key::F1),
+                i.key_pressed(Key::Escape),
+                i.key_pressed(Key::Escape),
+            )
+        });
+
+        let dropped_files: Vec<PathBuf> = ui.ctx().input(|i| {
+            if i.raw.dropped_files.is_empty() {
+                vec![]
+            } else {
+                // Select the first '.md' file; ignore other extensions.
+                let collect = i
+                    .raw
+                    .dropped_files
+                    .iter()
+                    .filter(|f| f.path().extension().is_some_and(|e| e == "md"))
+                    .map(|f| f.path().to_owned())
+                    .collect();
+                if i.raw.dropped_files.is_empty() {
+                    vec![]
+                } else {
+                    collect
+                }
+            }
+        });
+
+        // Act on shortcuts (zoom/font) only when text field does not have focus.
+        let wants_text = ui.ctx().egui_wants_keyboard_input();
+
+        if exit_key {
+            eprintln!("Exiting app");
+            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+        } else if close_file_key {
+            nav_action = NavAction::Close(ui.ctx().clone())
+        } else if open_key {
+            open_files_requested = true;
+        } else if !wants_text {
+            if zoom_in_key {
+                let z = ui.ctx().zoom_factor();
+                ui.ctx().set_zoom_factor((z * 1.1).min(3.0));
+            } else if zoom_out_key {
+                let z = ui.ctx().zoom_factor();
+                ui.ctx().set_zoom_factor((z / 1.1).max(0.4));
+            } else if zoom_reset_key {
+                ui.ctx().set_zoom_factor(1.0);
+            } else if font_enlarge_key {
+                new_font_scale = (new_font_scale * 1.1).min(3.0);
+            } else if font_reduce_key {
+                new_font_scale = (new_font_scale / 1.1).max(0.4);
+            } else if font_reset_key {
+                new_font_scale = 1.0;
+            }
+        }
+
+        // Derive the viewer Id from the Ui context each frame. This scopes it
+        // to the widget hierarchy (emilk's preferred pattern) and avoids
+        // global hash collisions. Stable as long as the widget tree is stable.
+        let id = ui.make_persistent_id(current_path_label);
+
+        // Feature toggles (independent of text focus).
+        if cmd_t {
+            new_show_toc = !show_toc;
+        }
+        if cmd_f {
+            new_search_open = !search_open;
+            if new_search_open {
+                // Run the previous search if any
+                if !self.cache.search_query_mut(&id).is_empty() {
+                    self.cache.update_search_matches(&id, &self.content);
+                }
+                // Opening the bar — request focus for the text field.
+                self.search_focus = true;
+            } else {
+                self.remove_search(&id);
+            }
+        }
+        if cmd_r && self.current_file_path.is_file() {
+            refresh_requested = true;
+        }
+        if f1_key || (escape_key && show_help) {
+            new_show_help = !show_help;
+        }
+        // Esc should close the search box and remove the search.
+        if new_search_open && search_escape {
+            new_search_open = false;
+            self.remove_search(&id);
+        }
+
+        // ── Top panel: toolbar ────────────────────────────────────────────────────────────
+        egui::Panel::top("toolbar").show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 2.0;
+                    if ui
+                        .button("⚙")
+                        .on_hover_text(t!("toolbar.theme_system").to_string())
+                        .clicked()
+                    {
+                        if let Some(system_theme) = ui.ctx().system_theme() {
+                            ui.ctx().set_theme(system_theme);
+                        } else {
+                            eprintln!("Could not access system theme");
+                        }
+                    }
+                    if ui
+                        .button("🌙")
+                        .on_hover_text(t!("toolbar.theme_dark").to_string())
+                        .clicked()
+                    {
+                        ui.ctx().set_theme(egui::Theme::Dark);
+                    }
+                    if ui
+                        .button("☀")
+                        .on_hover_text(t!("toolbar.theme_light").to_string())
+                        .clicked()
+                    {
+                        ui.ctx().set_theme(egui::Theme::Light);
+                    }
+                });
+
+                ui.separator();
+
+                if ui
+                    .selectable_label(new_show_toc, "§")
+                    .on_hover_text(t!("toolbar.toc_toggle", cmd = MOD).to_string())
+                    .clicked()
+                {
+                    new_show_toc = !new_show_toc;
+                }
+                if ui
+                    .selectable_label(new_search_open, "🔍")
+                    .on_hover_text(t!("toolbar.search_toggle", cmd = MOD).to_string())
+                    .clicked()
+                {
+                    new_search_open = !new_search_open;
+                    if new_search_open {
+                        self.search_focus = true;
+                    }
+                }
+
+                ui.separator();
+
+                if ui
+                    .add_enabled(can_go_back, egui::Button::new(HIST_BACK_ICON))
+                    .on_hover_text(&back_tip)
+                    .clicked()
+                {
+                    nav_action = NavAction::Back;
+                }
+
+                if ui
+                    .add_enabled(can_go_forward, egui::Button::new(HIST_FWD_ICON))
+                    .on_hover_text(&forward_tip)
+                    .clicked()
+                {
+                    nav_action = NavAction::Forward;
+                }
+                if ui
+                    .button("X")
+                    .on_hover_text(t!("toolbar.close_file_tip", cmd = MOD).to_string())
+                    .clicked()
+                {
+                    nav_action = NavAction::Close(ui.ctx().clone());
+                }
+                if self.history.len() > 1 {
+                    egui::ComboBox::from_id_salt("history_selector")
+                        .selected_text(
+                            self.history
+                                .get(self.history_index)
+                                .map(|p| p.display().to_string())
+                                .unwrap_or_default(),
+                        )
+                        .show_ui(ui, |ui| {
+                            for (index, path) in self.history.iter().enumerate() {
+                                if ui
+                                    .selectable_label(
+                                        index == self.history_index,
+                                        path.display().to_string(),
+                                    )
+                                    .clicked()
+                                {
+                                    nav_action = NavAction::History(index);
+                                    ui.close();
+                                }
+                            }
+                        });
+                }
+
+                ui.separator();
+                if ui
+                    .button("📖…")
+                    .on_hover_text(t!("toolbar.open_files", cmd = MOD).to_string())
+                    .clicked()
+                {
+                    open_files_requested = true;
+                }
+                if ui
+                    .add_enabled(self.current_file_path.is_file(), egui::Button::new("🔄"))
+                    .on_hover_text(t!("toolbar.reload", cmd = MOD).to_string())
+                    .clicked()
+                {
+                    refresh_requested = true;
+                }
+                // Transient auto-reload notice — fades after 2 s.
+                if show_reload_notice {
+                    ui.separator();
+                    ui.label(
+                        egui::RichText::new(t!("status.reloaded").to_string())
+                            .color(ui.visuals().weak_text_color()), // .small(),
+                    )
+                    .on_hover_text(t!("status.reloaded_tip").to_string());
+                    // Keep asking for repaints until the notice expires.
+                    ui.ctx().request_repaint_after(Duration::from_millis(250));
+                }
+
+                // Viewport-cache toggle — only shown for large documents.
+                if doc_is_large {
+                    ui.separator();
+                    let (status_view_mode, status_view_mode_tip) = if use_viewport_cache {
+                        ("status.cached", "status.cached_tip")
+                    } else {
+                        ("status.plain", "status.plain_tip")
+                    };
+                    if ui
+                        .selectable_label(use_viewport_cache, t!(status_view_mode).to_string())
+                        .on_hover_text(t!(status_view_mode_tip).to_string())
+                        .clicked()
+                    {
+                        new_use_viewport_cache = !use_viewport_cache;
+                        // Clear stale split-point cache so toggling ON triggers a fresh
+                        // full render, and toggling OFF starts clean.
+                        // self.cache = CommonMarkCache::default();
+                        self.cache.clear_viewers();
+                        add_code_block_themes(&mut self.cache);
+                    }
+                }
+
+                // Persistent file-size badge for large documents.
+                // Uses a coloured Frame (white text on solid background) for
+                // legibility in both light and dark themes.
+                {
+                    let sz = self.raw_content.len();
+                    if sz > AMBER_ALERT {
+                        let size_str = if sz >= 1_000_000_000 {
+                            format!("{:.1} GB", sz as f64 / 1e9)
+                        } else {
+                            format!("{:.1} MB", sz as f64 / 1e6)
+                        };
+                        let fill = if sz > RED_ALERT {
+                            Color32::from_rgb(255, 73, 73) // red: very large
+                        } else {
+                            Color32::from_rgb(255, 200, 100) // amber: large
+                        };
+                        ui.separator();
+                        egui::Frame::new()
+                            .fill(fill)
+                            .corner_radius(egui::CornerRadius::same(4))
+                            .inner_margin(egui::Margin::symmetric(5, 2))
+                            .show(ui, |ui| {
+                                ui.label(
+                                    egui::RichText::new(format!("\u{26a0} {size_str}"))
+                                        .color(if sz > RED_ALERT {
+                                            Color32::WHITE
+                                        } else {
+                                            Color32::BLACK
+                                        })
+                                        .strong(), // .small(),
+                                )
+                                .on_hover_text(t!("status.large_file_tip").to_string());
+                            });
+                    }
+                }
+
+                ui.separator();
+
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let cmd_opt: String = format!("{MOD}-{ALT}");
+
+                    if ui
+                        .button("🇽")
+                        .on_hover_text(t!("toolbar.close", cmd = cmd_opt).to_string())
+                        .clicked()
+                    {
+                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
+                    if ui
+                        .selectable_label(new_show_help, "❓")
+                        .on_hover_text(t!("toolbar.help").to_string())
+                        .clicked()
+                    {
+                        new_show_help = !new_show_help;
+                    }
+                    ui.separator();
+                    // Font scale controls (content text only; toolbar stays at 1×).
+                    // RTL layout: first-added = rightmost, so render `+, label, −`
+                    // to produce the visual sequence `− | 100% | +` left-to-right.
+                    if ui
+                        .small_button("+")
+                        .on_hover_text(t!("toolbar.font_enlarge", cmd = MOD).to_string())
+                        .clicked()
+                    {
+                        new_font_scale = (new_font_scale * 1.1).min(3.0);
+                    }
+                    if ui
+                        .button(&font_scale_label)
+                        .on_hover_text(t!("toolbar.font_reset", cmd = MOD).to_string())
+                        .clicked()
+                    {
+                        new_font_scale = 1.0;
+                    }
+                    if ui
+                        .small_button("−")
+                        .on_hover_text(t!("toolbar.font_reduce", cmd = MOD).to_string())
+                        .clicked()
+                    {
+                        new_font_scale = (new_font_scale / 1.1).max(0.4);
+                    }
+                    ui.separator();
+                    // Zoom controls.
+                    let zoom = ui.ctx().zoom_factor();
+                    if ui
+                        .small_button("+")
+                        .on_hover_text(t!("toolbar.zoom_in", cmd = MOD).to_string())
+                        .clicked()
+                    {
+                        ui.ctx().set_zoom_factor((zoom * 1.1).min(3.0));
+                    }
+                    if ui
+                        .button(format!("↕{:.0}%", zoom * 100.0))
+                        .on_hover_text(t!("toolbar.zoom_reset", cmd = MOD).to_string())
+                        .clicked()
+                    {
+                        ui.ctx().set_zoom_factor(1.0);
+                    }
+                    if ui
+                        .small_button("−")
+                        .on_hover_text(t!("toolbar.zoom_out", cmd = MOD).to_string())
+                        .clicked()
+                    {
+                        ui.ctx().set_zoom_factor((zoom / 1.1).max(0.4));
+                    }
+                    ui.separator();
+                });
+            });
+        });
+
+        // ── Top panel: search bar (shown when search is open) ─────────────────────────────
+        if new_search_open {
+            egui::Panel::top("search_bar").show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    let text_color = if self.cache.search_regex_error(&id).is_some() {
+                        ui.visuals().error_fg_color
+                    } else {
+                        ui.visuals().text_color()
+                    };
+
+                    ui.label("🔍");
+                    let response = ui.add(
+                        egui::TextEdit::singleline(self.cache.search_query_mut(&id))
+                            .text_color(text_color)
+                            .hint_text(t!("search.placeholder").to_string())
+                            .desired_width(280.0),
+                    );
+                    if let Some(error) = &self.cache.search_regex_error(&id) {
+                        response.clone().on_hover_text(error);
+                    }
+
+                    // Grab focus when the bar first opens.
+                    if self.search_focus {
+                        response.request_focus();
+                        self.search_focus = false;
+                    }
+
+                    // Checked unconditionally (not gated on the text edit still
+                    // having focus): a single-line TextEdit surrenders focus the
+                    // moment Enter is pressed, so `response.has_focus()` would
+                    // already be false here. We re-request focus below so that
+                    // repeated Enter presses keep working without having to
+                    // click back into the box each time.
+                    let enter_pressed = ui.input(|i| i.key_pressed(egui::Key::Enter));
+                    if enter_pressed {
+                        response.request_focus();
+                    }
+
+                    let mut search_options_changed = false;
+
+                    let mut search_toggle =
+                        |ui: &mut egui::Ui,
+                         flag: SearchOptions,
+                         label: egui::WidgetText,
+                         tooltip: String| {
+                            let selected = self.cache.search_options_mut(&id).contains(flag);
+
+                            if ui
+                                .selectable_label(selected, label)
+                                .on_hover_text(tooltip)
+                                .clicked()
+                            {
+                                self.cache.search_options_mut(&id).toggle(flag);
+                                search_options_changed = true;
+                            }
+                        };
+
+                    search_toggle(
+                        ui,
+                        SearchOptions::CASE_SENSITIVE,
+                        "Aa".into(),
+                        t!("search.case_sensitive_tip").to_string(),
+                    );
+
+                    search_toggle(
+                        ui,
+                        SearchOptions::WHOLE_WORD,
+                        egui::RichText::new("wd").underline().into(),
+                        t!("search.whole_word_tip").to_string(),
+                    );
+
+                    search_toggle(
+                        ui,
+                        SearchOptions::REGEX,
+                        ".*".into(),
+                        t!("search.regex_tip").to_string(),
+                    );
+
+                    if search_options_changed {
+                        self.cache.update_search_matches(&id, &self.content);
+                    }
+
+                    if response.changed() {
+                        self.cache.update_search_matches(&id, &self.content);
+                    }
+                    let match_count = self.cache.search_ranges(&id).len();
+                    match self.cache.active_match(&id) {
+                        Some(i) if match_count > 0 => ui.weak(format!("{} / {match_count}", i + 1)),
+                        _ => ui.weak(t!("search.no_matches").to_string()),
+                    };
+
+                    // Prev / next buttons.
+                    let has_matches = match_count > 0;
+                    if ui
+                        .add_enabled(
+                            has_matches,
+                            egui::Button::new(egui::RichText::new("\u{276e}").monospace()),
+                        )
+                        .on_hover_text(t!("search.prev_tip").to_string())
+                        .clicked()
+                        || (enter_pressed && ui.input(|i| i.modifiers.shift))
+                    {
+                        self.cache.go_to_match(&id, -1);
+                    }
+                    if ui
+                        .add_enabled(
+                            has_matches,
+                            egui::Button::new(egui::RichText::new("\u{276f}").monospace()),
+                        )
+                        .on_hover_text(t!("search.next_tip").to_string())
+                        .clicked()
+                        || (enter_pressed && !ui.input(|i| i.modifiers.shift))
+                    {
+                        self.cache.go_to_match(&id, 1);
+                    }
+
+                    if ui
+                        .button("X")
+                        .on_hover_text(t!("search.close_tip").to_string())
+                        .clicked()
+                    {
+                        new_search_open = false;
+                    }
+
+                    ui.separator();
+                });
+            });
+        }
+
+        // ── Left side panel: table of contents ───────────────────────────────────────────
+        if new_show_toc {
+            egui::Panel::left("toc")
+                .resizable(true)
+                .default_size(220.0)
+                .show(ui, |ui| {
+                    ui.add_space(4.0);
+                    ui.strong(t!("toc.title").to_string());
+                    ui.separator();
+                    egui::ScrollArea::vertical()
+                        .id_salt("toc_scroll")
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| {
+                            for entry in &self.toc {
+                                let indent = f32::from(entry.level.saturating_sub(1)) * 10.0;
+                                // Reserve a background slot BEFORE the row so it sits
+                                // behind the text in the draw-list (correct z-order).
+                                let bg_idx = ui.painter().add(egui::Shape::Noop);
+                                // Full-width row: click/hover sense covers the whole
+                                // row, not just the label text.
+                                let row_h = ui.spacing().interact_size.y;
+                                let (row_rect, row_resp) = ui.allocate_exact_size(
+                                    egui::vec2(ui.available_width(), row_h),
+                                    egui::Sense::click(),
+                                );
+                                if row_resp.hovered() {
+                                    ui.painter().set(
+                                        bg_idx,
+                                        egui::Shape::rect_filled(
+                                            row_rect,
+                                            egui::CornerRadius::ZERO,
+                                            ui.visuals().widgets.hovered.weak_bg_fill,
+                                        ),
+                                    );
+                                }
+                                // Paint the truncated label in the indented portion.
+                                // allocate_new_ui does not advance the parent cursor
+                                // (row_rect was already accounted for above), and the
+                                // explicit Layout prevents put()'s centred-and-justified
+                                // default from pushing text to the middle of the panel.
+                                if ui.is_rect_visible(row_rect) {
+                                    // Paint the text directly so we control both position
+                                    // and truncation without fighting the layout system.
+                                    let color = ui.visuals().text_color();
+                                    let font_id = egui::TextStyle::Body.resolve(ui.style());
+                                    let max_w = (row_rect.width() - indent).max(0.0);
+                                    let mut job = egui::text::LayoutJob::single_section(
+                                        entry.text.clone(),
+                                        egui::TextFormat {
+                                            font_id,
+                                            color,
+                                            ..Default::default()
+                                        },
+                                    );
+                                    job.wrap.max_rows = 1;
+                                    job.wrap.overflow_character = Some('\u{2026}'); // …
+                                    job.wrap.max_width = max_w;
+                                    // Allow breaking mid-word so truncation is progressive
+                                    // (letter by letter) rather than dropping a whole word.
+                                    job.wrap.break_anywhere = true;
+                                    let galley = ui.ctx().fonts_mut(|f| f.layout_job(job));
+                                    let y = galley.size().y.mul_add(-0.5, row_rect.center().y);
+                                    ui.painter().galley(
+                                        egui::pos2(row_rect.min.x + indent, y),
+                                        galley,
+                                        color,
+                                    );
+                                }
+                                if row_resp
+                                    .on_hover_text(&entry.text)
+                                    .on_hover_cursor(egui::CursorIcon::PointingHand)
+                                    .clicked()
+                                {
+                                    // Sanity-check: confirm the injected ID is actually
+                                    // present in the rendered content. If it is not, the
+                                    // scroll will silently do nothing and the target will
+                                    // be lost (egui_commonmark clears it at end of show).
+                                    let pat = format!("{{#{}}}", entry.slug);
+                                    if !self.content.contains(&pat) {
+                                        eprintln!(
+                                            "thag_md_view: TOC scroll MISS: \
+                                             {pat} not found in rendered content. \
+                                             slug={:?} heading={:?}",
+                                            entry.slug, entry.text
+                                        );
+                                    }
+                                    self.cache.scroll_to_heading(&id, Some(entry.slug.clone()));
+                                }
+                            }
+                        });
+                });
+        } // end TOC panel
+
+        // ── Central panel: the markdown document ──────────────────────────────────────────────
+        egui::CentralPanel::default().show(ui, |ui| {
+            // ── Style the scroll bar that show_scrollable will create internally ─
+            // These settings propagate into the inner ScrollArea because
+            // show_scrollable inherits ui.style() from this outer ui.
+            customise_scrollbar(ui);
+
+            // ── Keyboard scrolling ───────────────────────────────────────────
+            let user_scrolled = self.cache.handle_keyboard_scrolling(&id, ui);
+
+            // ── Font scale ──────────────────────────────────────────────────────────
+            // Applying to the outer ui propagates into show_scrollable's
+            // inner ScrollArea since it inherits style from us.
+            if (font_scale - 1.0).abs() > 0.005 {
+                use egui::{FontFamily, FontId, TextStyle};
+                let s = ui.style_mut();
+                let base_body = s.text_styles.get(&TextStyle::Body).map_or(14.0, |f| f.size);
+                let base_mono = s
+                    .text_styles
+                    .get(&TextStyle::Monospace)
+                    .map_or(12.0, |f| f.size);
+                let base_heading = s
+                    .text_styles
+                    .get(&TextStyle::Heading)
+                    .map_or(21.0, |f| f.size);
+                let base_small = s
+                    .text_styles
+                    .get(&TextStyle::Small)
+                    .map_or(10.0, |f| f.size);
+                s.text_styles.insert(
+                    TextStyle::Body,
+                    FontId::new(base_body * font_scale, FontFamily::Proportional),
+                );
+                s.text_styles.insert(
+                    TextStyle::Monospace,
+                    FontId::new(base_mono * font_scale, FontFamily::Monospace),
+                );
+                s.text_styles.insert(
+                    TextStyle::Heading,
+                    FontId::new(base_heading * font_scale, FontFamily::Proportional),
+                );
+                s.text_styles.insert(
+                    TextStyle::Small,
+                    FontId::new(base_small * font_scale, FontFamily::Proportional),
+                );
+            }
+
+            let (match_bg, active_bg) = if ui.visuals().dark_mode {
+                (
+                    egui::Color32::from_rgb(30, 115, 105),
+                    egui::Color32::from_rgb(95, 75, 165),
+                )
+            } else {
+                (
+                    egui::Color32::from_rgb(140, 220, 210),
+                    egui::Color32::from_rgb(185, 165, 240),
+                )
+            };
+
+            // ── Render with or without viewport culling ─────────────────────────────────────────
+            // show_scrollable does a full render on first open to populate
+            // split-point and heading-position caches, then culls to the
+            // visible viewport on all subsequent frames.  The source_id is
+            // keyed to the file path so navigating to a new file resets state.
+            CommonMarkViewer::new()
+                .syntax_theme_dark("Dunkel_Theme") // Must be one listed in THEME_BYTES
+                .syntax_theme_light("Slush_and_Poppies") // Must be one listed in THEME_BYTES
+                .search_match_color(match_bg)
+                .search_active_match_color(active_bg)
+                .enable_scroll_to_heading(true)
+                .show_scrollable(
+                    id,
+                    ui,
+                    &mut self.cache,
+                    &CommonMarkScrollOptions::default().viewport_cache(new_use_viewport_cache),
+                    &self.content,
+                );
+
+            self.cache
+                .sync_scrollable_active_match(&id, self.use_viewport_cache, user_scrolled);
+        });
+
+        // ── Intercept link clicks from egui_commonmark ────────────────────────────────────
+        // egui_commonmark dispatches link clicks by pushing OutputCommand::OpenUrl onto the
+        // context output. Intercept here: handle relative links ourselves, re-queue external ones.
+        let clicked_url = ui.ctx().output_mut(|o| {
+            let pos = o
+                .commands
+                .iter()
+                .position(|cmd| matches!(cmd, egui::OutputCommand::OpenUrl(_)));
+            pos.map(|idx| {
+                if let egui::OutputCommand::OpenUrl(open_url) = o.commands.remove(idx) {
+                    open_url.url
+                } else {
+                    unreachable!()
+                }
+            })
+        });
+
+        // ── Execute navigation ────────────────────────────────────────────────────────────
+        let navigated = if let Some(url) = clicked_url {
+            if url.starts_with("http://") || url.starts_with("https://") {
+                // Re-queue external links for the platform to open in the browser.
+                ui.ctx().open_url(egui::output::OpenUrl::new_tab(url));
+                false
+            } else {
+                self.handle_link_click(&url)
+            }
+        } else if open_files_requested {
+            let start_dir = if self.current_file_path.is_dir() {
+                self.current_file_path.clone()
+            } else {
+                self.current_file_path
+                    .parent()
+                    .map_or_else(|| PathBuf::from("."), Path::to_path_buf)
+            };
+            FileDialog::new()
+                .add_filter("Markdown", &["md", "markdown"])
+                .set_directory(&start_dir)
+                .pick_files()
+                .is_some_and(|paths| {
+                    let mut success = false;
+                    for path in paths {
+                        if self.load_and_register_history(path) && !success {
+                            success = true;
+                        }
+                    }
+                    success
+                })
+        } else if !dropped_files.is_empty() {
+            let mut success = false;
+            for path in dropped_files {
+                if self.load_and_register_history(path) && !success {
+                    success = true;
+                }
+            }
+            success
+        } else if refresh_requested {
+            // No history change on refresh.
+            let _ = self.reload_file();
+            false
+        } else if watcher_triggered {
+            // Auto-reload: the file watcher signalled a change on disk.
+            // Reload without history change, then stamp the notice timer.
+            if self.reload_file() {
+                self.last_reload = Some(Instant::now());
+            }
+            false // not a navigation; title stays the same
+        } else {
+            match nav_action {
+                NavAction::Back => self.go_back(),
+                NavAction::Forward => self.go_forward(),
+                NavAction::History(n) => self.load_history(n),
+                NavAction::None => false,
+                NavAction::Close(ctx) => self.close(&ctx),
+            }
+        };
+
+        // If load_file() ran this frame (navigation, manual reload, or watcher-triggered
+        // auto-reload), it already set `self.use_viewport_cache` to the correct value for
+        // the newly loaded document.  Propagate that back into `new_use_viewport_cache` so
+        // the frame-end commit below does not overwrite it with the stale pre-load snapshot
+        // (which would be `false` whenever the *previous* file was small or had caching
+        // disabled, causing large incoming files to open without viewport caching).
+        if navigated || watcher_triggered {
+            new_use_viewport_cache = self.use_viewport_cache;
+        }
+
+        // Reclaim key-window focus after the native file dialog releases it;
+        // without this the next keyboard shortcut typically needs two presses.
+        // if open_files_requested {
+        //     ui.ctx().send_viewport_cmd(egui::ViewportCommand::Focus);
+        // }
+
+        // ── Commit state changes ──────────────────────────────────────────────────────────
+        self.font_scale = new_font_scale;
+        self.show_toc = new_show_toc;
+        self.search_open = new_search_open;
+        self.show_help = new_show_help;
+        // Final safety guard: never enable caching for docs below the threshold.
+        // When load_file() ran this frame, new_use_viewport_cache was already synced to
+        // self.use_viewport_cache (see above), so both the large→small case (would
+        // wrongly re-enable cache) and the small/disabled→large case (would wrongly
+        // leave cache off) are handled before we reach this point.  The `&& threshold`
+        // check here is a belt-and-braces fallback for any path we may have missed.
+        self.use_viewport_cache =
+            new_use_viewport_cache && (self.content.len() >= VIEWPORT_CACHE_THRESHOLD);
+
+        if navigated {
+            ui.ctx()
+                .send_viewport_cmd(egui::ViewportCommand::Title(format!(
+                    "thag_md_view: {}",
+                    self.current_file_path.display()
+                )));
+        }
+
+        // ── Help window (floats above everything else) ────────────────────────────────────
+        if self.show_help {
+            let mut open = true;
+            egui::Window::new(t!("help.window_title").to_string())
+                .auto_sized()
+                .collapsible(false)
+                .open(&mut open)
+                .show(ui, |ui| {
+                    customise_scrollbar(ui);
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        let help_text =
+                            t!("help.text", prev = "\u{276e}", next = "\u{276f}").to_string();
+                        CommonMarkViewer::new().show(ui, &mut self.help_cache, &help_text);
+                    });
+                });
+            if !open {
+                self.show_help = false;
+            }
+        }
+        // ui.ctx().request_repaint_after(Duration::from_millis(250));
+        // ── On the very first frame, claim key-window focus so shortcuts work immediately
+        // without requiring the user to click first (macOS key-window / winit issue).
+        if self.first_frame {
+            // dbg!(&self.first_frame);
+            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Focus);
+            self.first_frame = false;
+        }
+    }
+}
+
+fn customise_scrollbar(ui: &mut egui::Ui) {
+    let scroll = &mut ui.style_mut().spacing.scroll;
+    scroll.floating = true;
+    scroll.content_margin = egui::Margin::same(10);
+    scroll.bar_inner_margin = 30.0;
+    scroll.bar_width = 10.0;
+    scroll.dormant_handle_opacity = 0.15;
+    scroll.interact_handle_opacity = 0.55;
+    scroll.active_handle_opacity = 0.80;
+}
+
+// ─── Fast SVG loader ──────────────────────────────────────────────────────────
+//
+// `egui_extras::install_image_loaders` (called lazily by `egui_commonmark` on
+// first render) only registers its built-in `SvgLoader` if no loader with that
+// ID already exists:
+//
+//   if !ctx.is_loader_installed(SvgLoader::ID) { ctx.add_image_loader(...) }
+//
+// `SvgLoader::default()` calls `fontdb::Database::load_system_fonts()`, which
+// on macOS scans `/System/Library/AssetsV2` — thousands of downloadable font
+// assets — and takes ~20 seconds.
+//
+// By pre-registering `FastSvgLoader` with the **same ID**, we prevent that
+// constructor from ever running.  Our loader calls `load_fonts_dir` on a small
+// set of known directories, reading font files directly without the macOS
+// CoreText/AssetsV2 scan, which is fast (<1 s).
+
+struct FastSvgLoader {
+    state: Mutex<FastSvgState>,
+}
+
+struct FastSvgState {
+    pass_index: u64,
+    cache: HashMap<String, HashMap<SizeHint, FastSvgEntry>>,
+    options: resvg::usvg::Options<'static>,
+}
+
+struct FastSvgEntry {
+    last_used: u64,
+    result: Result<Arc<egui::ColorImage>, String>,
+}
+
+impl FastSvgLoader {
+    /// Must match `egui::generate_loader_id!(SvgLoader)` as evaluated inside
+    /// the `egui_extras::loaders::svg_loader` module:
+    /// `concat!(module_path!(), "::", "SvgLoader")`
+    const ID: &str = "egui_extras::loaders::svg_loader::SvgLoader";
+
+    fn new() -> Self {
+        let mut options = resvg::usvg::Options::default();
+
+        // Populate fontdb from known directories instead of calling
+        // `load_system_fonts()`.  On macOS this deliberately skips
+        // `/System/Library/AssetsV2`, which is what causes the ~20 s delay.
+        let db = options.fontdb_mut();
+
+        #[cfg(target_os = "macos")]
+        {
+            db.load_fonts_dir("/System/Library/Fonts/");
+            db.load_fonts_dir("/Library/Fonts/");
+            if let Ok(home) = env::var("HOME") {
+                db.load_fonts_dir(Path::new(&home).join("Library/Fonts"));
+            }
+        }
+        #[cfg(target_os = "linux")]
+        {
+            db.load_fonts_dir("/usr/share/fonts/");
+            db.load_fonts_dir("/usr/local/share/fonts/");
+            if let Ok(home) = env::var("HOME") {
+                db.load_fonts_dir(Path::new(&home).join(".fonts"));
+                db.load_fonts_dir(Path::new(&home).join(".local/share/fonts"));
+            }
+        }
+        #[cfg(target_os = "windows")]
+        {
+            db.load_fonts_dir("C:/Windows/Fonts/");
+            if let Ok(profile) = env::var("USERPROFILE") {
+                db.load_fonts_dir(
+                    Path::new(&profile).join("AppData/Local/Microsoft/Windows/Fonts"),
+                );
+            }
+        }
+
+        log::info!(
+            "FastSvgLoader: initialised ({} font faces)",
+            options.fontdb.faces().count()
+        );
+
+        Self {
+            state: Mutex::new(FastSvgState {
+                pass_index: 0,
+                cache: HashMap::default(),
+                options,
+            }),
+        }
+    }
+}
+
+impl ImageLoader for FastSvgLoader {
+    fn id(&self) -> &str {
+        Self::ID
+    }
+
+    fn load(&self, ctx: &egui::Context, uri: &str, size_hint: SizeHint) -> ImageLoadResult {
+        if !Path::new(uri)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("svg"))
+        {
+            return Err(LoadError::NotSupported);
+        }
+
+        let FastSvgState {
+            pass_index,
+            cache,
+            options,
+        } = &mut *(self.state.lock().unwrap());
+
+        let bucket = cache.entry(uri.to_owned()).or_default();
+        if let Some(entry) = bucket.get_mut(&size_hint) {
+            entry.last_used = *pass_index;
+            return match entry.result.clone() {
+                Ok(image) => Ok(ImagePoll::Ready { image }),
+                Err(err) => Err(LoadError::Loading(err)),
+            };
+        }
+
+        match ctx.try_load_bytes(uri) {
+            Ok(BytesPoll::Ready { bytes, .. }) => {
+                let result =
+                    egui_extras::image::load_svg_bytes_with_size(&bytes, size_hint, options)
+                        .map(Arc::new);
+                bucket.insert(
+                    size_hint,
+                    FastSvgEntry {
+                        last_used: *pass_index,
+                        result: result.clone(),
+                    },
+                );
+                match result {
+                    Ok(image) => Ok(ImagePoll::Ready { image }),
+                    Err(err) => Err(LoadError::Loading(err)),
+                }
+            }
+            Ok(BytesPoll::Pending { size }) => Ok(ImagePoll::Pending { size }),
+            Err(err) => Err(err),
+        }
+    }
+
+    fn forget(&self, uri: &str) {
+        self.state.lock().unwrap().cache.retain(|key, _| key != uri);
+    }
+
+    fn forget_all(&self) {
+        self.state.lock().unwrap().cache.clear();
+    }
+
+    fn byte_size(&self) -> usize {
+        self.state
+            .lock()
+            .unwrap()
+            .cache
+            .values()
+            .flat_map(|bucket| bucket.values())
+            .map(|entry| match &entry.result {
+                Ok(image) => image.pixels.len() * std::mem::size_of::<Color32>(),
+                Err(err) => err.len(),
+            })
+            .sum()
+    }
+
+    fn end_pass(&self, pass_index: u64) {
+        let mut state = self.state.lock().unwrap();
+        state.pass_index = pass_index;
+        state.cache.retain(|_key, bucket| {
+            if 2 <= bucket.len() {
+                bucket.retain(|_, entry| pass_index <= entry.last_used + 1);
+            }
+            !bucket.is_empty()
+        });
+    }
+}

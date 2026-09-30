@@ -8,11 +8,11 @@ iced = { version = "^0.12.1", features = ["image", "debug"] }
 //# Categories: crates, technique
 use iced::alignment::{self, Alignment};
 use iced::theme;
+use iced::widget::{Button, Column, Container, Slider};
 use iced::widget::{
     checkbox, column, container, horizontal_space, image, radio, row, scrollable, slider, text,
     text_input, toggler, vertical_space,
 };
-use iced::widget::{Button, Column, Container, Slider};
 use iced::{Color, Element, Font, Length, Pixels, Sandbox, Settings};
 
 pub fn main() -> iced::Result {
@@ -61,7 +61,7 @@ impl Sandbox for Tour {
         }
     }
 
-    fn view(&self) -> Element<Message> {
+    fn view(&self) -> Element<'_, Message> {
         let Tour { steps, .. } = self;
 
         let controls = row![]
@@ -149,7 +149,7 @@ impl Steps {
         self.steps[self.current].update(msg, debug);
     }
 
-    fn view(&self, debug: bool) -> Element<StepMessage> {
+    fn view(&self, debug: bool) -> Element<'_, StepMessage> {
         self.steps[self.current].view(debug)
     }
 
@@ -338,7 +338,7 @@ impl<'a> Step {
         }
     }
 
-    fn view(&self, debug: bool) -> Element<StepMessage> {
+    fn view(&self, debug: bool) -> Element<'_, StepMessage> {
         match self {
             Step::Welcome => Self::welcome(),
             Step::Radio { selection } => Self::radio(*selection),

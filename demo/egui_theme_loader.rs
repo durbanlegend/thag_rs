@@ -5,13 +5,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-eframe = "0.31"
-serde_yaml = "0.9"
+# eframe = "0.36.2"
+# serde_yaml = "0.9"
  */
 /// Demo of RYO `egui` theming.
 ///
 /// E.g.: `thag demo/egui_theme_loader.rs -- ./thag_styling/themes/wezterm/atelier_seaside_light.yaml`
-/// (run from $THAG_DEV_PATH)
+/// (run from $`THAG_DEV_PATH`)
 //# Purpose: demo RYO `egui` theming from popular Base16 themes.
 //# Categories: crates, demo, styling, technique
 //# Argument: PATH: Path to a `Base16` `.y[a]ml` file. There are a few examples in the `thag_rs/thag_styling/themes` directory.
@@ -25,15 +25,15 @@ struct Demo {
 }
 
 impl eframe::App for Demo {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ui, |ui| {
             ui.heading("Base16 theme preview");
             ui.label("Normal text");
             ui.weak("Weak text");
             ui.hyperlink("https://example.com");
             ui.code("inline_code()");
-            ui.colored_label(ctx.style().visuals.warn_fg_color, "warning");
-            ui.colored_label(ctx.style().visuals.error_fg_color, "error");
+            ui.colored_label(ui.visuals().warn_fg_color, "warning");
+            ui.colored_label(ui.style().visuals.error_fg_color, "error");
             ui.separator();
             ui.text_edit_singleline(&mut self.text);
             ui.checkbox(&mut self.checked, "A checkbox");
@@ -213,6 +213,9 @@ mod base16 {
     }
 
     fn luminance(c: Color32) -> f32 {
-        (0.2126 * c.r() as f32 + 0.7152 * c.g() as f32 + 0.0722 * c.b() as f32) / 255.0
+        0.0722f32.mul_add(
+            f32::from(c.b()),
+            0.7152f32.mul_add(f32::from(c.g()), 0.2126 * f32::from(c.r())),
+        ) / 255.0
     }
 }

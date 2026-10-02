@@ -1,9 +1,9 @@
 use proc_macro::TokenStream;
 use std::{env, fs, io, path::Path};
 use syn::{
+    LitStr, Token,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
-    LitStr, Token,
 };
 
 struct CopyArgs {
@@ -17,9 +17,7 @@ impl Parse for CopyArgs {
         let args = Punctuated::<LitStr, Token![,]>::parse_terminated(input)?;
 
         if !(2..=3).contains(&args.len()) {
-            return Err(
-                input.error("expected: copy_resource_dir!(\"ENV_VAR\", \"source\", \"dest\")")
-            );
+            return Err(input.error(r#"expected: copy_resource_dir!("ENV_VAR", "source", "dest")"#));
         }
 
         let mut args = args.into_iter();

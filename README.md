@@ -676,31 +676,34 @@ at the start of the script, as you can see done in some of the demos. To help wi
 
 ### Example of using a toml block (demo/prettyplease.rs)
 
-    /*[toml]
-    [dependencies]
-    prettyplease = "0.2.32"
-    syn = { version = "2", default-features = false, features = ["full", "parsing"] }
-    */
-
-    /// Published example from `prettyplease` Readme.
-    //# Purpose: Demo featured crate.
-    const INPUT: &str = stringify! {
-        use crate::{
-              lazy::{Lazy, SyncLazy, SyncOnceCell}, panic,
-            sync::{ atomic::{AtomicUsize, Ordering::SeqCst},
-                mpsc::channel, Mutex, },
-          thread,
-        };
-        impl<T, U> Into<U> for T where U: From<T> {
-            fn into(self) -> U { U::from(self) }
-        }
+```toml
+/*[toml]
+[dependencies]
+prettyplease = "0.2.32"
+syn = { version = "2", default-features = false, features = ["full", "parsing"] }
+*/
+```
+```rust
+/// Published example from `prettyplease` Readme.
+//# Purpose: Demo featured crate.
+const INPUT: &str = stringify! {
+    use crate::{
+            lazy::{Lazy, SyncLazy, SyncOnceCell}, panic,
+        sync::{ atomic::{AtomicUsize, Ordering::SeqCst},
+            mpsc::channel, Mutex, },
+        thread,
     };
-
-    fn main() {
-        let syntax_tree = syn::parse_file(INPUT).unwrap();
-        let formatted = prettyplease::unparse(&syntax_tree);
-        print!("{}", formatted);
+    impl<T, U> Into<U> for T where U: From<T> {
+        fn into(self) -> U { U::from(self) }
     }
+};
+
+fn main() {
+    let syntax_tree = syn::parse_file(INPUT).unwrap();
+    let formatted = prettyplease::unparse(&syntax_tree);
+    print!("{}", formatted);
+}
+```
 
 ## Usage
 
@@ -840,7 +843,7 @@ by choosing only the features you need
 
 #### Feature dependency tree:
 
-```
+```toml
 default
 ├── simplelog
 └── full
@@ -933,11 +936,11 @@ SPDX-License-Identifier: Apache-2.0 OR MIT
 
 Licensed under either of
 
-    Apache License, Version 2.0 (LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
+-  Apache License, Version 2.0 (LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
 
 or
 
-    MIT license (LICENSE-MIT or http://opensource.org/licenses/MIT)
+-  MIT license (LICENSE-MIT or http://opensource.org/licenses/MIT)
 
 as you prefer.
 

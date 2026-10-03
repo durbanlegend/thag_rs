@@ -1,28 +1,23 @@
 /*[toml]
 [package]
-name = "base16-egui"
+name = "egui_theme_loader"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-eframe = "0.31"
-serde_yaml = "0.9"
+# eframe = "0.36.2"
+# serde_yaml = "0.9"
 # default-fancy = pure-Rust regex backend (no C/onig build needed).
 # If you already depend on syntect via egui_commonmark, match that version/features.
 syntect = { version = "5", default-features = false, features = ["default-fancy"] }
 */
 /// Demo of RYO `egui` theming using a `syntect` `.tmTheme` file.
 ///
-/// E.g.: `thag demo/egui_theme_loader_syntect.rs -- /path/to/file.tmTheme`
+/// E.g.: `thag demo/egui_theme_loader.rs -- /path/to/file.tmTheme`
 ///
 //# Purpose: demo RYO `egui` theming from popular `syntect` themes.
 //# Categories: crates, demo, styling, technique
-//# Argument: PATH: Path to a `syntect` `.thTheme` file. There are a few examples in the `thag_rs/thag_styling/themes` directory.
-/// Derive UI colour roles from a syntect `.tmTheme` file.
-///
-/// A tmTheme only defines an editor background/foreground plus scope colours,
-/// so the in-between greys (borders, hover fills, ...) are blended from
-/// background and foreground, and accents are looked up from scopes.
+//# Argument: PATH: Path to a `syntect` `.thTheme` file or a `Base16` `.y[a]ml` file.
 use eframe::egui;
 use theme::Roles;
 
@@ -33,20 +28,23 @@ struct Demo {
 }
 
 impl eframe::App for Demo {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ui, |ui| {
             ui.heading("Theme preview");
             ui.label("Normal text");
             ui.weak("Weak text");
             ui.hyperlink("https://example.com");
             ui.code("inline_code()");
-            ui.colored_label(ctx.style().visuals.warn_fg_color, "warning");
-            ui.colored_label(ctx.style().visuals.error_fg_color, "error");
+            ui.colored_label(ui.visuals().warn_fg_color, "warning");
+            ui.colored_label(ui.visuals().error_fg_color, "error");
             ui.separator();
             ui.text_edit_singleline(&mut self.text);
             ui.checkbox(&mut self.checked, "A checkbox");
             ui.add(egui::Slider::new(&mut self.slider, 0.0..=1.0));
             let _ = ui.button("A button");
+
+            // With egui_commonmark, this is all you need after the theme is set:
+            // CommonMarkViewer::new().show(ui, &mut cache, "# Hello\n`code`");
         });
     }
 }
@@ -58,7 +56,7 @@ fn load(path: &str) -> Result<(String, Roles), Box<dyn std::error::Error>> {
         .and_then(|e| e.to_str())
         .map(str::to_ascii_lowercase);
     match ext.as_deref() {
-        Some("yaml") | Some("yml") => base16::from_file(path),
+        Some("yaml" | "yml") => base16::from_file(path),
         Some("tmtheme") => tmtheme::from_file(path),
         _ => Err("expected a .yaml/.yml (base16) or .tmTheme file".into()),
     }
@@ -79,14 +77,14 @@ fn main() -> eframe::Result<()> {
     );
 
     eframe::run_native(
-        "base16-egui",
+        "egui_theme_loader",
         eframe::NativeOptions::default(),
         Box::new(move |cc| {
             roles.apply(&cc.egui_ctx);
             Ok(Box::new(Demo {
                 text: "Edit me".into(),
                 checked: true,
-                slider: 0.4,
+                slider: 0.4_f32,
             }))
         }),
     )
@@ -130,7 +128,7 @@ mod base16 {
         let is_dark = match root.get("variant").and_then(|v| v.as_str()) {
             Some("dark") => true,
             Some("light") => false,
-            _ => luminance(c[0]) < 0.5,
+            _ => luminance(c[0]) < 0.5_f32,
         };
 
         let roles = Roles {
@@ -152,7 +150,7 @@ mod base16 {
         Ok((name, roles))
     }
 
-    pub(crate) fn parse_hex(s: &str) -> Result<Color32, Box<dyn Error>> {
+    pub fn parse_hex(s: &str) -> Result<Color32, Box<dyn Error>> {
         let h = s.trim().trim_start_matches('#');
         if h.len() != 6 {
             return Err(format!("expected 6 hex digits, got `{s}`").into());
@@ -162,6 +160,11 @@ mod base16 {
     }
 }
 
+/// Derive UI colour roles from a syntect `.tmTheme` file.
+///
+/// A tmTheme only defines an editor background/foreground plus scope colours,
+/// so the in-between greys (borders, hover fills, ...) are blended from
+/// background and foreground, and accents are looked up from scopes.
 mod tmtheme {
     use crate::theme::{Roles, luminance, mix};
     use eframe::egui;
@@ -170,16 +173,17 @@ mod tmtheme {
     use syntect::highlighting::{Color, Highlighter, ThemeSet};
     use syntect::parsing::Scope;
 
+    #[allow(clippy::similar_names)]
     pub fn from_file(path: impl AsRef<Path>) -> Result<(String, Roles), Box<dyn Error>> {
         let theme = ThemeSet::get_theme(path.as_ref())?;
         let s = &theme.settings;
 
         let rgb = |c: Color| Color32::from_rgb(c.r, c.g, c.b);
 
-        let bg = s.background.map(rgb).unwrap_or(Color32::WHITE);
+        let bg = s.background.map_or(Color32::WHITE, rgb);
         // Deliberately ignores alpha: some themes (e.g. gruvbox Light) store the
         // foreground as #RRGGBB80 for editor reasons; flattening it would wash out all text.
-        let fg = s.foreground.map(rgb).unwrap_or(Color32::BLACK);
+        let fg = s.foreground.map_or(Color32::BLACK, rgb);
         let is_dark = luminance(bg) < 0.5;
         let pure = if is_dark {
             Color32::WHITE
@@ -189,13 +193,12 @@ mod tmtheme {
 
         // Colours in tmThemes may carry alpha; flatten them onto a background
         // so egui never has to deal with translucent fills.
-        let flatten = |c: Color, over: Color32| mix(over, rgb(c), c.a as f32 / 255.0);
+        let flatten = |c: Color, over: Color32| mix(over, rgb(c), f32::from(c.a) / 255.0);
 
         // Greys derived from bg/fg, unless the theme supplies something better.
         let bg_alt = s
             .line_highlight
-            .map(|c| flatten(c, bg))
-            .unwrap_or_else(|| mix(bg, fg, 0.06));
+            .map_or_else(|| mix(bg, fg, 0.06), |c| flatten(c, bg));
         // Idle widgets sit on `bg_alt`, so hover/pressed must step away from *that*,
         // not from `bg`, or hovering would barely change anything.
         let bg_sel = mix(bg_alt, fg, 0.12);
@@ -238,15 +241,12 @@ mod tmtheme {
         // Editors often use a subtle selection that equals the line highlight, which
         // would be invisible in egui. Otherwise use a tint of the accent colour.
         let far = |a: Color32, b: Color32| {
-            let d = |x: u8, y: u8| (x as i32 - y as i32).abs();
+            let d = |x: u8, y: u8| (i32::from(x) - i32::from(y)).abs();
             d(a.r(), b.r()) + d(a.g(), b.g()) + d(a.b(), b.b()) >= 80
         };
-        let themed = s.selection.map(|c| {
-            (
-                flatten(c, bg),
-                s.selection_foreground.map(rgb).unwrap_or(fg),
-            )
-        });
+        let themed = s
+            .selection
+            .map(|c| (flatten(c, bg), s.selection_foreground.map_or(fg, rgb)));
         let (sel_bg, sel_fg) = match themed {
             Some((b, f)) if far(b, bg) && far(b, bg_alt) => (b, f),
             _ => (mix(bg, accent, 0.35), fg),
@@ -308,7 +308,7 @@ mod theme {
 
             v.panel_fill = self.bg;
             v.window_fill = self.bg;
-            v.window_stroke = Stroke::new(1.0, self.border);
+            v.window_stroke = Stroke::new(1.0_f32, self.border);
             v.extreme_bg_color = self.bg_alt; // text edits, scroll areas
             v.faint_bg_color = self.bg_alt; // striped table rows
             v.code_bg_color = self.bg_alt; // inline code (markdown)
@@ -317,35 +317,35 @@ mod theme {
             v.warn_fg_color = self.warn;
             v.error_fg_color = self.error;
             v.selection.bg_fill = self.sel_bg;
-            v.selection.stroke = Stroke::new(1.0, self.sel_fg);
+            v.selection.stroke = Stroke::new(1.0_f32, self.sel_fg);
 
             // Text colour comes from each state's `fg_stroke`.
             let w = &mut v.widgets;
 
             w.noninteractive.bg_fill = self.bg;
             w.noninteractive.weak_bg_fill = self.bg;
-            w.noninteractive.bg_stroke = Stroke::new(1.0, self.bg_sel);
-            w.noninteractive.fg_stroke = Stroke::new(1.0, self.fg);
+            w.noninteractive.bg_stroke = Stroke::new(1.0_f32, self.bg_sel);
+            w.noninteractive.fg_stroke = Stroke::new(1.0_f32, self.fg);
 
             w.inactive.bg_fill = self.bg_alt;
             w.inactive.weak_bg_fill = self.bg_alt;
             w.inactive.bg_stroke = Stroke::NONE;
-            w.inactive.fg_stroke = Stroke::new(1.0, self.fg);
+            w.inactive.fg_stroke = Stroke::new(1.0_f32, self.fg);
 
             w.hovered.bg_fill = self.bg_sel;
             w.hovered.weak_bg_fill = self.bg_sel;
-            w.hovered.bg_stroke = Stroke::new(1.0, self.border);
-            w.hovered.fg_stroke = Stroke::new(1.5, self.fg_hi);
+            w.hovered.bg_stroke = Stroke::new(1.0_f32, self.border);
+            w.hovered.fg_stroke = Stroke::new(1.5_f32, self.fg_hi);
 
             w.active.bg_fill = self.border;
             w.active.weak_bg_fill = self.border;
-            w.active.bg_stroke = Stroke::new(1.0, self.muted);
-            w.active.fg_stroke = Stroke::new(2.0, self.fg_max);
+            w.active.bg_stroke = Stroke::new(1.0_f32, self.muted);
+            w.active.fg_stroke = Stroke::new(2.0_f32, self.fg_max);
 
             w.open.bg_fill = self.bg_alt;
             w.open.weak_bg_fill = self.bg_alt;
-            w.open.bg_stroke = Stroke::new(1.0, self.border);
-            w.open.fg_stroke = Stroke::new(1.0, self.fg_hi);
+            w.open.bg_stroke = Stroke::new(1.0_f32, self.border);
+            w.open.fg_stroke = Stroke::new(1.0_f32, self.fg_hi);
 
             v
         }
@@ -364,12 +364,20 @@ mod theme {
     }
 
     /// Linear blend in sRGB space: t = 0 gives `a`, t = 1 gives `b`.
+    #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
     pub fn mix(a: Color32, b: Color32, t: f32) -> Color32 {
-        let ch = |x: u8, y: u8| (x as f32 + (y as f32 - x as f32) * t).round() as u8;
+        let ch = |x: u8, y: u8| {
+            (f32::from(y) - f32::from(x))
+                .mul_add(t, f32::from(x))
+                .round() as u8
+        };
         Color32::from_rgb(ch(a.r(), b.r()), ch(a.g(), b.g()), ch(a.b(), b.b()))
     }
 
     pub fn luminance(c: Color32) -> f32 {
-        (0.2126 * c.r() as f32 + 0.7152 * c.g() as f32 + 0.0722 * c.b() as f32) / 255.0
+        0.0722f32.mul_add(
+            f32::from(c.b()),
+            0.7152f32.mul_add(f32::from(c.g()), 0.2126 * f32::from(c.r())),
+        ) / 255.0
     }
 }

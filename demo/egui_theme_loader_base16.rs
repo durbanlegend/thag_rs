@@ -1,6 +1,6 @@
 /*[toml]
 [package]
-name = "base16-egui"
+name = "egui_theme_loader_base16"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,7 +10,7 @@ edition = "2021"
  */
 /// Demo of RYO `egui` theming.
 ///
-/// E.g.: `thag demo/egui_theme_loader.rs -- ./thag_styling/themes/wezterm/atelier_seaside_light.yaml`
+/// E.g.: `thag demo/egui_theme_loader_base16.rs -- ./thag_styling/themes/wezterm/atelier_seaside_light.yaml`
 /// (run from $`THAG_DEV_PATH`)
 //# Purpose: demo RYO `egui` theming from popular Base16 themes.
 //# Categories: crates, demo, styling, technique
@@ -33,7 +33,7 @@ impl eframe::App for Demo {
             ui.hyperlink("https://example.com");
             ui.code("inline_code()");
             ui.colored_label(ui.visuals().warn_fg_color, "warning");
-            ui.colored_label(ui.style().visuals.error_fg_color, "error");
+            ui.colored_label(ui.visuals().error_fg_color, "error");
             ui.separator();
             ui.text_edit_singleline(&mut self.text);
             ui.checkbox(&mut self.checked, "A checkbox");
@@ -62,7 +62,7 @@ fn main() -> eframe::Result<()> {
     );
 
     eframe::run_native(
-        "base16-egui",
+        "egui_theme_loader_base16",
         eframe::NativeOptions::default(),
         Box::new(move |cc| {
             theme.apply(&cc.egui_ctx);

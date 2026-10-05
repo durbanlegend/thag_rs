@@ -25,7 +25,7 @@ pub struct HelpSystem {
     /// Populated via [`HelpSystem::with_options`]; displayed below the hard-coded `-h, --help` entry.
     pub options: Vec<(String, String)>,
     /// Named arguments: `(label, description)`, e.g. `("PATH Output path")`.
-    /// Populated via [`HelpSystem::with_args``]; displayed below the hard-coded `-h, --help` entry.
+    /// Populated via [`HelpSystem::with_args`]; displayed below the hard-coded `-h, --help` entry.
     pub args: Vec<(String, String)>,
 }
 

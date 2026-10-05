@@ -14,7 +14,7 @@ thag_profiler = { version = "1, thag-auto", features=["full_profiling", "debug_l
 ///
 /// Also, the expansions of the individual `generate_tests!` invocations are visible
 /// if the `expand` argument of the call to fn `maybe_expand_proc_macro` from the proc
-/// macro function fn `generate_tests` in `lib.rs` iis set to `true`. So if you prefer
+/// macro function fn `generate_tests` in `lib.rs` is set to `true`. So if you prefer
 /// to use this, you can remove the hard-coded debugging from `generate_tests.rs`.
 ///
 /// To perform the tests and see the results, simply run:

@@ -94,7 +94,7 @@ fn main() -> eframe::Result<()> {
         "Loaded `{name}` ({})",
         if roles.is_dark { "dark" } else { "light" }
     );
-    eprintln!("Markdown colours: {:#?}", roles.md);
+    // eprintln!("Markdown colours: {:#?}", roles.md);
 
     eframe::run_native(
         "egui_theme_loader_enh",

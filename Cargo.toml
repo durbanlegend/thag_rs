@@ -264,7 +264,7 @@ required-features = ["tools"]
 
 [dependencies]
 anyhow = { version = "1.0", optional = true }
-arboard = { version = "3.4", optional = true }
+arboard = { version = "3", optional = true }
 atty = { version = "0.2", optional = true }
 backtrace = "0.3"
 bitflags = { version = "2", optional = true }

@@ -724,7 +724,7 @@ fn maybe_load_config() -> Option<Config> {
     }
 }
 
-/// Gets the real or mock context according to whether test mode is detected via the `TEST_ENV` sstem variable.
+/// Gets the real or mock context according to whether test mode is detected via the `TEST_ENV` system variable.
 ///
 /// # Panics
 ///
